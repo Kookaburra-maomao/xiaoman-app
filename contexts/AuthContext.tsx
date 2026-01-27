@@ -1,4 +1,4 @@
-import { User, checkAuth, getUser, login, logout, register, updateUser } from '@/utils/auth';
+import { User, checkAuth, getUser, login, logout, register, saveUser, updateUser } from '@/utils/auth';
 import { getLastRequestTime, setRequestCallback } from '@/utils/request';
 import React, { ReactNode, createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
@@ -11,6 +11,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
   updateUserInfo: (data: { avatar?: string }) => Promise<void>;
+  updateVipExpireTime: (vipExpireTime: string) => Promise<void>;
   setUser: (user: User | null) => void;
 }
 
@@ -158,6 +159,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(updatedUser);
   }, [user?.id]);
 
+  const handleUpdateVipExpireTime = useCallback(async (vipExpireTime: string) => {
+    if (!user) {
+      throw new Error('用户信息不存在');
+    }
+    // 更新用户信息中的 vip_expire_time
+    const updatedUser: User = {
+      ...user,
+      vip_expire_time: vipExpireTime,
+      is_vip: 'true', // 设置会员状态为 true
+    };
+    // 更新 context 中的 user
+    setUser(updatedUser);
+    // 更新本地存储
+    await saveUser(updatedUser);
+  }, [user]);
+
   const value: AuthContextType = {
     user,
     loading,
@@ -167,6 +184,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     logout: handleLogout,
     refreshAuth,
     updateUserInfo: handleUpdateUserInfo,
+    updateVipExpireTime: handleUpdateVipExpireTime,
     setUser,
   };
 

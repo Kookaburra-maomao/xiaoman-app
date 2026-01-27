@@ -1,7 +1,8 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { scaleSize } from '@/utils/screen';
+import { getUnreadCount } from '@/utils/unread-messages';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
-import { getUnreadCount } from '@/utils/unread-messages';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface TabConfig {
   chinese: string;
@@ -109,10 +110,11 @@ export default function CustomTabBar({ state, descriptors, navigation }: CustomT
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    paddingTop: 8,
-    paddingBottom: 8,
-    height: 60,
+    paddingTop: 0,
+    paddingBottom: 0,
+    height: scaleSize(76),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   tabButton: {
     flex: 1,

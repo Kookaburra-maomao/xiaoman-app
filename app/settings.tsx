@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import * as imageService from '@/services/imageService';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
@@ -10,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -262,30 +264,97 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </TouchableOpacity>
           <Text style={styles.username}>{user?.nick || user?.username || '用户'}</Text>
-          <View style={styles.membershipStatus}>
-            <Ionicons name="checkmark-circle" size={14} color={Colors.light.icon} />
-            <Text style={styles.membershipText}>非会员</Text>
-          </View>
-        </View>
+          {(() => {
+            // 检查是否是有效会员
+            const isVipValid = () => {
+              if (!user?.is_vip || user.is_vip === 'false') return false;
+              if (!user?.vip_expire_time) return false;
+              const expireTime = new Date(user.vip_expire_time);
+              const now = new Date();
+              return expireTime > now;
+            };
 
-        {/* 会员推广横幅 */}
-        <View style={styles.membershipBanner}>
-          <View style={styles.membershipBannerLeft}>
-            <View style={styles.membershipIcon}>
-              <Text style={styles.membershipIconText}>V</Text>
-            </View>
-            <Text style={styles.membershipBannerText}>会员</Text>
-            <View style={styles.membershipDivider} />
-            <Text style={styles.membershipBannerText}>新人专享,首月6元</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.membershipButton}
-            activeOpacity={0.7}
-            onPress={() => router.push('/vip-center')}
-          >
-            <Text style={styles.membershipButtonText}>立即开通</Text>
-          </TouchableOpacity>
+            if (isVipValid()) {
+              // 显示会员标签
+              return (
+                <Image
+                  source={{ uri: 'http://39.103.63.159/api/files/vip-tag.png' }}
+                  style={styles.vipTag}
+                  resizeMode="contain"
+                />
+              );
+            } else {
+              // 显示非会员状态
+              return (
+                <View style={styles.membershipStatus}>
+                  <Image
+                    source={{ uri: 'http://39.103.63.159/api/files/vip-no.png' }}
+                    style={styles.membershipStatusIcon}
+                    resizeMode="contain"
+                  />
+                  <Text style={styles.membershipText}>非会员</Text>
+                </View>
+              );
+            }
+          })()}
         </View>
+        {/* 会员推广横幅 */}
+        <ImageBackground
+          source={{ uri: 'http://39.103.63.159/api/files/vip-card.png' }}
+          style={styles.membershipBanner}
+          resizeMode="cover"
+        >
+          <View style={styles.membershipBannerContent}>
+            <Text style={styles.membershipBannerText}>
+              {(() => {
+                // 检查是否是有效会员
+                const isVipValid = () => {
+                  if (!user?.is_vip || user.is_vip === 'false') return false;
+                  if (!user?.vip_expire_time) return false;
+                  const expireTime = new Date(user.vip_expire_time);
+                  const now = new Date();
+                  return expireTime > now;
+                };
+
+                if (isVipValid() && user?.vip_expire_time) {
+                  // 格式化日期为 yyyy/mm/dd
+                  const date = new Date(user.vip_expire_time);
+                  const year = date.getFullYear();
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                  const day = String(date.getDate()).padStart(2, '0');
+                  return `有效期至 ${year}/${month}/${day}`;
+                } else {
+                  return '新人专享，首月6元';
+                }
+              })()}
+            </Text>
+            <TouchableOpacity
+              style={styles.membershipButton}
+              activeOpacity={0.7}
+              onPress={() => router.push('/vip-center')}
+            >
+              <LinearGradient
+                colors={['#EAB287', '#EB3967']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.membershipButtonGradient}
+              >
+                <Text style={styles.membershipButtonText}>
+                  {(() => {
+                    const isVipValid = () => {
+                      if (!user?.is_vip || user.is_vip === 'false') return false;
+                      if (!user?.vip_expire_time) return false;
+                      const expireTime = new Date(user.vip_expire_time);
+                      const now = new Date();
+                      return expireTime > now;
+                    };
+                    return isVipValid() ? '查看' : '立即开通';
+                  })()}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </ImageBackground>
 
         {/* 设置选项组1 */}
         <View style={styles.settingsGroup}>
@@ -390,7 +459,7 @@ const styles = StyleSheet.create({
   },
   profileSection: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingTop: 40,
     paddingHorizontal: 20,
   },
   avatarContainer: {
@@ -447,62 +516,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
+  membershipStatusIcon: {
+    width: 14,
+    height: 14,
+  },
   membershipText: {
     fontSize: 14,
     color: Colors.light.icon,
   },
+  vipTag: {
+    width: 80,
+    height: 40,
+  },
   membershipBanner: {
+    height: 52,
+    marginHorizontal: 20,
+    marginTop: 24,
+
+    marginBottom: 24,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  membershipBannerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginHorizontal: 20,
-    marginBottom: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-  },
-  membershipBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  membershipIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  membershipIconText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FF6B9D',
-    // 渐变效果需要 LinearGradient，这里先用单色
+    height: '100%',
+    paddingLeft: 90,
+    paddingRight: 20,
   },
   membershipBannerText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    marginRight: 12,
-  },
-  membershipDivider: {
-    width: 1,
-    height: 16,
-    backgroundColor: '#FFFFFF',
-    marginRight: 12,
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#FFD8BB',
+    fontFamily: 'PingFang SC',
   },
   membershipButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#FF6B9D', // 渐变效果，这里先用单色
+    height: 32,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  membershipButtonGradient: {
+    height: '100%',
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   membershipButtonText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
+    fontFamily: 'PingFang SC',
   },
   settingsGroup: {
     marginHorizontal: 20,

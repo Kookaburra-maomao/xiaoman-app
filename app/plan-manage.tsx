@@ -9,9 +9,9 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const FALLBACK_IMAGE_BASE_URL = 'http://39.103.63.159/api/upload/files/plan';
-const PIN_IMAGE_URL = 'http://39.103.63.159/api/upload/files/Pin.png';
-const PIN_NORMAL_IMAGE_URL = 'http://39.103.63.159/api/upload/files/Pin-normal.png';
+const FALLBACK_IMAGE_BASE_URL = 'http://39.103.63.159/api/files/plan';
+const PIN_IMAGE_URL = 'http://39.103.63.159/api/files/Pin.png';
+const PIN_NORMAL_IMAGE_URL = 'http://39.103.63.159/api/files/Pin-normal.png';
 
 interface PlanRecord {
   id: string;

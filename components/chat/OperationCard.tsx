@@ -4,14 +4,16 @@
 
 import { Colors } from '@/constants/theme';
 import { OperationCard } from '@/services/chatService';
+import { scaleSize } from '@/utils/screen';
 import { useRouter } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { Dimensions, FlatList, Image, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const SCROLL_CONTAINER_PADDING = 20; // 滑动容器左右边距
-const CARD_MARGIN_RIGHT = 16; // 卡片右边距
-const CARD_WIDTH = SCREEN_WIDTH - SCROLL_CONTAINER_PADDING * 2; // 卡片宽度 = 屏幕宽度 - 容器左右边距
+const CARD_WIDTH = scaleSize(335); // 卡片宽度固定为 335px
+const CARD_HEIGHT = scaleSize(240); // 卡片高度固定为 240px
+const CARD_MARGIN_RIGHT = scaleSize(16); // 卡片右边距
+const VISIBLE_PADDING = scaleSize(20); // 左右可见区域的内边距，用于露出相邻卡片
 const SNAP_INTERVAL = CARD_WIDTH + CARD_MARGIN_RIGHT; // 分页间隔 = 卡片宽度 + 卡片右边距
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 
@@ -24,7 +26,6 @@ interface OperationCardProps {
 export default function OperationCardCarousel({ cards, username, onItemSelect }: OperationCardProps) {
   const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
 
   // 获取当前时间段
   const getTimeGreeting = () => {
@@ -43,8 +44,8 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
   // 处理选项点击
   const handleItemPress = (card: OperationCard, itemIndex: number) => {
     const item = card.record_item[itemIndex];
-    if (item && item.emoji) {
-      onItemSelect(card.prompt_rule, item.emoji);
+    if (item && item.text) {
+      onItemSelect(card.prompt_rule, item.text);
     }
   };
 
@@ -62,31 +63,47 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
     }
   };
 
+  // 判断是否为图片URL
+  const isImageUrl = (str: string): boolean => {
+    return str.startsWith('http://') || str.startsWith('https://') || str.startsWith('/');
+  };
+
+  // 处理图片URL
+  const getImageUrl = (url: string): string => {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    return `${apiUrl}${url}`;
+  };
+
   // 渲染单个卡片
   const renderCard = ({ item, index }: { item: OperationCard; index: number }) => {
-    const timeGreeting = getTimeGreeting();
+    const isLast = index === (cards?.length || 0) - 1;
     const recordItems = item.record_item || [];
-    const hasButton = item.button_name && item.content_url;
+    const hasItems = recordItems.length > 0;
+    const hasTopic = !!item.record_topic;
+    const hasButton = !!(item.button_name && item.content_url);
     const hasBgImage = !!item.bg_image;
     
     // 处理背景图片URL
     let bgImageUrl = '';
     if (hasBgImage && item.bg_image) {
-      if (item.bg_image.startsWith('http://') || item.bg_image.startsWith('https://')) {
-        bgImageUrl = item.bg_image;
-      } else {
-        // 相对路径，拼接域名前缀
-        bgImageUrl = `${apiUrl}${item.bg_image}`;
-      }
+      bgImageUrl = getImageUrl(item.bg_image);
     }
+
+    // 判断渲染类型
+    const isType1 = hasItems && hasTopic && !hasButton; // 有选项、有问题、没有按钮
+    const isType2 = !hasItems && hasTopic && hasButton; // 有问题、没有选项、有按钮
+    const isType3 = !hasItems && hasTopic && !hasButton; // 有问题、无选项、无按钮
 
     return (
       <View style={[
         styles.cardContainer, 
         { 
           width: CARD_WIDTH,
-          backgroundColor: hasBgImage ? 'transparent' : '#FFFFFF',
-        }
+          backgroundColor: hasBgImage ? 'transparent' : Colors.light.background,
+        },
+        isLast && styles.cardContainerLast,
       ]} key={item.id}>
         {/* 背景图片 */}
         {hasBgImage && bgImageUrl && (
@@ -95,92 +112,96 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
             style={styles.cardBackground}
             resizeMode="cover"
           />
-        )}
-        
-        <View style={[styles.cardContent, { backgroundColor: hasBgImage ? 'rgba(255, 255, 255, 0.7)' : 'transparent' }]}>
-          {/* 第一个区域：问候区 */}
-          <View style={styles.greetingSection}>
-            <Text style={styles.greetingText}>
-              Hi {username} {timeGreeting}好，{item.record_topic}
-            </Text>
+        )}        
+        {/* 情况1: 有选项、有问题、没有按钮 */}
+        {isType1 && (
+          <View style={styles.type1Container}>
+            <Text style={styles.type1Text}>{item.record_topic}</Text>
+            <View style={styles.type1ItemsContainer}>
+              {recordItems.map((recordItem, itemIndex) => {
+                const isEmojiImage = isImageUrl(recordItem.emoji);
+                return (
+                  <TouchableOpacity
+                    key={itemIndex}
+                    style={[
+                      styles.type1Item,
+                      (itemIndex + 1) % 3 === 0 && { marginRight: 0 }, // 每行第三个不需要右边距
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => handleItemPress(item, itemIndex)}
+                  >
+                    {isEmojiImage ? (
+                      <Image
+                        source={{ uri: getImageUrl(recordItem.emoji) }}
+                        style={styles.type1ItemImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.type1ItemEmoji}>
+                        <Text style={{ fontSize: scaleSize(52), lineHeight: scaleSize(52) }}>
+                          {recordItem.emoji}
+                        </Text>
+                      </View>
+                    )}
+                    <Text style={styles.type1ItemText}>{recordItem.text}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
+        )}
 
-          {/* 第二个区域：选项区 */}
-          {recordItems.length > 0 && (
-            <View style={styles.itemsSection}>
-              {recordItems.map((recordItem, itemIndex) => (
-                <TouchableOpacity
-                  key={itemIndex}
-                  style={styles.itemContainer}
-                  activeOpacity={0.7}
-                  onPress={() => handleItemPress(item, itemIndex)}
-                >
-                  <Text style={styles.itemEmoji}>{recordItem.emoji}</Text>
-                  <Text style={styles.itemText}>{recordItem.text}</Text>
-                </TouchableOpacity>
-              ))}
+        {/* 情况2: 有问题、没有选项、有按钮 */}
+        {isType2 && (
+          <View style={styles.type2Container}>
+            <View style={styles.type2Text}>
+              <Text style={{ color: '#FFFFFF', fontSize: scaleSize(20), lineHeight: scaleSize(28), textAlign: 'center' }}>
+                {item.record_topic}
+              </Text>
             </View>
-          )}
+            <TouchableOpacity
+              style={styles.type2Button}
+              activeOpacity={0.7}
+              onPress={() => handleButtonPress(item.content_url)}
+            >
+              <Text style={styles.type2ButtonText}>{item.button_name}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-          {/* 第三个区域：按钮区 */}
-          {hasButton && (
-            <View style={styles.buttonSection}>
-              <TouchableOpacity
-                style={styles.actionButton}
-                activeOpacity={0.7}
-                onPress={() => handleButtonPress(item.content_url)}
-              >
-                <Text style={styles.actionButtonText}>{item.button_name}</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
+        {/* 情况3: 有问题、无选项、无按钮 */}
+        {isType3 && (
+          <View style={styles.type3Container}>
+            <Text style={styles.type3Text}>{item.record_topic}</Text>
+          </View>
+        )}
       </View>
     );
   };
 
-  // 滚动事件处理
+  // 滚动事件处理（保留用于可能的后续功能）
   const onScroll = useCallback((event: any) => {
-    const scrollPosition = event.nativeEvent.contentOffset.x;
-    const index = Math.round(scrollPosition / SNAP_INTERVAL);
-    setCurrentIndex(index);
+    // 可以用于后续功能，如自动播放等
   }, []);
 
   return (
     <View style={styles.container}>
-      {/* 滑动容器，左右20的边距 */}
-      <View style={styles.scrollContainer}>
-        <FlatList
-          ref={flatListRef}
-          data={cards}
-          renderItem={renderCard}
-          keyExtractor={(item) => item.id}
-          horizontal
-          pagingEnabled={false}
-          snapToInterval={SNAP_INTERVAL}
-          decelerationRate="fast"
-          snapToAlignment="start"
-          showsHorizontalScrollIndicator={false}
-          onScroll={onScroll}
-          scrollEventThrottle={16}
-          contentContainerStyle={styles.listContent}
-        />
-      </View>
-      
-      {/* 指示器 */}
-      {cards.length > 1 && (
-        <View style={styles.indicatorContainer}>
-          {cards.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.indicator,
-                index === currentIndex && styles.indicatorActive,
-              ]}
-            />
-          ))}
-        </View>
-      )}
+      <FlatList
+        ref={flatListRef}
+        data={cards}
+        renderItem={renderCard}
+        keyExtractor={(item) => item.id}
+        horizontal
+        pagingEnabled={false}
+        snapToInterval={SNAP_INTERVAL}
+        decelerationRate="fast"
+        snapToAlignment="start"
+        showsHorizontalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        contentContainerStyle={styles.listContent}
+        style={styles.flatList}
+      />
     </View>
   );
 }
@@ -188,33 +209,36 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.light.background,
     marginTop: 8,
     marginBottom: 8,
   },
-  scrollContainer: {
-    marginHorizontal: 20,
-    overflow: 'hidden',
+  flatList: {
+    width: '100%',
   },
   listContent: {
-    paddingHorizontal: 0,
+    paddingHorizontal: VISIBLE_PADDING,
   },
+  // ==================== 基础容器样式 ====================
   cardContainer: {
-    height: 300,
-    marginTop: 10,
-    marginRight: 16,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    borderRadius: scaleSize(8),
     overflow: 'hidden',
+    position: 'relative',
+    marginRight: CARD_MARGIN_RIGHT,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: scaleSize(2) },
+    shadowOpacity: 0.15,
+    shadowRadius: scaleSize(8),
+  },
+  // 第一个和最后一个卡片需要特殊处理，确保左右都能露出相邻卡片
+  cardContainerFirst: {
+    marginLeft: 0,
+  },
+  cardContainerLast: {
+    marginRight: VISIBLE_PADDING,
   },
   cardBackground: {
     position: 'absolute',
@@ -225,73 +249,118 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  cardContent: {
-    flex: 1,
-    padding: 16,
+  overlay: {
+    width: '100%',
+    height: '100%',
   },
-  greetingSection: {
-    marginBottom: 16,
+  // ==================== 情况1: 有选项、有问题、没有按钮 ====================
+  type1Container: {
+    width: '100%',
+    height: '100%',
+    flexDirection: 'column',
   },
-  greetingText: {
-    fontSize: 18,
+  type1Text: {
+    fontFamily: 'PingFang SC',
     fontWeight: '600',
-    color: Colors.light.text,
+    fontSize: scaleSize(20),
+    lineHeight: scaleSize(28),
+    textAlign: 'center',
+    color: '#333',
+    marginBottom: scaleSize(12),
+    width: '100%',
+    marginTop: scaleSize(24),
   },
-  itemsSection: {
+  type1ItemsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 16,
-    justifyContent: 'space-around',
+    justifyContent: 'center',
   },
-  itemContainer: {
-    width: '25%',
+  type1Item: {
+    width: scaleSize(93),
+    height: scaleSize(78),
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderWidth: scaleSize(0.5),
+    borderColor: '#E1E1E1',
+    borderRadius: scaleSize(12),
+    flexDirection: 'column',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    marginBottom: 8,
+    marginRight: scaleSize(8),
+    marginBottom: scaleSize(8),
+    justifyContent: 'center',
   },
-  itemEmoji: {
-    fontSize: 32,
-    marginBottom: 8,
+  type1ItemEmoji: {
+    width: scaleSize(52),
+    height: scaleSize(52),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: scaleSize(4),
   },
-  itemText: {
-    fontSize: 12,
-    color: Colors.light.text,
+  type1ItemImage: {
+    width: scaleSize(52),
+    height: scaleSize(52),
+    borderRadius: scaleSize(4),
+    marginTop: scaleSize(4),
+  },
+  type1ItemText: {
+    fontSize: scaleSize(10),
+    color: '#333',
+    textAlign: 'center',
+    lineHeight: scaleSize(14),
+    marginTop: scaleSize(4),
+  },
+  // ==================== 情况2: 有问题、没有选项、有按钮 ====================
+  type2Container: {
+    width: '100%',
+    height: '100%',
+    flexDirection: 'column',
+    paddingTop: scaleSize(32),
+    paddingBottom: scaleSize(32),
+    paddingLeft: scaleSize(40),
+    paddingRight: scaleSize(40),
+    justifyContent: 'flex-start',
+  },
+  type2Text: {
+    width: '100%',
+    height: scaleSize(120),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: scaleSize(32),
+  },
+  type2Button: {
+    width: scaleSize(140),
+    height: scaleSize(40),
+    backgroundColor: '#ffffff',
+    borderRadius: scaleSize(40),
+    paddingTop: scaleSize(9),
+    paddingBottom: scaleSize(9),
+    paddingLeft: scaleSize(4),
+    paddingRight: scaleSize(4),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: scaleSize(10),
+    alignSelf: 'center',
+  },
+  type2ButtonText: {
+    color: '#000',
+    fontSize: scaleSize(16),
     textAlign: 'center',
   },
-  buttonSection: {
+  // ==================== 情况3: 有问题、无选项、无按钮 ====================
+  type3Container: {
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
-    marginTop: 'auto',
-  },
-  actionButton: {
-    backgroundColor: Colors.light.tint,
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 20,
-  },
-  actionButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  indicatorContainer: {
-    flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
+    paddingTop: scaleSize(32),
+    paddingBottom: scaleSize(32),
+    paddingLeft: scaleSize(40),
+    paddingRight: scaleSize(40),
   },
-  indicator: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#CCCCCC',
-    marginHorizontal: 4,
-  },
-  indicatorActive: {
-    backgroundColor: Colors.light.tint,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  type3Text: {
+    color: '#FFFFFF',
+    lineHeight: scaleSize(28),
+    fontSize: scaleSize(20),
+    textAlign: 'center',
   },
 });
 

@@ -2,24 +2,30 @@
  * 添加计划全屏弹窗组件
  */
 
+import { CYCLE_MAP } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
-import { GeneratedPlan, GeneratePlanResponse } from '@/services/chatService';
-import { Ionicons } from '@expo/vector-icons';
+import { GeneratePlanResponse } from '@/services/chatService';
+import * as planService from '@/services/planService';
+import { emitPlanRefresh } from '@/utils/planRefreshEvent';
+import { get } from '@/utils/request';
+import { scaleSize } from '@/utils/screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import {
   Alert,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as planService from '@/services/planService';
-import DatePicker from '@/components/plan/DatePicker';
-import { formatDateForDisplay } from '@/utils/date-utils';
+
+const FALLBACK_IMAGE_BASE_URL = 'http://39.103.63.159/api/files/plan';
+const ICON_RETURN_URL = 'http://39.103.63.159/api/files/xiaoman-icon-return.png';
 
 interface PlanAddModalProps {
   visible: boolean;
@@ -27,6 +33,7 @@ interface PlanAddModalProps {
   userId: string;
   onClose: () => void;
   onPlanAdded: (planIndex: number) => void;
+  onPlanCreated?: () => void; // 计划创建成功后的回调
 }
 
 export default function PlanAddModal({
@@ -35,6 +42,7 @@ export default function PlanAddModal({
   userId,
   onClose,
   onPlanAdded,
+  onPlanCreated,
 }: PlanAddModalProps) {
   const [editingPlans, setEditingPlans] = useState<Array<{
     plan_name: string;
@@ -42,6 +50,9 @@ export default function PlanAddModal({
     times: number;
     cycle: 'day' | 'week' | 'month' | 'year' | 'no';
     gmt_limit: string;
+    plan_tag?: string; // 计划标签
+    image?: string; // 计划图片
+    image_preview?: string; // 计划预览图片
   }>>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -60,6 +71,52 @@ export default function PlanAddModal({
       }));
       setEditingPlans(initialPlans);
       setIsInitialized(true);
+      
+      // 遍历所有计划名称，调用接口获取 plan_tag 并拼接图片 URL，直接保存到 plan item 中
+      const fetchPlanTags = async () => {
+        try {
+          const plansWithImages = await Promise.all(
+            initialPlans.map(async (plan) => {
+              try {
+                const result = await get('/api/chat/plan-to-tag', {
+                  plan: plan.plan_name,
+                });
+                if (result.code === 200 && result.data?.plan_tag) {
+                  const planTag = result.data.plan_tag;
+                  // 基于计划名称生成稳定的随机数（1-5），确保相同计划总是显示相同的图片
+                  let hash = 0;
+                  for (let i = 0; i < plan.plan_name.length; i++) {
+                    hash = ((hash << 5) - hash) + plan.plan_name.charCodeAt(i);
+                    hash = hash & hash; // Convert to 32bit integer
+                  }
+                  const randomNum = (Math.abs(hash) % 5) + 1; // 生成 1-5 的稳定随机数
+                  
+                  // 将 plan_tag、image 和 image_preview 直接保存到 plan item 中
+                  return {
+                    ...plan,
+                    plan_tag: planTag,
+                    image: `http://39.103.63.159/api/files/${planTag}${randomNum}.jpg`,
+                    image_preview: `http://39.103.63.159/api/files/${planTag}${randomNum}_preview.jpg`,
+                  };
+                }
+                // 如果获取失败，返回原始 plan（不包含图片信息）
+                return plan;
+              } catch (error) {
+                console.error(`获取计划 ${plan.plan_name} 的 tag 失败:`, error);
+                // 如果获取失败，返回原始 plan（不包含图片信息）
+                return plan;
+              }
+            })
+          );
+          setEditingPlans(plansWithImages);
+        } catch (error) {
+          console.error('批量获取计划 tag 失败:', error);
+          // 如果批量获取失败，使用原始 plans
+          setEditingPlans(initialPlans);
+        }
+      };
+      
+      fetchPlanTags();
     } else if (!visible) {
       // 弹窗关闭时重置状态
       setIsInitialized(false);
@@ -157,16 +214,42 @@ export default function PlanAddModal({
 
     try {
       setIsSubmitting(true);
-      await planService.createPlan({
+      
+      // 构建创建计划的参数
+      const createPlanParams: any = {
         name: plan.plan_name.trim(),
-        description: plan.plan_description.trim() || plan.plan_name.trim(),
+        description: '', // 始终传空字符串
         cycle: plan.cycle,
         times: plan.cycle === 'no' ? 0 : plan.times,
         gmt_limit: plan.gmt_limit || '',
         user_id: userId,
-      } as any);
+      };
+      
+      // 如果 plan item 中有图片信息，直接使用
+      if (plan.image && plan.image_preview) {
+        createPlanParams.image = plan.image;
+        createPlanParams.image_preview = plan.image_preview;
+      } else if (plan.image) {
+        // 如果只有 image，使用 image
+        createPlanParams.image = plan.image;
+      } else {
+        // 否则使用默认图片（基于索引生成稳定随机数）
+        const randomNum = (index % 18) + 1;
+        createPlanParams.image = `${FALLBACK_IMAGE_BASE_URL}${randomNum}.png`;
+      }
+      
+      await planService.createPlan(createPlanParams);
 
       Alert.alert('成功', '创建计划成功');
+      
+      // 触发计划数据刷新事件，通知计划tab刷新数据
+      emitPlanRefresh();
+      
+      // 通知计划创建成功，用于刷新计划tab的数据
+      if (onPlanCreated) {
+        onPlanCreated();
+      }
+      
       removePlan(index);
     } catch (error: any) {
       console.error('创建计划失败:', error);
@@ -184,142 +267,121 @@ export default function PlanAddModal({
     { label: '每年', value: 'year' },
   ];
 
+  // 格式化截止日期
+  const formatDeadline = (gmtLimit?: string): string => {
+    if (!gmtLimit) return '';
+    try {
+      const date = new Date(gmtLimit);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      return `截止 ${year}年${month}月${day}日`;
+    } catch {
+      return '';
+    }
+  };
+
+  // 获取计划图片URL（优先使用 image_preview，否则使用基于索引生成稳定随机数）
+  const getPlanImageUrl = (index: number): string => {
+    const plan = editingPlans[index];
+    // 如果 plan item 中有 image_preview，优先使用
+    if (plan?.image_preview) {
+      return plan.image_preview;
+    }
+    // 如果 plan item 中有 image，使用 image
+    if (plan?.image) {
+      return plan.image;
+    }
+    // 否则使用基于索引生成稳定随机数
+    const randomNum = (index % 18) + 1;
+    return `${FALLBACK_IMAGE_BASE_URL}${randomNum}.png`;
+  };
+
+  // 获取循环文本
+  const getCycleText = (cycle: 'day' | 'week' | 'month' | 'year' | 'no' | string | undefined, times: number): string => {
+    // 如果 cycle 为空、'none'、'no' 或者 times 为空/0，显示"不循环"
+    if (!cycle || cycle === 'none' || cycle === 'no' || !times || times === 0) {
+      return '不循环';
+    }
+    // 否则显示"每{周期} {次数}次"
+    return `每${CYCLE_MAP[cycle as 'day' | 'week' | 'month' | 'year'] || cycle} ${times}次`;
+  };
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">
-      <SafeAreaView style={styles.container} edges={['top']}>
-        {/* 头部 */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={24} color={Colors.light.text} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>建议计划</Text>
-          <View style={styles.headerPlaceholder} />
-        </View>
-
-        {/* 内容区域 */}
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {editingPlans.map((plan, index) => (
-            <View key={index} style={styles.planCard}>
-              {/* 计划名称 */}
-              <TextInput
-                style={styles.planNameInput}
-                value={plan.plan_name}
-                onChangeText={(text) => updatePlanName(index, text)}
-                placeholder="计划名称"
-                placeholderTextColor={Colors.light.icon}
+      <View style={styles.container}>
+        <StatusBar style="dark" />
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+          {/* 头部 */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onClose} style={styles.backButton}>
+              <Image
+                source={{ uri: ICON_RETURN_URL }}
+                style={styles.backIcon}
+                resizeMode="contain"
               />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>建议计划</Text>
+            <View style={styles.headerPlaceholder} />
+          </View>
 
-              {/* 计划描述 */}
-              <TextInput
-                style={styles.planDescriptionInput}
-                value={plan.plan_description}
-                onChangeText={(text) => updatePlanDescription(index, text)}
-                placeholder="详细信息"
-                placeholderTextColor={Colors.light.icon}
-                multiline
-                numberOfLines={3}
-              />
-
-              {/* 次数 */}
-              <View style={styles.settingRow}>
-                <View style={styles.settingLeft}>
-                  <Ionicons name="checkmark-circle" size={20} color={Colors.light.text} />
-                  <Text style={styles.settingLabel}>次数</Text>
-                </View>
-                <View style={styles.settingRight}>
-                  <TouchableOpacity
-                    style={styles.stepperButton}
-                    onPress={() => updatePlanTimes(index, plan.times - 1)}
-                  >
-                    <Ionicons name="chevron-down" size={16} color={Colors.light.text} />
-                  </TouchableOpacity>
-                  <Text style={styles.settingValue}>{plan.times}次</Text>
-                  <TouchableOpacity
-                    style={styles.stepperButton}
-                    onPress={() => updatePlanTimes(index, plan.times + 1)}
-                  >
-                    <Ionicons name="chevron-up" size={16} color={Colors.light.text} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* 重复 */}
-              <View style={styles.settingRow}>
-                <View style={styles.settingLeft}>
-                  <Ionicons name="refresh" size={20} color={Colors.light.text} />
-                  <Text style={styles.settingLabel}>重复</Text>
-                </View>
-                <View style={styles.settingRight}>
-                  <TouchableOpacity
-                    style={styles.cycleSelector}
-                    onPress={() => {
-                      const currentIndex = cycleOptions.findIndex((opt) => opt.value === plan.cycle);
-                      const nextIndex = (currentIndex + 1) % cycleOptions.length;
-                      updatePlanCycle(index, cycleOptions[nextIndex].value);
-                    }}
-                  >
-                    <Text style={styles.settingValue}>
-                      {cycleOptions.find((opt) => opt.value === plan.cycle)?.label || '每天'}
+          {/* 内容区域 */}
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            {editingPlans.map((plan, index) => (
+              <View key={index} style={styles.planCard}>
+                {/* 上部分：图片+信息展示 */}
+                <View style={styles.planCardTop}>
+                  {/* 左侧：计划图片 */}
+                  <Image
+                    source={{ uri: getPlanImageUrl(index) }}
+                    style={styles.planImage}
+                    resizeMode="cover"
+                  />
+                  
+                  {/* 右侧：信息区域 */}
+                  <View style={styles.planInfo}>
+                    <TextInput
+                      style={styles.planNameInput}
+                      value={plan.plan_name}
+                      onChangeText={(text) => updatePlanName(index, text)}
+                      placeholder="计划名称"
+                      placeholderTextColor={Colors.light.icon}
+                    />
+                    <Text style={styles.planCycleText}>
+                      {getCycleText(plan.cycle, plan.times)}
                     </Text>
-                    <Ionicons name="chevron-down" size={16} color={Colors.light.text} />
-                  </TouchableOpacity>
+                    {plan.gmt_limit && (
+                      <Text style={styles.planDeadlineText}>
+                        {formatDeadline(plan.gmt_limit)}
+                      </Text>
+                    )}
+                  </View>
                 </View>
-              </View>
 
-              {/* 截止时间 */}
-              <View style={styles.settingRow}>
-                <View style={styles.settingLeft}>
-                  <Ionicons name="calendar-outline" size={20} color={Colors.light.text} />
-                  <Text style={styles.settingLabel}>截止时间</Text>
-                </View>
-                <View style={styles.settingRight}>
+                {/* 下部分：按钮功能 */}
+                <View style={styles.buttonRow}>
                   <TouchableOpacity
-                    style={styles.dateInput}
+                    style={styles.modifyButton}
                     onPress={() => {
-                      setCurrentDatePickerIndex(index);
-                      setShowDatePicker(true);
+                      // TODO: 实现修改功能
                     }}
-                    activeOpacity={0.7}
+                    disabled={isSubmitting}
                   >
-                    <Text style={[styles.dateInputText, !plan.gmt_limit && styles.dateInputPlaceholder]}>
-                      {plan.gmt_limit ? formatDateForDisplay(plan.gmt_limit) : '请选择截止日期'}
-                    </Text>
-                    <Ionicons name="chevron-down" size={16} color={Colors.light.text} />
+                    <Text style={styles.modifyButtonText}>修改</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={() => handleAddPlan(index)}
+                    disabled={isSubmitting}
+                  >
+                    <Text style={styles.addButtonText}>添加计划</Text>
                   </TouchableOpacity>
                 </View>
               </View>
-
-              {/* 日期选择器 */}
-              {currentDatePickerIndex === index && (
-                <DatePicker
-                  visible={showDatePicker}
-                  selectedDate={plan.gmt_limit}
-                  onConfirm={handleConfirmDate}
-                  onCancel={handleCancelDate}
-                />
-              )}
-
-              {/* 按钮 */}
-              <View style={styles.buttonRow}>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.cancelButton]}
-                  onPress={() => removePlan(index)}
-                  disabled={isSubmitting}
-                >
-                  <Text style={styles.cancelButtonText}>取消</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.addButton]}
-                  onPress={() => handleAddPlan(index)}
-                  disabled={isSubmitting}
-                >
-                  <Text style={styles.addButtonText}>添加计划</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-      </SafeAreaView>
+            ))}
+          </ScrollView>
+        </SafeAreaView>
+      </View>
     </Modal>
   );
 }
@@ -329,143 +391,121 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.light.background,
   },
+  safeArea: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: scaleSize(16),
+    paddingVertical: scaleSize(12),
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
   backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: Colors.light.text,
-  },
-  headerPlaceholder: {
-    width: 40,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  planCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  planNameInput: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.light.text,
-    marginBottom: 12,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  planDescriptionInput: {
-    fontSize: 14,
-    color: Colors.light.text,
-    marginBottom: 16,
-    paddingVertical: 8,
-    minHeight: 60,
-    textAlignVertical: 'top',
-  },
-  settingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-  },
-  settingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  settingLabel: {
-    fontSize: 16,
-    color: Colors.light.text,
-    marginLeft: 8,
-  },
-  settingRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  stepperButton: {
-    padding: 4,
-  },
-  settingValue: {
-    fontSize: 16,
-    color: Colors.light.text,
-    marginHorizontal: 12,
-    minWidth: 60,
-    textAlign: 'center',
-  },
-  cycleSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  dateInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  dateInputText: {
-    fontSize: 16,
-    color: Colors.light.text,
-    marginRight: 8,
-  },
-  dateInputPlaceholder: {
-    color: Colors.light.icon,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    marginTop: 16,
-    gap: 12,
-  },
-  actionButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
+    width: scaleSize(40),
+    height: scaleSize(40),
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cancelButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: Colors.light.text,
+  backIcon: {
+    width: scaleSize(40),
+    height: scaleSize(40),
   },
-  cancelButtonText: {
-    fontSize: 16,
-    color: Colors.light.text,
+  headerTitle: {
+    fontSize: scaleSize(18),
     fontWeight: '600',
+    color: Colors.light.text,
+    fontFamily: 'PingFang SC',
+  },
+  headerPlaceholder: {
+    width: scaleSize(40),
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: scaleSize(20),
+    paddingTop: scaleSize(16),
+  },
+  planCard: {
+    height: scaleSize(134),
+    backgroundColor: '#FFFFFF',
+    borderRadius: scaleSize(12),
+    paddingTop: scaleSize(8),
+    paddingBottom: scaleSize(12),
+    paddingLeft: scaleSize(12),
+    paddingRight: scaleSize(12),
+    marginBottom: scaleSize(16),
+  },
+  planCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  planImage: {
+    width: scaleSize(60),
+    height: scaleSize(60),
+    borderRadius: scaleSize(8),
+    backgroundColor: '#F5F5F5',
+  },
+  planInfo: {
+    flex: 1,
+    marginLeft: scaleSize(16),
+    justifyContent: 'center',
+  },
+  planNameInput: {
+    fontSize: scaleSize(16),
+    fontWeight: '600',
+    color: Colors.light.text,
+    fontFamily: 'PingFang SC',
+    padding: 0,
+    marginBottom: scaleSize(4),
+  },
+  planCycleText: {
+    fontSize: scaleSize(14),
+    color: Colors.light.icon,
+    fontFamily: 'PingFang SC',
+    marginBottom: scaleSize(2),
+  },
+  planDeadlineText: {
+    fontSize: scaleSize(14),
+    color: Colors.light.icon,
+    fontFamily: 'PingFang SC',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: scaleSize(20),
+    marginTop: scaleSize(8),
+  },
+  modifyButton: {
+    width: scaleSize(150),
+    height: scaleSize(40),
+    borderRadius: scaleSize(12),
+    backgroundColor: '#DDDDDD',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modifyButtonText: {
+    fontSize: scaleSize(14),
+    color: '#222222',
+    fontFamily: 'PingFang SC',
+    fontWeight: '400',
   },
   addButton: {
-    backgroundColor: Colors.light.text,
+    width: scaleSize(150),
+    height: scaleSize(40),
+    borderRadius: scaleSize(12),
+    backgroundColor: '#000000',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   addButtonText: {
-    fontSize: 16,
+    fontSize: scaleSize(14),
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontFamily: 'PingFang SC',
+    fontWeight: '400',
   },
 });
 

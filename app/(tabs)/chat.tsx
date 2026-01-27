@@ -21,7 +21,8 @@ export default function ChatScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
-  const cardSlideAnim = useRef(new Animated.Value(0)).current; // 卡片滑动动画值
+  const cardSlideAnim = useRef(new Animated.Value(0)).current; // 卡片透明度动画值
+  const cardTranslateY = useRef(new Animated.Value(0)).current; // 卡片垂直位移动画值（从0开始，收起时移动到-60，即title区域上边界）
   const [inputText, setInputText] = useState('');
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isCardExpanded, setIsCardExpanded] = useState(true);
@@ -40,6 +41,7 @@ export default function ChatScreen() {
     showDiaryModal,
     diaryContent,
     diaryImageUrl,
+    currentDiaryId,
     setShowDiaryModal,
     sendMessage,
     uploadImageAndUnderstand,
@@ -53,8 +55,10 @@ export default function ChatScreen() {
   const {
     isRecording,
     recordingDuration,
+    audioLevel,
     startRecording,
     stopRecording,
+    cancelRecording,
     uploadAndRecognize,
   } = useRecording();
 
@@ -81,24 +85,38 @@ export default function ChatScreen() {
     }, [loadChatHistory, loadPendingMessages, fetchOperationCards])
   );
 
-  // 运营卡片显示/隐藏动画（渐显/渐隐）
+  // 运营卡片显示/隐藏动画（渐显/渐隐 + 下拉/上拉）
   useEffect(() => {
     if (showCard) {
-      // 显示：渐显
-      Animated.timing(cardSlideAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+      // 显示：渐显 + 下拉出现（从-60到0，即从title区域上边界下拉到正常位置）
+      Animated.parallel([
+        Animated.timing(cardSlideAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(cardTranslateY, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
     } else {
-      // 隐藏：渐隐
-      Animated.timing(cardSlideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+      // 隐藏：渐隐 + 上拉消失（从0到-60，即移动到title区域上边界就停止）
+      Animated.parallel([
+        Animated.timing(cardSlideAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(cardTranslateY, {
+          toValue: -60,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
-  }, [showCard, cardSlideAnim]);
+  }, [showCard, cardSlideAnim, cardTranslateY]);
 
   // 切换语音/文字输入
   const toggleInputMode = useCallback(() => {
@@ -121,14 +139,15 @@ export default function ChatScreen() {
         const recognizedText = await uploadAndRecognize(uri);
         // 将识别结果自动发送
         if (recognizedText?.trim()) {
+          const trimmedText = recognizedText.trim();
           // 保存对话记录：用户上传录音
           if (user?.id) {
-            chatService.saveChatRecord(user.id, 'text', 'user', recognizedText).catch(() => {
+            chatService.saveChatRecord(user.id, 'text', 'user', trimmedText).catch(() => {
               // 静默处理错误
             });
           }
           setShowCard(false);
-          await sendMessage(recognizedText, scrollToBottom);
+          await sendMessage(trimmedText, scrollToBottom);
         }
       } catch (error: any) {
         console.error('上传或识别失败:', error);
@@ -140,7 +159,7 @@ export default function ChatScreen() {
     }
   }, [stopRecording, uploadAndRecognize, sendMessage, scrollToBottom, user?.id]);
 
-  // 处理语音按钮点击
+  // 处理语音按钮点击（保留用于兼容）
   const handleVoiceButtonPress = useCallback(() => {
     if (isGeneratingDiary) {
       return;
@@ -151,6 +170,42 @@ export default function ChatScreen() {
       startRecording();
     }
   }, [isGeneratingDiary, isRecording, startRecording, handleStopRecording]);
+
+  // 处理按住开始录音
+  const handleVoiceButtonPressIn = useCallback(async () => {
+    console.log('handleVoiceButtonPressIn called', { isGeneratingDiary, isRecording });
+    if (isGeneratingDiary) {
+      console.log('Skipping: isGeneratingDiary');
+      return;
+    }
+    if (!isRecording) {
+      console.log('Starting recording...');
+      const result = await startRecording();
+      console.log('startRecording result:', result);
+    } else {
+      console.log('Already recording');
+    }
+  }, [isGeneratingDiary, isRecording, startRecording]);
+
+  // 处理松手（发送或取消录音）
+  const handleVoiceButtonPressOut = useCallback(async (shouldCancel: boolean) => {
+    if (isGeneratingDiary || !isRecording) {
+      return;
+    }
+    if (shouldCancel) {
+      // 取消录音：只停止录音，不上传和发送
+      await cancelRecording();
+    } else {
+      // 发送录音：停止录音并上传识别
+      await handleStopRecording();
+    }
+  }, [isGeneratingDiary, isRecording, cancelRecording, handleStopRecording]);
+
+  // 处理手势移动（上滑检测）
+  const handleVoiceButtonMove = useCallback((isMovingUp: boolean) => {
+    // 这个回调主要用于UI状态更新，实际逻辑在ChatInput中处理
+    // 可以在这里添加额外的逻辑，比如震动反馈等
+  }, []);
 
   // 打开图片选择器（摄像头或相册）
   const openImagePicker = useCallback(async () => {
@@ -254,20 +309,30 @@ export default function ChatScreen() {
     }
   }, []);
 
+  // 处理计划创建成功（用于刷新计划tab的数据）
+  const handlePlanCreated = useCallback(() => {
+    // 通过导航事件通知计划tab刷新数据
+    // 使用 router 的 emit 方法或者直接触发刷新
+    // 由于 tab 之间没有直接的导航关系，我们使用 useFocusEffect 在 plan.tsx 中处理
+    // 这里可以添加其他逻辑，比如显示提示等
+  }, []);
+
   // 处理计划添加完成
   const handlePlanAdded = useCallback((planIndex: number) => {
     if (selectedPlanMessage && selectedPlanMessage.plans) {
       const newPlans = selectedPlanMessage.plans.plans.filter((_: any, index: number) => index !== planIndex);
       if (newPlans.length === 0) {
-        // 如果所有计划都已添加，关闭弹窗并更新消息
+        // 如果所有计划都已添加，关闭弹窗并标记消息为已处理
         setShowPlanModal(false);
         setSelectedPlanMessage(null);
-        // 从messages中移除该消息的计划数据
+        // 标记消息为已处理，保留计划数据用于历史记录
         setMessages((prev: any[]) =>
           prev.map((msg: any) => {
             if (msg.id === selectedPlanMessage.id) {
-              const { plans, ...rest } = msg;
-              return rest;
+              return {
+                ...msg,
+                plansProcessed: true, // 标记为已处理
+              };
             }
             return msg;
           })
@@ -340,8 +405,8 @@ export default function ChatScreen() {
   }, [showCard]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <StatusBar hidden />
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -360,7 +425,8 @@ export default function ChatScreen() {
             style={[
               styles.cardWrapper,
               {
-                opacity: cardSlideAnim, // 只使用透明度实现渐显/渐隐效果
+                opacity: cardSlideAnim, // 透明度实现渐显/渐隐效果
+                transform: [{ translateY: cardTranslateY }], // 垂直位移实现下拉/上拉效果
               },
             ]}
             pointerEvents={showCard ? 'auto' : 'none'} // 隐藏时禁用交互
@@ -397,11 +463,15 @@ export default function ChatScreen() {
           isVoiceMode={isVoiceMode}
           isRecording={isRecording}
           recordingDuration={recordingDuration}
+          audioLevel={audioLevel}
           isSending={isSending}
           isGeneratingDiary={isGeneratingDiary}
           onInputChange={setInputText}
           onToggleInputMode={toggleInputMode}
           onVoiceButtonPress={handleVoiceButtonPress}
+          onVoiceButtonPressIn={handleVoiceButtonPressIn}
+          onVoiceButtonPressOut={handleVoiceButtonPressOut}
+          onVoiceButtonMove={handleVoiceButtonMove}
           onSend={handleSendMessage}
           onImagePicker={openImagePicker}
         />
@@ -414,6 +484,8 @@ export default function ChatScreen() {
         content={diaryContent}
         imageUrl={diaryImageUrl}
         isGenerating={isGeneratingDiary}
+        gmt_create={new Date().toISOString()}
+        diaryId={currentDiaryId || undefined}
         onClose={() => {
           if (!isGeneratingDiary) {
             setShowDiaryModal(false);
@@ -432,6 +504,7 @@ export default function ChatScreen() {
             setSelectedPlanMessage(null);
           }}
           onPlanAdded={handlePlanAdded}
+          onPlanCreated={handlePlanCreated}
         />
       )}
     </SafeAreaView>
@@ -440,6 +513,7 @@ export default function ChatScreen() {
 
 const styles = StyleSheet.create({
   container: {
+
     flex: 1,
     backgroundColor: Colors.light.background,
   },
@@ -454,9 +528,10 @@ const styles = StyleSheet.create({
   },
   cardWrapper: {
     position: 'absolute',
-    top: 60, // header 高度约 40px（按钮位置）+ 20px（间距）= 60px
+    top: 60, // header 高度约 40px（按钮位置）+ 20px（间距）= 60px，从title区域以下开始
     left: 0,
     right: 0,
-    zIndex: 999,
+    zIndex: 998, // 低于header的zIndex（1000），确保不覆盖title区域
+    overflow: 'hidden', // 裁剪超出部分，确保卡片收起时不会透出到title区域上方
   },
 });

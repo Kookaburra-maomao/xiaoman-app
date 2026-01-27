@@ -1,14 +1,17 @@
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { autoRegisterByPhone, getUserByPhone, saveUser, sendSmsCode, verifySmsCode } from '@/utils/auth';
+import { scaleSize } from '@/utils/screen';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -17,6 +20,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+const LOGO_URL = 'http://39.103.63.159/api/files/xiaoman.png';
+const SLOGAN_URL = 'http://39.103.63.159/api/files/xiaoman-slogan.png';
 
 export default function LoginScreen() {
   const [phone, setPhone] = useState('');
@@ -159,23 +165,51 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <View style={styles.content}>
-          <Text style={styles.title}>小满日记</Text>
-          <Text style={styles.subtitle}>欢迎使用</Text>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.content}>
+            {/* Logo */}
+            <Image
+              source={{ uri: LOGO_URL }}
+              style={styles.logo}
+              resizeMode="contain"
+            />
 
-          <View style={styles.form}>
+            {/* Slogan */}
+            <Image
+              source={{ uri: SLOGAN_URL }}
+              style={styles.slogan}
+              resizeMode="contain"
+            />
+
+            <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>手机号</Text>
-              <View style={styles.phoneInputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="请输入手机号"
+                placeholderTextColor={Colors.light.icon}
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                maxLength={11}
+                editable={!sendingCode && !verifying}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <View style={styles.verifyCodeContainer}>
                 <TextInput
-                  style={[styles.input, styles.phoneInput]}
-                  placeholder="请输入手机号"
+                  style={styles.verifyCodeInput}
+                  placeholder="请输入验证码"
                   placeholderTextColor={Colors.light.icon}
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
-                  maxLength={11}
-                  editable={!sendingCode && !verifying}
+                  value={verifyCode}
+                  onChangeText={setVerifyCode}
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  editable={!verifying}
                 />
                 <TouchableOpacity
                   style={[
@@ -190,24 +224,10 @@ export default function LoginScreen() {
                   ) : countdown > 0 ? (
                     <Text style={styles.sendCodeButtonText}>{countdown}秒</Text>
                   ) : (
-                    <Text style={styles.sendCodeButtonText}>发送验证码</Text>
+                    <Text style={styles.sendCodeButtonText}>获取验证码</Text>
                   )}
                 </TouchableOpacity>
               </View>
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>验证码</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="请输入4位验证码"
-                placeholderTextColor={Colors.light.icon}
-                value={verifyCode}
-                onChangeText={setVerifyCode}
-                keyboardType="number-pad"
-                maxLength={4}
-                editable={!verifying}
-              />
             </View>
 
             <TouchableOpacity
@@ -232,8 +252,9 @@ export default function LoginScreen() {
                 thumbColor="#FFFFFF"
               />
             </View>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -247,62 +268,76 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
+    paddingBottom: scaleSize(40),
   },
-  title: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: Colors.light.text,
-    textAlign: 'center',
-    marginBottom: 8,
+  content: {
+    paddingHorizontal: scaleSize(24),
+    alignItems: 'center',
   },
-  subtitle: {
-    fontSize: 16,
-    color: Colors.light.icon,
-    textAlign: 'center',
-    marginBottom: 40,
+  logo: {
+    width: scaleSize(80),
+    height: scaleSize(80),
+    marginTop: scaleSize(120),
+    marginBottom: scaleSize(24),
+  },
+  slogan: {
+    width: scaleSize(105),
+    height: scaleSize(15),
+    marginBottom: scaleSize(60),
   },
   form: {
+    marginTop: scaleSize(120),
     width: '100%',
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: scaleSize(20),
   },
   label: {
-    fontSize: 14,
+    fontSize: scaleSize(14),
     color: Colors.light.text,
-    marginBottom: 8,
+    marginBottom: scaleSize(8),
     fontWeight: '500',
   },
   input: {
-    height: 50,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    fontSize: 16,
+    height: scaleSize(50),
+    backgroundColor: '#FFFFFF',
+    borderRadius: scaleSize(8),
+    paddingHorizontal: scaleSize(16),
+    fontSize: scaleSize(16),
     color: Colors.light.text,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
+    borderColor: '#000000',
   },
-  phoneInputContainer: {
+  verifyCodeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    backgroundColor: '#fff',
+    borderRadius: scaleSize(8),
+    borderWidth: 1,
+    borderColor: '#000',
+    padding: scaleSize(2),
+    gap: scaleSize(2),
   },
-  phoneInput: {
+  verifyCodeInput: {
     flex: 1,
+    height: scaleSize(46),
+    backgroundColor: '#FFFFFF',
+    borderRadius: scaleSize(6),
+    paddingHorizontal: scaleSize(16),
+    fontSize: scaleSize(16),
+    color: Colors.light.text,
   },
   sendCodeButton: {
-    height: 50,
-    backgroundColor: Colors.light.tint,
-    borderRadius: 8,
-    paddingHorizontal: 20,
+    height: scaleSize(46),
+    backgroundColor: '#000000',
+    borderRadius: scaleSize(6),
+    paddingHorizontal: scaleSize(16),
     justifyContent: 'center',
     alignItems: 'center',
-    minWidth: 120,
+    minWidth: scaleSize(100),
   },
   sendCodeButtonDisabled: {
     backgroundColor: '#CCCCCC',
@@ -310,23 +345,23 @@ const styles = StyleSheet.create({
   },
   sendCodeButtonText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: scaleSize(14),
     fontWeight: '600',
   },
   submitButton: {
-    height: 50,
-    backgroundColor: Colors.light.tint,
-    borderRadius: 8,
+    height: scaleSize(50),
+    backgroundColor: '#000000',
+    borderRadius: scaleSize(8),
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: scaleSize(10),
   },
   submitButtonDisabled: {
     opacity: 0.6,
   },
   submitButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: scaleSize(16),
     fontWeight: '600',
   },
   // TODO: 上线前移除调试功能样式
@@ -334,16 +369,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    marginTop: scaleSize(20),
+    paddingVertical: scaleSize(12),
+    paddingHorizontal: scaleSize(16),
     backgroundColor: '#FFF3CD',
-    borderRadius: 8,
+    borderRadius: scaleSize(8),
     borderWidth: 1,
     borderColor: '#FFC107',
   },
   debugLabel: {
-    fontSize: 14,
+    fontSize: scaleSize(14),
     color: '#856404',
     fontWeight: '500',
   },

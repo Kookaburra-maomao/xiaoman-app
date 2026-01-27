@@ -24,6 +24,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
   const [showDiaryModal, setShowDiaryModal] = useState(false);
   const [diaryContent, setDiaryContent] = useState('');
   const [diaryImageUrl, setDiaryImageUrl] = useState<string | undefined>(undefined);
+  const [currentDiaryId, setCurrentDiaryId] = useState<string | null>(null);
   const hasLoadedHistoryRef = useRef(false); // 标记是否已加载过历史记录
   const currentSystemMessageRef = useRef<string>('');
 
@@ -418,6 +419,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
                 id: diaryDetail.id,
                 context: diaryDetail.context,
                 pic: diaryDetail.pic,
+                gmt_create: record.gmt_create,
               },
             };
             newMessages.push(message);
@@ -457,6 +459,15 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
             text: record.chat_context,
             recordType: record.type,
           };
+          
+          // 如果是包含计划提示的系统消息，标记为已处理（因为计划数据不会从数据库恢复）
+          // 如果用户已经看到过这个消息，说明计划可能已经被处理过，或者用户已经选择不添加计划
+          if (message.type === 'system' && 
+              message.text.includes('日记生成完成') && 
+              message.text.includes('计划')) {
+            message.plansProcessed = true;
+          }
+          
           newMessages.push(message);
         }
 
@@ -572,6 +583,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
 
         // 保存日记并获取返回的ID
         const diaryId = await chatService.saveDiary(fullContent, user.id, picPath, assistantEmoji);
+        setCurrentDiaryId(diaryId); // 保存当前生成的日记ID
 
         // 保存对话记录：用户生成日记，使用保存后返回的日记ID
         chatService.saveChatRecord(user.id, 'diary', 'user', diaryId).catch(() => {
@@ -590,6 +602,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
             id: diaryId,
             context: fullContent,
             pic: picForDisplay,
+            gmt_create: new Date().toISOString(), // 使用当前时间
           },
         };
         setMessages((prev) => [...prev, diaryMessage]);
@@ -631,6 +644,10 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
           // 静默处理生成计划失败，不影响日记生成流程
           console.error('生成计划失败:', planError);
         }
+
+        // 保存日记成功后，清空 assistantHistory，确保接下来的对话和生成日记不受之前的影响
+        await clearAssistantHistory();
+        setAssistantHistory([]);
       } catch (saveError: any) {
         console.error('保存日记失败:', saveError);
         Alert.alert('提示', '日记生成成功，但保存失败：' + (saveError.message || '请稍后重试'));
@@ -657,6 +674,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     showDiaryModal,
     diaryContent,
     diaryImageUrl,
+    currentDiaryId,
     setShowDiaryModal,
     sendMessage,
     uploadImageAndUnderstand,

@@ -4,8 +4,12 @@
 
 import { WEEKDAYS } from '@/constants/chat';
 import { Colors } from '@/constants/theme';
+import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+const HEADER_UP_ICON_URL = 'http://39.103.63.159/api/files/header-up.png';
+const HEADER_DOWN_ICON_URL = 'http://39.103.63.159/api/files/header-down.png';
 
 interface ChatHeaderProps {
   showCard: boolean;
@@ -16,24 +20,17 @@ interface ChatHeaderProps {
 export default function ChatHeader({ showCard, onToggleCard, onShowMenu }: ChatHeaderProps) {
   // 获取当前日期信息
   const today = new Date();
-  const year = today.getFullYear();
   const month = today.getMonth() + 1;
   const date = today.getDate();
   const weekday = WEEKDAYS[today.getDay()];
 
-  // 模拟地址和天气（实际应该从API获取）
-  const location = '杭州';
-  const weather = '晴';
-
   return (
     <View style={styles.header}>
-      {/* 左边：日期信息 */}
+      {/* 左边：标题和日期信息 */}
       <View style={styles.headerLeft}>
+        <Text style={styles.headerTitle}>小满日记</Text>
         <Text style={styles.headerDate}>
-          {month}月{date}日 {weekday}
-        </Text>
-        <Text style={styles.headerLocation}>
-          {location} {weather}
+          {month}月{date}日 · {weekday}
         </Text>
       </View>
       
@@ -43,10 +40,10 @@ export default function ChatHeader({ showCard, onToggleCard, onShowMenu }: ChatH
         onPress={onToggleCard}
         activeOpacity={0.7}
       >
-        <Ionicons
-          name={showCard ? 'chevron-up' : 'chevron-down'}
-          size={24}
-          color={Colors.light.text}
+        <Image
+          source={{ uri: showCard ? HEADER_UP_ICON_URL : HEADER_DOWN_ICON_URL }}
+          style={styles.headerIcon}
+          resizeMode="contain"
         />
       </TouchableOpacity>
       
@@ -76,17 +73,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 20,
     backgroundColor: Colors.light.background,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
-    // 添加阴影效果
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3, // Android 阴影
   },
   headerLeft: {
     flex: 1,
@@ -102,14 +88,25 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingRight: 4,
   },
-  headerDate: {
+  headerTitle: {
+    fontFamily: 'PingFang SC',
+    fontWeight: '400',
     fontSize: 16,
-    fontWeight: '600',
+    lineHeight: 24,
+    letterSpacing: 0,
     color: Colors.light.text,
   },
-  headerLocation: {
-    fontSize: 14,
-    color: Colors.light.icon,
+  headerDate: {
+    fontFamily: 'PingFang SC',
+    fontWeight: '400',
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0,
+    color: Colors.light.text,
+  },
+  headerIcon: {
+    width: scaleSize(46),
+    height: scaleSize(46),
   },
 });
 

@@ -9,28 +9,28 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  Image,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    Image,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const FALLBACK_IMAGE_BASE_URL = 'http://39.103.63.159/api/upload/files/plan';
-const ICON_RETURN_URL = 'http://39.103.63.159/api/upload/files/icon-return.png';
-const OPTION_ICON_URL = 'http://39.103.63.159/api/upload/files/icon-option.png';
-const MISSION_COMPLETED_ICON_URL = 'http://39.103.63.159/api/upload/files/MissionConpleted.png';
-const ICON_REPEAT_URL = 'http://39.103.63.159/api/upload/files/icon-repeat.png';
-const ICON_CALC_URL = 'http://39.103.63.159/api/upload/files/icon-calc.png';
-const ICON_OK_URL = 'http://39.103.63.159/api/upload/files/icon-ok.png';
-const ICON_WARNING_URL = 'http://39.103.63.159/api/upload/files/icon-warning.png';
+const FALLBACK_IMAGE_BASE_URL = 'http://39.103.63.159/api/files/plan';
+const ICON_RETURN_URL = 'http://39.103.63.159/api/files/icon-return.png';
+const OPTION_ICON_URL = 'http://39.103.63.159/api/files/icon-option.png';
+const MISSION_COMPLETED_ICON_URL = 'http://39.103.63.159/api/files/MissionConpleted.png';
+const ICON_REPEAT_URL = 'http://39.103.63.159/api/files/icon-repeat.png';
+const ICON_CALC_URL = 'http://39.103.63.159/api/files/icon-calc.png';
+const ICON_OK_URL = 'http://39.103.63.159/api/files/icon-ok.png';
+const ICON_WARNING_URL = 'http://39.103.63.159/api/files/icon-warning.png';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_ASPECT_RATIO = 295 / 360;
@@ -223,7 +223,7 @@ export default function PlanDetailScreen() {
       setSaving(true);
       const result = await put(`/api/plans/${plan.id}`, {
         name: formData.name.trim(),
-        description: formData.description.trim(),
+        description: '', // 始终传空字符串
         cycle: formData.cycle,
         times: timesNum,
         gmt_limit: formData.gmt_limit || '',

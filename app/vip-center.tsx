@@ -4,11 +4,13 @@
 
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { post } from '@/utils/request';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Dimensions,
   Image,
@@ -23,16 +25,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const VIP_HEADER_BG_URL = 'http://39.103.63.159/api/upload/files/vip-header-bg.png';
-const VIP_BANNER_URL = 'http://39.103.63.159/api/upload/files/vip-banner.png';
-const ICON_RETURN_DARK_URL = 'http://39.103.63.159/api/upload/files/icon-return-dark.png';
-const ICON_OPTION_DARK_URL = 'http://39.103.63.159/api/upload/files/icon-option-dark.png';
-const ICON_VIP_URL = 'http://39.103.63.159/api/upload/files/icon-vip.png';
-const VIP_SELECTED_URL = 'http://39.103.63.159/api/upload/files/vip-selected.png';
-const VIP_NORMAL_URL = 'http://39.103.63.159/api/upload/files/vip-normal.png';
-const VIP_NEW_FLAG_URL = 'http://39.103.63.159/api/upload/files/vip-new-flag.png';
-const VIP_RIGHT_ICON_URL = 'http://39.103.63.159/api/upload/files/vip-right.png';
-const VIP_TEXT_GRADIENT_URL = 'http://39.103.63.159/api/upload/files/vip-text.png';
+const VIP_HEADER_BG_URL = 'http://39.103.63.159/api/files/vip-header-bg.png';
+const VIP_BANNER_URL = 'http://39.103.63.159/api/files/vip-banner.png';
+const ICON_RETURN_DARK_URL = 'http://39.103.63.159/api/files/icon-return-dark.png';
+const ICON_OPTION_DARK_URL = 'http://39.103.63.159/api/files/icon-option-dark.png';
+const ICON_VIP_URL = 'http://39.103.63.159/api/files/icon-vip.png';
+const VIP_SELECTED_URL = 'http://39.103.63.159/api/files/vip-selected.png';
+const VIP_NORMAL_URL = 'http://39.103.63.159/api/files/vip-normal.png';
+const VIP_NEW_FLAG_URL = 'http://39.103.63.159/api/files/vip-new-flag.png';
+const VIP_RIGHT_ICON_URL = 'http://39.103.63.159/api/files/vip-right.png';
+const VIP_TEXT_GRADIENT_URL = 'http://39.103.63.159/api/files/vip-text.png';
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 
@@ -85,9 +87,10 @@ const vipBenefits: VipBenefit[] = [
 
 export default function VipCenterScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, updateVipExpireTime } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState<string>('monthly');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [paying, setPaying] = useState(false);
 
   // 检查是否是有效会员
   const isVipValid = () => {
@@ -108,13 +111,49 @@ export default function VipCenterScreen() {
   };
 
   // 处理支付
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (!agreedToTerms) {
       Alert.alert('提示', '请先阅读并同意会员协议和续费协议');
       return;
     }
-    // TODO: 实现支付逻辑
-    Alert.alert('提示', '支付功能待实现');
+
+    if (!user?.id) {
+      Alert.alert('错误', '用户信息不存在');
+      return;
+    }
+
+    try {
+      setPaying(true);
+      const result = await post(`/api/users/${user.id}/vip`, {
+        vipType: 'month',
+      });
+
+      if (result.code === 200) {
+        // 计算新的会员到期时间（当前时间 + 1个月）
+        const now = new Date();
+        const expireTime = new Date(now);
+        expireTime.setMonth(expireTime.getMonth() + 1);
+        const vipExpireTimeStr = expireTime.toISOString();
+
+        // 更新用户信息中的 vip_expire_time
+        try {
+          await updateVipExpireTime(vipExpireTimeStr);
+        } catch (error) {
+          console.error('更新会员信息失败:', error);
+          // 即使更新失败，支付已成功，继续导航
+        }
+        // 导航到设置页面
+        router.push('/settings');
+        Alert.alert('成功', '会员开通成功');
+      } else {
+        throw new Error(result.message || '支付失败');
+      }
+    } catch (error: any) {
+      console.error('支付失败:', error);
+      Alert.alert('错误', error.message || '支付失败，请重试');
+    } finally {
+      setPaying(false);
+    }
   };
 
   const avatarUrl = user?.avatar
@@ -275,6 +314,7 @@ export default function VipCenterScreen() {
             style={styles.paymentButton}
             onPress={handlePayment}
             activeOpacity={0.8}
+            disabled={paying}
           >
             <LinearGradient
               colors={['#FF336C', '#FFC591']}
@@ -282,9 +322,13 @@ export default function VipCenterScreen() {
               end={{ x: 1, y: 0 }}
               style={styles.paymentButtonGradient}
             >
-              <Text style={styles.paymentButtonText}>
-                立即支付 ￥{vipPlans.find(p => p.id === selectedPlan)?.price || '0'}
-              </Text>
+              {paying ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.paymentButtonText}>
+                  立即支付 ￥{vipPlans.find(p => p.id === selectedPlan)?.price || '0'}
+                </Text>
+              )}
             </LinearGradient>
           </TouchableOpacity>
 

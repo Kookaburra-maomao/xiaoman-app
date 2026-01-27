@@ -21,6 +21,7 @@ export interface Plan {
   state: string;
   records: PlanRecord[];
   image?: string; // 计划图片
+  image_preview?: string; // 计划预览图片
 }
 
 export interface PlanKeepTime {
@@ -40,6 +41,7 @@ export interface CreatePlanForm {
   times: number;
   gmt_limit: string;
   image?: string;
+  image_preview?: string;
 }
 
 export interface SuccessModalData {

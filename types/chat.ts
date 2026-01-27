@@ -13,6 +13,7 @@ export interface Message {
     id: string;
     context: string;
     pic?: string;
+    gmt_create?: string; // 创建时间
   }; // 日记数据
   plans?: {
     plan_theme: string;
@@ -26,6 +27,7 @@ export interface Message {
       };
     }>;
   }; // 计划数据
+  plansProcessed?: boolean; // 标记计划是否已被处理（已保存）
 }
 
 export interface MoodIcon {

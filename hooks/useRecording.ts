@@ -10,6 +10,7 @@ import { Alert } from 'react-native';
 export const useRecording = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [audioLevel, setAudioLevel] = useState(0); // 音量级别 0-1
   const recordingRef = useRef<Audio.Recording | null>(null);
   const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -29,19 +30,31 @@ export const useRecording = () => {
         playsInSilentModeIOS: true,
       });
 
-      // 创建录音实例
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
+      // 创建录音实例，启用 metering 以获取音量数据
+      const { recording } = await Audio.Recording.createAsync({
+        ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+        isMeteringEnabled: true, // 启用音量检测
+      });
 
       recordingRef.current = recording;
       setIsRecording(true);
       setRecordingDuration(0);
+      setAudioLevel(0);
 
       // 开始计时
       durationIntervalRef.current = setInterval(() => {
         setRecordingDuration((prev) => prev + 1);
       }, 1000);
+
+      // 监听录音状态，获取音量数据
+      recording.setOnRecordingStatusUpdate((status) => {
+        if (status.isRecording && status.metering !== undefined) {
+          // 将 dB 值转换为 0-1 的范围
+          // metering 通常在 -160 到 0 之间，我们将其映射到 0-1
+          const normalizedLevel = Math.max(0, Math.min(1, (status.metering + 60) / 60));
+          setAudioLevel(normalizedLevel);
+        }
+      });
 
       console.log('开始录音');
       return true;
@@ -71,6 +84,7 @@ export const useRecording = () => {
       
       recordingRef.current = null;
       setIsRecording(false);
+      setAudioLevel(0);
       const duration = recordingDuration;
       setRecordingDuration(0);
 
@@ -109,11 +123,41 @@ export const useRecording = () => {
     }
   }, []);
 
+  // 取消录音（不处理录音文件）
+  const cancelRecording = useCallback(async () => {
+    try {
+      if (!recordingRef.current) {
+        return;
+      }
+
+      // 停止计时
+      if (durationIntervalRef.current) {
+        clearInterval(durationIntervalRef.current);
+        durationIntervalRef.current = null;
+      }
+
+      // 停止并卸载录音
+      await recordingRef.current.stopAndUnloadAsync();
+      
+      recordingRef.current = null;
+      setIsRecording(false);
+      setAudioLevel(0);
+      setRecordingDuration(0);
+    } catch (error) {
+      console.error('取消录音失败:', error);
+      setIsRecording(false);
+      setAudioLevel(0);
+      setRecordingDuration(0);
+    }
+  }, []);
+
   return {
     isRecording,
     recordingDuration,
+    audioLevel, // 导出音量级别
     startRecording,
     stopRecording,
+    cancelRecording,
     uploadAndRecognize,
   };
 };

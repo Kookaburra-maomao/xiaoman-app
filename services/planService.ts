@@ -39,7 +39,7 @@ export const fetchPlanDetail = async (planId: string): Promise<Plan> => {
 export const createPlan = async (formData: CreatePlanForm & { user_id: string; description?: string }): Promise<string> => {
   const requestData: any = {
     name: formData.name.trim(),
-    description: formData.description?.trim() || formData.name.trim(),
+    description: '', // 始终传空字符串
     user_id: formData.user_id,
     cycle: formData.cycle,
     times: formData.cycle === 'no' ? 0 : formData.times,
@@ -57,6 +57,11 @@ export const createPlan = async (formData: CreatePlanForm & { user_id: string; d
   // 如果有图片URL，添加到请求数据中
   if (formData.image) {
     requestData.image = formData.image;
+  }
+  
+  // 如果有预览图片URL，添加到请求数据中
+  if (formData.image_preview) {
+    requestData.image_preview = formData.image_preview;
   }
 
   const result = await post('/api/plans', requestData);

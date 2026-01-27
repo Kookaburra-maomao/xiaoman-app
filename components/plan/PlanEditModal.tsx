@@ -5,6 +5,7 @@
 import { CYCLE_MAP } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
 import { formatDateForDisplay } from '@/utils/date-utils';
+import { get } from '@/utils/request';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
@@ -22,7 +23,7 @@ import {
 } from 'react-native';
 import DatePicker from './DatePicker';
 
-const FALLBACK_IMAGE_BASE_URL = 'http://39.103.63.159/api/upload/files/plan';
+const FALLBACK_IMAGE_BASE_URL = 'http://39.103.63.159/api/files/plan';
 
 export interface EditPlanFormData {
   name: string;
@@ -30,6 +31,8 @@ export interface EditPlanFormData {
   cycle: 'day' | 'week' | 'month' | 'year' | 'no';
   times: number;
   gmt_limit: string;
+  image?: string;
+  image_preview?: string;
 }
 
 interface PlanEditModalProps {
@@ -63,9 +66,12 @@ export default function PlanEditModal({
     cycle: 'no',
     times: 1,
     gmt_limit: '',
+    image: undefined,
+    image_preview: undefined,
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCycleMenu, setShowCycleMenu] = useState(false);
+  const [isFetchingTag, setIsFetchingTag] = useState(false);
 
   // 初始化表单数据
   useEffect(() => {
@@ -87,10 +93,53 @@ export default function PlanEditModal({
           cycle: 'no',
           times: 1,
           gmt_limit: '',
+          image: undefined,
+          image_preview: undefined,
         });
       }
     }
   }, [plan, visible]);
+
+  // 获取 plan_tag 并生成图片 URL（在保存前调用）
+  const fetchPlanTagAndImage = async (planName: string): Promise<{ image?: string; image_preview?: string }> => {
+    // 只在创建模式（plan 为 null）且计划名称不为空时调用
+    if (plan || !planName.trim()) {
+      return {};
+    }
+
+    try {
+      setIsFetchingTag(true);
+      const result = await get('/api/chat/plan-to-tag', {
+        plan: planName.trim(),
+      });
+
+      if (result.code === 200 && result.data?.plan_tag) {
+        const planTag = result.data.plan_tag;
+        // 生成 1-5 的随机数
+        const randomIndex = Math.floor(Math.random() * 5) + 1;
+        
+        // 生成 image 和 image_preview URL
+        const image = `http://39.103.63.159/api/files/${planTag}${randomIndex}.jpg`;
+        const image_preview = `http://39.103.63.159/api/files/${planTag}${randomIndex}_preview.jpg`;
+        
+        // 更新表单数据
+        setEditFormData((prev) => ({
+          ...prev,
+          image,
+          image_preview,
+        }));
+        
+        return { image, image_preview };
+      }
+    } catch (error) {
+      console.error('获取计划 tag 失败:', error);
+      // 静默处理错误，不影响用户操作
+    } finally {
+      setIsFetchingTag(false);
+    }
+    
+    return {};
+  };
 
   // 处理保存
   const handleSave = async () => {
@@ -98,14 +147,26 @@ export default function PlanEditModal({
       Alert.alert('提示', '计划名称不能为空');
       return;
     }
+    
+    // 在保存前，获取 plan_tag 并生成图片 URL（仅创建模式）
+    const imageData = await fetchPlanTagAndImage(editFormData.name);
+    
+    // 确保 description 始终为空字符串，并使用获取到的图片数据
+    const formDataToSave = {
+      ...editFormData,
+      description: '',
+      // 如果获取到了图片数据，使用它们；否则使用已有的
+      image: imageData.image || editFormData.image,
+      image_preview: imageData.image_preview || editFormData.image_preview,
+    };
 
-    const timesNum = editFormData.cycle === 'no' ? 0 : editFormData.times;
-    if (editFormData.cycle !== 'no' && (isNaN(timesNum) || timesNum < 1)) {
+    const timesNum = formDataToSave.cycle === 'no' ? 0 : formDataToSave.times;
+    if (formDataToSave.cycle !== 'no' && (isNaN(timesNum) || timesNum < 1)) {
       Alert.alert('提示', '次数必须大于0');
       return;
     }
 
-    await onSave(editFormData);
+    await onSave(formDataToSave);
   };
 
   return (
@@ -161,23 +222,6 @@ export default function PlanEditModal({
               </View>
             </View>
 
-            {/* 分隔线 */}
-            <View style={styles.editFormDivider} />
-            {/* 详细信息 */}
-            <View style={styles.editFormItem}>
-              <View style={styles.editFormItemRow}>
-
-                <TextInput
-                  style={styles.editFormTextArea}
-                  placeholder="详细信息"
-                  placeholderTextColor={Colors.light.icon}
-                  value={editFormData.description}
-                  onChangeText={(text) => setEditFormData({ ...editFormData, description: text })}
-                  multiline
-                  numberOfLines={4}
-                />
-              </View>
-            </View>
             {/* 分隔线 */}
             <View style={styles.editFormDivider} />
             {/* 重复 */}

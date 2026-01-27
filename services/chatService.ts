@@ -2,7 +2,9 @@
  * 对话相关API服务
  */
 
+import { CYCLE_MAP } from '@/constants/plan';
 import { getAssistantHistory } from '@/utils/unread-messages';
+import { fetchActivePlans } from './planService';
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 
@@ -686,13 +688,37 @@ export const generatePlan = async (
   assistantHistory: string[],
   userId: string
 ): Promise<GeneratePlanResponse> => {
+  // 获取用户的所有有效计划
+  let activePlans: any[] = [];
+  try {
+    activePlans = await fetchActivePlans(userId);
+  } catch (error) {
+    console.error('获取有效计划失败:', error);
+    // 静默处理错误，不影响生成计划的流程
+  }
+
+  // 格式化有效计划信息为字符串数组
+  const plansHistory = activePlans.map(plan => {
+    const cycleText = plan.cycle === 'no' || !plan.cycle 
+      ? '不重复' 
+      : `每${CYCLE_MAP[plan.cycle] || plan.cycle} ${plan.times}次`;
+    const deadlineText = plan.gmt_limit ? `，截止日期：${plan.gmt_limit}` : '';
+    return `计划：${plan.name}，${cycleText}${deadlineText}`;
+  });
+
+  // 过滤 assistantHistory，移除所有以 system: 开头的项
+  const filteredUserContent = assistantHistory.filter(
+    (item) => !item.startsWith('system:')
+  );
+
   const response = await fetch(`${apiUrl}/api/chat/generate-plan`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      assistantHistory: assistantHistory,
+      userContent: filteredUserContent, // 过滤后的 assistantHistory（移除 system: 开头的项）作为 userContent
+      assistantHistory: plansHistory, // 有效计划列表作为 assistantHistory
       userId: userId,
     }),
   });
@@ -705,7 +731,14 @@ export const generatePlan = async (
   const result = await response.json();
 
   if (result.code === 200 && result.data) {
-    return result.data;
+    // 过滤计划：只保留 plan_quality_score >= 8 的计划
+    const filteredData: GeneratePlanResponse = {
+      ...result.data,
+      plans: result.data.plans.filter(
+        (plan: GeneratedPlan) => plan.repeat?.plan_quality_score >= 8
+      ),
+    };
+    return filteredData;
   } else {
     throw new Error(result.message || '生成计划失败');
   }

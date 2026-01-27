@@ -11,8 +11,8 @@ import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const FALLBACK_IMAGE_BASE_URL = 'http://39.103.63.159/api/upload/files/plan';
-const PIN_IMAGE_URL = 'http://39.103.63.159/api/upload/files/Pin.png';
+const FALLBACK_IMAGE_BASE_URL = 'http://39.103.63.159/api/files/plan';
+const PIN_IMAGE_URL = 'http://39.103.63.159/api/files/Pin.png';
 
 interface PlanItemProps {
   plan: Plan & { isFinish?: boolean };

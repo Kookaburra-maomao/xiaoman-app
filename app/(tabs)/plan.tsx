@@ -5,11 +5,12 @@ import { WEEKDAYS } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
 import { usePlan } from '@/hooks/usePlan';
 import { Plan, SuccessModalData } from '@/types/plan';
+import { onPlanRefresh } from '@/utils/planRefreshEvent';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -45,17 +46,25 @@ export default function PlanScreen() {
   const handleCreatePlanSave = async (formData: EditPlanFormData) => {
     try {
       setSaving(true);
-      // 生成1-18之间的随机数作为图片URL
-      const randomNum = Math.floor(Math.random() * 18) + 1;
-      const imageUrl = `http://39.103.63.159/api/upload/files/plan${randomNum}.png`;
+      
+      // 如果 formData 中有 image 和 image_preview，使用它们；否则使用默认图片
+      let imageUrl = formData.image;
+      let imagePreviewUrl = formData.image_preview;
+      
+      if (!imageUrl) {
+        // 如果没有通过 plan_tag 生成的图片，使用默认图片
+        const randomNum = Math.floor(Math.random() * 18) + 1;
+        imageUrl = `http://39.103.63.159/api/files/plan${randomNum}.png`;
+      }
       
       const success = await handleCreatePlan({
         name: formData.name,
         cycle: formData.cycle,
         times: formData.times,
         gmt_limit: formData.gmt_limit,
-        description: formData.description,
+        description: '', // 始终传空字符串
         image: imageUrl,
+        image_preview: imagePreviewUrl,
       });
       if (success) {
         setShowCreateModal(false);
@@ -108,6 +117,21 @@ export default function PlanScreen() {
 
   useEffect(() => {
     fetchPlans();
+  }, [fetchPlans]);
+
+  // 页面聚焦时刷新数据（从其他页面返回时，或从对话页面创建计划后）
+  useFocusEffect(
+    useCallback(() => {
+      fetchPlans();
+    }, [fetchPlans])
+  );
+
+  // 监听计划数据刷新事件（从对话页面创建计划后）
+  useEffect(() => {
+    const unsubscribe = onPlanRefresh(() => {
+      fetchPlans();
+    });
+    return unsubscribe;
   }, [fetchPlans]);
 
   // 格式化当前日期和星期

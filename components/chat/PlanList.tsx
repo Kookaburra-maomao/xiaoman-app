@@ -2,9 +2,9 @@
  * 计划列表组件
  */
 
-import { Colors } from '@/constants/theme';
 import { Message } from '@/types/chat';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { scaleSize } from '@/utils/screen';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface PlanListProps {
   message: Message;
@@ -22,9 +22,13 @@ export default function PlanList({ message, onAddToPlan }: PlanListProps) {
       <View style={styles.plansContainer}>
         {message.plans.plans.map((plan, index) => (
           <View key={index} style={styles.planItem}>
+            <Image
+              source={{ uri: 'http://39.103.63.159/api/files/xiaoman-icon-dot.png' }}
+              style={styles.planItemIcon}
+              resizeMode="contain"
+            />
             <Text style={styles.planName}>
               {plan.plan_name}
-              {plan.repeat && plan.repeat.times_per_unit > 0 && ` ${plan.repeat.times_per_unit}次`}
             </Text>
           </View>
         ))}
@@ -32,7 +36,12 @@ export default function PlanList({ message, onAddToPlan }: PlanListProps) {
 
       {/* 添加到我的计划按钮 */}
       <TouchableOpacity style={styles.addButton} onPress={onAddToPlan} activeOpacity={0.7}>
-        <Text style={styles.addButtonText}>添加到我的计划</Text>
+        <Text style={styles.addButtonText}>添加我的计划</Text>
+        <Image
+          source={{ uri: 'http://39.103.63.159/api/files/xiaoman-icon-right.png' }}
+          style={styles.addButtonIcon}
+          resizeMode="contain"
+        />
       </TouchableOpacity>
     </View>
   );
@@ -40,38 +49,54 @@ export default function PlanList({ message, onAddToPlan }: PlanListProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 12,
-    marginBottom: 8,
-    paddingLeft: 4,
+    marginTop: scaleSize(0),
+    marginBottom: scaleSize(8),
+    paddingLeft: scaleSize(20),
   },
   plansContainer: {
-    marginBottom: 12,
+    marginBottom: scaleSize(0),
   },
   planItem: {
-    marginBottom: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: scaleSize(4),
+    paddingVertical: scaleSize(8),
+    borderRadius: scaleSize(8),
+
+  },
+  planItemIcon: {
+    width: scaleSize(20),
+    height: scaleSize(20),
+    marginRight: scaleSize(8),
   },
   planName: {
-    fontSize: 14,
-    color: Colors.light.text,
-    lineHeight: 20,
+    fontSize: scaleSize(16),
+    lineHeight: scaleSize(24),
+    color: '#222222',
+    fontFamily: 'PingFang SC',
   },
   addButton: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: Colors.light.tint,
-    borderRadius: 20,
-    minWidth: 120,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: scaleSize(122),
+    height: scaleSize(34),
+    backgroundColor: '#000000',
+    borderRadius: scaleSize(10),
+    paddingHorizontal: scaleSize(16),
+    paddingVertical: scaleSize(8),
   },
   addButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontSize: scaleSize(12),
+    lineHeight: scaleSize(18),
+    fontWeight: '400',
+    fontFamily: 'PingFang SC',
+  },
+  addButtonIcon: {
+    width: scaleSize(16),
+    height: scaleSize(16),
+    marginLeft: scaleSize(4),
   },
 });
 
