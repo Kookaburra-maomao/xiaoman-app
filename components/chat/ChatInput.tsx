@@ -5,21 +5,16 @@
 import { Colors } from '@/constants/theme';
 import { scaleSize } from '@/utils/screen';
 import { LinearGradient } from 'expo-linear-gradient';
+import LottieView, { type AnimationObject } from 'lottie-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Keyboard, Modal, PanResponder, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import Animated, {
-  Easing,
-  SharedValue,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
 
 const RADIO_ICON_URL = 'http://39.103.63.159/api/files/xiaoman-chat-radio.png';
 const KEYBOARD_ICON_URL = 'http://39.103.63.159/api/files/xiaoman-chat-keyboard.png';
 const PIC_ICON_URL = 'http://39.103.63.159/api/files/xiaoman-chat-pic.png';
 const SEND_MSG_ICON_URL = 'http://39.103.63.159/api/files/xiaoman-chat-sendmsg.png';
+const LOTTIE_RADIO_URL = 'http://39.103.63.159/api/files/lottie-radio.json';
+const RADIO_DOT_IMAGE_URL = 'http://39.103.63.159/api/files/xiaoman-radio-dot.png';
 
 interface ChatInputProps {
   inputText: string;
@@ -38,43 +33,6 @@ interface ChatInputProps {
   onSend: () => void;
   onImagePicker: () => void;
 }
-
-const DOT_COUNT = 30; // 点的数量
-const DOT_SPACING = scaleSize(3); // 点之间的间距
-const WAVE_HEIGHT = scaleSize(8); // 波形最大高度
-
-// 单个动画点组件
-interface AnimatedDotProps {
-  dot: {
-    y: SharedValue<number>;
-    scale: SharedValue<number>;
-    opacity: SharedValue<number>;
-  };
-  index: number;
-  isMovingUp: boolean;
-}
-
-const AnimatedDot = ({ dot, index, isMovingUp }: AnimatedDotProps) => {
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [
-        { translateY: dot.y.value },
-        { scale: dot.scale.value },
-      ],
-      opacity: dot.opacity.value,
-    };
-  });
-
-  return (
-    <Animated.View
-      style={[
-        styles.recordingDot,
-        isMovingUp && styles.recordingDotCancel,
-        animatedStyle,
-      ]}
-    />
-  );
-};
 
 export default function ChatInput({
   inputText,
@@ -99,21 +57,22 @@ export default function ChatInput({
   const startYRef = useRef<number>(0);
   const currentYRef = useRef<number>(0);
   const textInputRef = useRef<TextInput>(null);
-  const shouldCancelRef = useRef<boolean>(false); // 用于保存是否应该取消的状态
-  
-  // 创建点阵动画值
-  const dotPositions = useRef(
-    Array(DOT_COUNT)
-      .fill(0)
-      .map(() => ({
-        y: useSharedValue(0),
-        scale: useSharedValue(1),
-        opacity: useSharedValue(0.3),
-      }))
-  ).current;
-  
-  const volumeRef = useRef(0);
-  const animationFrameRef = useRef<number | null>(null);
+  const shouldCancelRef = useRef<boolean>(false);
+  const [lottieRadioSource, setLottieRadioSource] = useState<AnimationObject | null>(null);
+
+  // 加载按住说话 Lottie 动画 JSON
+  useEffect(() => {
+    let cancelled = false;
+    fetch(LOTTIE_RADIO_URL)
+      .then((res) => res.json())
+      .then((data: AnimationObject) => {
+        if (!cancelled) setLottieRadioSource(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // 监听键盘显示/隐藏
   useEffect(() => {
@@ -133,94 +92,6 @@ export default function ChatInput({
       keyboardDidHideListener.remove();
     };
   }, []);
-
-  // 根据音量更新点阵动画
-  useEffect(() => {
-    if (!isRecording) {
-      // 停止录音时，重置所有点
-      dotPositions.forEach((dot) => {
-        dot.y.value = withSpring(0, { damping: 15, stiffness: 100 });
-        dot.scale.value = withSpring(1, { damping: 15, stiffness: 150 });
-        dot.opacity.value = withTiming(0.3, { duration: 300 });
-      });
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-      return;
-    }
-
-    // 更新音量引用
-    volumeRef.current = audioLevel;
-
-    // 动画循环函数
-    const animate = () => {
-      const volume = volumeRef.current;
-      const time = Date.now() / 1000;
-
-      dotPositions.forEach((dot, index) => {
-        if (volume > 0.05 && !isMovingUp) {
-          // 有声状态：生成波形
-          // 创建多个正弦波叠加的效果，形成连续的声波线
-          const wave1 = Math.sin(time * 2 + index * 0.3) * volume;
-          const wave2 = Math.sin(time * 3.5 + index * 0.5) * volume * 0.7;
-          const wave3 = Math.sin(time * 5 + index * 0.2) * volume * 0.3;
-          const waveHeight = ((wave1 + wave2 + wave3) / 3) * WAVE_HEIGHT;
-
-          // Y轴位置动画（弹簧效果）
-          dot.y.value = withSpring(waveHeight, {
-            damping: 12,
-            stiffness: 100,
-            mass: 0.8,
-          });
-
-          // 大小变化（音量越大点越大）
-          const targetScale = 1 + volume * 0.5;
-          dot.scale.value = withSpring(targetScale, {
-            damping: 15,
-            stiffness: 150,
-          });
-
-          // 透明度变化
-          dot.opacity.value = withTiming(0.8 + volume * 0.2, {
-            duration: 200,
-            easing: Easing.out(Easing.ease),
-          });
-        } else {
-          // 静音或取消状态：恢复原位
-          // 添加延迟，创建涟漪效果
-          const delay = index * 5;
-          
-          dot.y.value = withSpring(0, {
-            damping: 20,
-            stiffness: 120,
-          });
-          
-          dot.scale.value = withSpring(1, {
-            damping: 15,
-            stiffness: 150,
-          });
-          
-          dot.opacity.value = withTiming(isMovingUp ? 1 : 0.3, {
-            duration: 300,
-          });
-        }
-      });
-
-      if (isRecording) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      }
-    };
-
-    animate();
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-    };
-  }, [isRecording, audioLevel, isMovingUp]);
 
   // 判断是否显示扩展样式（键盘显示且是文字输入态）
   const showExpandedStyle = !isVoiceMode && isKeyboardVisible && isInputFocused;
@@ -457,14 +328,22 @@ export default function ChatInput({
             >
             {isRecording ? (
               <View style={styles.recordingIndicator}>
-                {dotPositions.map((dot, index) => (
-                  <AnimatedDot
-                    key={index}
-                    dot={dot}
-                    index={index}
-                    isMovingUp={isMovingUp}
+                {isMovingUp ? (
+                  <Image
+                    source={{ uri: RADIO_DOT_IMAGE_URL }}
+                    style={styles.radioDotImage}
+                    resizeMode="contain"
                   />
-                ))}
+                ) : lottieRadioSource ? (
+                  <LottieView
+                    source={lottieRadioSource}
+                    autoPlay
+                    loop
+                    style={styles.lottieRadio}
+                  />
+                ) : (
+                  <Text style={styles.voiceText}>...</Text>
+                )}
               </View>
             ) : (
               <Text style={styles.voiceText}>按住 说话</Text>
@@ -569,10 +448,13 @@ const styles = StyleSheet.create({
   },
   recordingHintContainer: {
     position: 'absolute',
+    height: scaleSize(30),
     top: scaleSize(-30),
     left: scaleSize(16),
     right: scaleSize(16),
     alignItems: 'center',
+    paddingTop: scaleSize(8),
+    backgroundColor: '#F1F1F1E5',
   },
   recordingHintText: {
     fontSize: scaleSize(14),
@@ -694,17 +576,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scaleSize(3),
     width: '100%',
   },
-  recordingDot: {
-    width: scaleSize(4),
-    height: scaleSize(4),
-    borderRadius: scaleSize(2),
-    backgroundColor: '#FF326C', // 粉色点
+  lottieRadio: {
+    width: scaleSize(330),
+    height: scaleSize(35),
   },
-  recordingDotCancel: {
-    backgroundColor: '#FFFFFF', // 取消时显示白色点
+  radioDotImage: {
+    width: scaleSize(226),
+    height: scaleSize(28),
   },
   imageButton: {
     width: 52,

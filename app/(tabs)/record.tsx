@@ -11,6 +11,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 
+// image_url 为 JSON 字符串数组，如 '["/api/files/xxx.png", ...]'
+function parseImageUrl(imageUrl?: string | null): { hasImage: boolean; firstImageUrl: string | null } {
+  if (!imageUrl || imageUrl.trim() === '') return { hasImage: false, firstImageUrl: null };
+  try {
+    const parsed = JSON.parse(imageUrl);
+    if (!Array.isArray(parsed) || parsed.length === 0) return { hasImage: false, firstImageUrl: null };
+    const first = parsed[0];
+    if (typeof first !== 'string' || first.trim() === '') return { hasImage: false, firstImageUrl: null };
+    const url = first.startsWith('http') ? first : `${apiUrl}${first.startsWith('/') ? '' : '/'}${first}`;
+    return { hasImage: true, firstImageUrl: url };
+  } catch {
+    return { hasImage: false, firstImageUrl: null };
+  }
+}
+
 export default function RecordScreen() {
   const { user } = useAuth();
   const router = useRouter();
@@ -179,9 +194,7 @@ export default function RecordScreen() {
               const isCurrentMonthDay = day !== null;
               const isTodayDate = isToday(day);
               const dayData = getDayData(day);
-              
-              // 判断渲染类型
-              const hasImage = dayData?.image_url;
+              const { hasImage, firstImageUrl } = parseImageUrl(dayData?.image_url);
               const hasEmoji = dayData?.emoji && !hasImage;
               const hasRecord = dayData && dayData.diary_count >= 1 && !hasImage && !hasEmoji;
               
@@ -198,11 +211,11 @@ export default function RecordScreen() {
                   onPress={() => handleDayPress(day)}
                   disabled={!isCurrentMonthDay}
                 >
-                  {hasImage ? (
-                    // 情况1：有图片
+                  {hasImage && firstImageUrl ? (
+                    // 情况1：有图片（取第一张展示）
                     <View style={styles.dayCellWithImage}>
                       <Image
-                        source={{ uri: dayData.image_url?.startsWith('http') ? dayData.image_url : `${apiUrl}${dayData.image_url}` }}
+                        source={{ uri: firstImageUrl }}
                         style={styles.dayImage}
                         resizeMode="cover"
                       />
