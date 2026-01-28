@@ -25,6 +25,8 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
   const [diaryContent, setDiaryContent] = useState('');
   const [diaryImageUrl, setDiaryImageUrl] = useState<string | undefined>(undefined);
   const [currentDiaryId, setCurrentDiaryId] = useState<string | null>(null);
+  const [imageList, setImageList] = useState<string[]>([]); // 图片列表，最多保存3张
+  const [diaryImageList, setDiaryImageList] = useState<string[]>([]); // 生成日记时的图片列表快照
   const hasLoadedHistoryRef = useRef(false); // 标记是否已加载过历史记录
   const currentSystemMessageRef = useRef<string>('');
 
@@ -254,6 +256,15 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       // 上传图片
       const uploadResult = await imageService.uploadImage(imageUri);
       const imageUrl = `${uploadResult.url}`;
+      
+      // 将图片添加到列表（最多3张，FIFO）
+      setImageList((prev) => {
+        const newList = [...prev, imageUrl];
+        // 如果超过3张，移除最旧的
+        const result = newList.slice(-3);
+        console.log('添加图片到列表:', { imageUrl, prev, result });
+        return result;
+      });
       
       // 在右侧显示图片消息（用户消息）
       const imageMessage: Message = {
@@ -510,6 +521,11 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     }
 
     try {
+      // 保存当前图片列表的副本，避免在生成过程中被清空
+      const currentImageList = [...imageList];
+      console.log('开始生成日记，当前imageList:', imageList, '保存的副本:', currentImageList);
+      // 保存图片列表快照，用于在生成过程中显示
+      setDiaryImageList(currentImageList);
       setIsGeneratingDiary(true);
       setShowDiaryModal(true);
       setDiaryContent('');
@@ -556,34 +572,38 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
 
       // 生成完成后，保存日记
       try {
-        // 提取图片路径（使用当前保存的图片URL）
-        const imageUrlToUse = currentImageUrl || diaryImageUrl;
-        let picPath = '';
-        if (imageUrlToUse) {
-          const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
-          
-          if (imageUrlToUse.startsWith(apiUrl)) {
+        // 将图片列表转为路径数组，然后转为JSON字符串（使用保存的副本）
+        const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
+        console.log('保存日记时使用的图片列表:', currentImageList);
+        const picPaths = currentImageList.map((imageUrl) => {
+          if (imageUrl.startsWith(apiUrl)) {
             // 去掉域名前缀，只保留路径
-            picPath = imageUrlToUse.replace(apiUrl, '');
-          } else if (imageUrlToUse.startsWith('http://') || imageUrlToUse.startsWith('https://')) {
+            return imageUrl.replace(apiUrl, '');
+          } else if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
             // 如果已经是完整URL，提取路径部分
             try {
-              const url = new URL(imageUrlToUse);
-              picPath = url.pathname;
+              const url = new URL(imageUrl);
+              return url.pathname;
             } catch {
               // 如果解析失败，尝试手动提取路径（如 /api/upload/files/xxx.jpg）
-              const match = imageUrlToUse.match(/\/api\/upload\/[^\s?]+/);
-              picPath = match ? match[0] : '';
+              const match = imageUrl.match(/\/api\/upload\/[^\s?]+/);
+              return match ? match[0] : '';
             }
           } else {
             // 如果已经是路径格式（如 /api/upload/files/xxx.jpg），直接使用
-            picPath = imageUrlToUse;
+            return imageUrl;
           }
-        }
+        }).filter(path => path); // 过滤掉空路径
+
+        // 将图片路径数组转为JSON字符串
+        const picJson = picPaths.length > 0 ? JSON.stringify(picPaths) : '';
 
         // 保存日记并获取返回的ID
-        const diaryId = await chatService.saveDiary(fullContent, user.id, picPath, assistantEmoji);
+        const diaryId = await chatService.saveDiary(fullContent, user.id, picJson, assistantEmoji);
         setCurrentDiaryId(diaryId); // 保存当前生成的日记ID
+        
+        // 清空图片列表（日记生成后清空）
+        setImageList([]);
 
         // 保存对话记录：用户生成日记，使用保存后返回的日记ID
         chatService.saveChatRecord(user.id, 'diary', 'user', diaryId).catch(() => {
@@ -591,8 +611,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         });
 
         // 在对话框内添加日记卡片
-        // 使用原始图片URL（如果有）或picPath
-        const picForDisplay = imageUrlToUse || picPath;
+        // 使用图片列表（JSON格式）
         const diaryMessage: Message = {
           id: `diary_${Date.now()}`,
           type: 'user',
@@ -601,7 +620,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
           diaryData: {
             id: diaryId,
             context: fullContent,
-            pic: picForDisplay,
+            pic: picJson, // 使用JSON格式的图片列表
             gmt_create: new Date().toISOString(), // 使用当前时间
           },
         };
@@ -659,7 +678,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     } finally {
       setIsGeneratingDiary(false);
     }
-  }, [user?.id, assistantHistory, messages]);
+  }, [user?.id, assistantHistory, messages, imageList, assistantEmoji, scrollToBottom]);
 
   return {
     messages,
@@ -675,6 +694,8 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     diaryContent,
     diaryImageUrl,
     currentDiaryId,
+    imageList, // 图片列表
+    diaryImageList, // 生成日记时的图片列表快照
     setShowDiaryModal,
     sendMessage,
     uploadImageAndUnderstand,

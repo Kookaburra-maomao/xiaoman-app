@@ -1,21 +1,16 @@
-import ShareModal from '@/components/diary/ShareModal';
+import DiaryActionButtons from '@/components/diary/DiaryActionButtons';
+import DiaryImageCarousel from '@/components/diary/DiaryImageCarousel';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { deleteDiary, DiaryDetail, getDiaryDetail } from '@/services/chatService';
-import * as imageService from '@/services/imageService';
 import { Ionicons } from '@expo/vector-icons';
-import * as MediaLibrary from 'expo-media-library';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Dimensions,
-  Image,
   Modal,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,15 +18,29 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import ViewShot from 'react-native-view-shot';
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// 解析图片列表（支持逗号分隔的多张图片）
+// 解析图片列表（支持JSON格式和逗号分隔的多张图片）
 const parseImages = (pic?: string | null): string[] => {
-  if (!pic) return [];
-  return pic.split(',').map(img => img.trim()).filter(img => img);
+  if (!pic || pic.trim() === '') return [];
+  
+  // 尝试解析JSON格式
+  try {
+    const parsed = JSON.parse(pic);
+    if (Array.isArray(parsed)) {
+      const result = parsed.filter(img => img && img.trim() !== '');
+      console.log('解析JSON格式图片:', { pic, parsed, result });
+      return result;
+    }
+  } catch (e) {
+    // 如果不是JSON格式，按逗号分隔处理（兼容旧格式）
+    const result = pic.split(',').map(img => img.trim()).filter(img => img);
+    console.log('解析逗号分隔格式图片:', { pic, result });
+    return result;
+  }
+  
+  return [];
 };
 
 // 格式化日期显示
@@ -62,16 +71,6 @@ export default function DiaryDetailScreen() {
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [sharing, setSharing] = useState(false);
-  const [screenshotUri, setScreenshotUri] = useState<string | null>(null);
-  const [localScreenshotUri, setLocalScreenshotUri] = useState<string | null>(null);
-  const scrollViewRef = useRef<ScrollView>(null);
-  const imageScrollViewRef = useRef<ScrollView>(null);
-  const contentViewRef = useRef<ViewShot>(null);
-
-  const images = diary ? parseImages(diary.pic) : [];
 
   // 获取日记详情
   const fetchDiaryDetail = async () => {
@@ -80,6 +79,7 @@ export default function DiaryDetailScreen() {
     try {
       setLoading(true);
       const data = await getDiaryDetail(diaryId);
+      console.log('获取日记详情:', { diaryId, data, pic: data.pic });
       setDiary(data);
     } catch (error) {
       console.error('获取日记详情失败:', error);
@@ -89,6 +89,9 @@ export default function DiaryDetailScreen() {
       setLoading(false);
     }
   };
+
+  const images = diary ? parseImages(diary.pic) : [];
+  console.log('解析后的图片列表:', { pic: diary?.pic, images, imagesLength: images.length });
 
   useEffect(() => {
     fetchDiaryDetail();
@@ -102,13 +105,6 @@ export default function DiaryDetailScreen() {
       }
     }, [diaryId])
   );
-
-  // 处理图片滚动
-  const handleImageScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(offsetX / SCREEN_WIDTH);
-    setCurrentImageIndex(index);
-  };
 
   // 处理删除
   const handleDelete = async () => {
@@ -130,71 +126,6 @@ export default function DiaryDetailScreen() {
       setDeleting(false);
       setShowDeleteModal(false);
       setShowDeleteMenu(false);
-    }
-  };
-
-  // 处理分享 - 截图并上传
-  const handleShare = async () => {
-    if (!contentViewRef.current || !diary) {
-      return;
-    }
-
-    try {
-      setSharing(true);
-
-      // 滚动到顶部，确保从开始截图
-      if (scrollViewRef.current) {
-        scrollViewRef.current.scrollTo({ y: 0, animated: false });
-      }
-
-      // 等待内容渲染和滚动完成
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // 截图整个内容区域（包括超出屏幕的部分）
-      if (!contentViewRef.current || !contentViewRef.current.capture) {
-        throw new Error('ViewShot ref not available');
-      }
-      const uri = await contentViewRef.current.capture();
-
-      // 保存本地URI用于保存到相册
-      setLocalScreenshotUri(uri);
-
-      // 上传截图
-      const uploadResult = await imageService.uploadImage(uri);
-      setScreenshotUri(uploadResult.url);
-
-      // 显示分享弹窗
-      setShowShareModal(true);
-    } catch (error: any) {
-      console.error('截图或上传失败:', error);
-      Alert.alert('错误', error.message || '截图失败，请重试');
-    } finally {
-      setSharing(false);
-    }
-  };
-
-  // 保存图片到相册
-  const handleSaveImage = async () => {
-    if (!localScreenshotUri) {
-      Alert.alert('提示', '图片未准备好');
-      return;
-    }
-
-    try {
-      // 请求相册权限
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('提示', '需要相册权限才能保存图片');
-        return;
-      }
-
-      // 保存到相册（使用本地截图URI）
-      await MediaLibrary.createAssetAsync(localScreenshotUri);
-      
-      Alert.alert('成功', '图片已保存到相册');
-    } catch (error: any) {
-      console.error('保存图片失败:', error);
-      Alert.alert('错误', error.message || '保存图片失败，请重试');
     }
   };
 
@@ -255,58 +186,20 @@ export default function DiaryDetailScreen() {
       )}
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* 日记信息卡片 - 用于截图 */}
-        <ViewShot
-          ref={contentViewRef}
-          options={{ format: 'png', quality: 1, result: 'tmpfile' }}
-          style={styles.contentView}
-        >
+        <View style={styles.contentView}>
           <View style={styles.infoCard}>
             {/* 日期显示 */}
             <View style={styles.dateContainer}>
               <Text style={styles.dateText}>Date {formatDate(diary.gmt_create)}</Text>
             </View>
 
-            {/* 图片列表 - 横滑展示 */}
+            {/* 图片区域 - 与生成弹窗统一的轮播组件 */}
             {images.length > 0 && (
-              <View style={styles.imageContainer}>
-              <ScrollView
-                ref={imageScrollViewRef}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onScroll={handleImageScroll}
-                scrollEventThrottle={16}
-                style={styles.imageScrollView}
-              >
-                  {images.map((imageUri, index) => {
-                    const fullUri = imageUri.startsWith('http') ? imageUri : `${apiUrl}${imageUri}`;
-                    return (
-                      <Image
-                        key={index}
-                        source={{ uri: fullUri }}
-                        style={styles.diaryImage}
-                        resizeMode="cover"
-                      />
-                    );
-                  })}
-                </ScrollView>
-                
-                {/* 图片指示器 */}
-                {images.length > 1 && (
-                  <View style={styles.indicatorContainer}>
-                    {images.map((_, index) => (
-                      <View
-                        key={index}
-                        style={[
-                          styles.indicator,
-                          index === currentImageIndex && styles.indicatorActive,
-                        ]}
-                      />
-                    ))}
-                  </View>
-                )}
-              </View>
+              <DiaryImageCarousel
+                imageUrls={images}
+                apiUrl={apiUrl}
+                showIndicator={true}
+              />
             )}
 
             {/* 时间戳 */}
@@ -321,36 +214,14 @@ export default function DiaryDetailScreen() {
               </View>
             )}
           </View>
-        </ViewShot>
-
-        {/* 操作按钮 */}
-        <View style={styles.actionButtonsContainer}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => {
-              router.push(`/diary-edit?diaryId=${diary.id}` as any);
-            }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="create-outline" size={20} color={Colors.light.text} />
-            <Text style={styles.actionButtonText}>编辑</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleShare}
-            disabled={sharing}
-            activeOpacity={0.7}
-          >
-            {sharing ? (
-              <ActivityIndicator size="small" color={Colors.light.text} />
-            ) : (
-              <>
-                <Ionicons name="share-outline" size={20} color={Colors.light.text} />
-                <Text style={styles.actionButtonText}>分享</Text>
-              </>
-            )}
-          </TouchableOpacity>
         </View>
+
+        {/* 操作按钮 - 分享跳转至分享页 */}
+        <DiaryActionButtons
+          onEdit={() => router.push(`/diary-edit?diaryId=${diary.id}` as any)}
+          onExport={() => router.push(`/diary-share?diaryId=${diary.id}` as any)}
+          exportLabel="分享"
+        />
       </ScrollView>
 
       {/* 删除确认弹窗 */}
@@ -390,13 +261,6 @@ export default function DiaryDetailScreen() {
         </View>
       </Modal>
 
-      {/* 分享弹窗 */}
-      <ShareModal
-        visible={showShareModal}
-        imageUri={screenshotUri || undefined}
-        onClose={() => setShowShareModal(false)}
-        onSaveImage={handleSaveImage}
-      />
     </SafeAreaView>
   );
 }
@@ -498,42 +362,11 @@ const styles = StyleSheet.create({
   },
   dateContainer: {
     paddingBottom: 8,
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   dateText: {
     fontSize: 14,
     color: Colors.light.icon,
-  },
-  imageContainer: {
-    marginTop: 8,
-    marginHorizontal: -16,
-    overflow: 'hidden',
-  },
-  imageScrollView: {
-    height: SCREEN_WIDTH - 32, // 屏幕宽度减去左右margin(16*2)
-  },
-  diaryImage: {
-    width: SCREEN_WIDTH - 32,
-    height: SCREEN_WIDTH - 32,
-  },
-  indicatorContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 12,
-    gap: 8,
-  },
-  indicator: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#D0D0D0',
-  },
-  indicatorActive: {
-    backgroundColor: Colors.light.tint,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
   },
   timeContainer: {
     paddingTop: 16,
@@ -550,31 +383,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.light.text,
     lineHeight: 24,
-  },
-  actionButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    gap: 24,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.light.text,
-    minWidth: 100,
-  },
-  actionButtonText: {
-    fontSize: 16,
-    color: Colors.light.text,
-    fontWeight: '600',
-    marginLeft: 8,
   },
   modalOverlay: {
     flex: 1,

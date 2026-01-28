@@ -2,6 +2,8 @@
  * 日记生成弹窗组件
  */
 
+import DiaryActionButtons from '@/components/diary/DiaryActionButtons';
+import DiaryImageCarousel from '@/components/diary/DiaryImageCarousel';
 import ShareModal from '@/components/diary/ShareModal';
 import { Colors } from '@/constants/theme';
 import * as imageService from '@/services/imageService';
@@ -15,13 +17,12 @@ import Markdown from 'react-native-markdown-display';
 import ViewShot from 'react-native-view-shot';
 
 const RETURN_ICON_URL = 'http://39.103.63.159/api/files/xiaoman-icon-return.png';
-const EDIT_ICON_URL = 'http://39.103.63.159/api/files/xiaoman-icon-edit.png';
-const EXPORT_ICON_URL = 'http://39.103.63.159/api/files/xiaoman-icon-export.png';
 
 interface DiaryGenerateModalProps {
   visible: boolean;
   content: string;
-  imageUrl?: string;
+  imageUrl?: string; // 兼容旧版本，单张图片
+  imageUrls?: string[]; // 图片列表（新版本，支持多张）
   isGenerating: boolean;
   onClose: () => void;
   gmt_create?: string; // 创建时间
@@ -57,6 +58,7 @@ export default function DiaryGenerateModal({
   visible,
   content,
   imageUrl,
+  imageUrls = [],
   isGenerating,
   onClose,
   gmt_create,
@@ -210,7 +212,12 @@ export default function DiaryGenerateModal({
   if (!visible) return null;
 
   const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
-  const fullImageUrl = imageUrl ? (imageUrl.startsWith('http') ? imageUrl : `${apiUrl}${imageUrl}`) : undefined;
+  // 图片列表：优先 imageUrls，兼容单张 imageUrl
+  const carouselImageUrls = imageUrls && imageUrls.length > 0
+    ? imageUrls
+    : imageUrl
+      ? [imageUrl]
+      : [];
   const dateStr = formatDate(gmt_create);
   
   // 渲染日记内容（支持 markdown）
@@ -285,11 +292,13 @@ export default function DiaryGenerateModal({
                 {/* 日期区域 */}
                 <Text style={styles.dateText}>{dateStr}</Text>
                 
-                {/* 图片区域 */}
-                {fullImageUrl && (
-                  <View style={styles.imageContainer}>
-                    <Image source={{ uri: fullImageUrl }} style={styles.diaryImage} resizeMode="cover" />
-                  </View>
+                {/* 图片区域 - 公共轮播组件 */}
+                {carouselImageUrls.length > 0 && (
+                  <DiaryImageCarousel
+                    imageUrls={carouselImageUrls}
+                    apiUrl={apiUrl}
+                    showIndicator={false}
+                  />
                 )}
 
                 {/* 日记内容区域 */}
@@ -299,41 +308,15 @@ export default function DiaryGenerateModal({
               </View>
             </ViewShot>
 
-            {/* 操作区域 */}
-            <View style={styles.actionContainer}>
-              <TouchableOpacity 
-                style={styles.editButton} 
-                disabled={isGenerating || !diaryId}
-                onPress={handleEdit}
-                activeOpacity={0.7}
-              >
-                <Image
-                  source={{ uri: EDIT_ICON_URL }}
-                  style={styles.actionIcon}
-                  resizeMode="contain"
-                />
-                <Text style={styles.editButtonText}>编辑</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.exportButton} 
-                disabled={isGenerating || sharing}
-                onPress={handleExport}
-                activeOpacity={0.7}
-              >
-                {sharing ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Image
-                      source={{ uri: EXPORT_ICON_URL }}
-                      style={styles.actionIcon}
-                      resizeMode="contain"
-                    />
-                    <Text style={styles.exportButtonText}>导出</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
+            {/* 操作区域 - 公共按钮组件 */}
+            <DiaryActionButtons
+              onEdit={handleEdit}
+              onExport={handleExport}
+              editDisabled={isGenerating || !diaryId}
+              exportDisabled={isGenerating}
+              exportLoading={sharing}
+              exportLabel="导出"
+            />
           </ScrollView>
 
           {/* 分享弹窗 */}
@@ -431,16 +414,6 @@ const styles = StyleSheet.create({
     fontFamily: 'PingFang SC',
     paddingHorizontal: scaleSize(20),
   },
-  imageContainer: {
-    marginTop: scaleSize(14),
-    alignItems: 'center',
-  },
-  diaryImage: {
-    width: scaleSize(303),
-    height: scaleSize(303),
-    borderRadius: scaleSize(8),
-    backgroundColor: '#F5F5F5',
-  },
   diaryContentContainer: {
     marginTop: scaleSize(20),
     paddingHorizontal: scaleSize(20),
@@ -463,56 +436,6 @@ const styles = StyleSheet.create({
   generatingText: {
     fontSize: scaleSize(14),
     color: Colors.light.icon,
-    fontFamily: 'PingFang SC',
-  },
-  actionContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: scaleSize(20),
-    paddingTop: scaleSize(20),
-    paddingBottom: scaleSize(20),
-    gap: scaleSize(12),
-  },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: scaleSize(162),
-    height: scaleSize(50),
-    borderRadius: scaleSize(14),
-    paddingTop: scaleSize(12),
-    paddingRight: scaleSize(10),
-    paddingBottom: scaleSize(12),
-    paddingLeft: scaleSize(10),
-    backgroundColor: '#DDDDDD',
-  },
-  exportButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: scaleSize(162),
-    height: scaleSize(50),
-    borderRadius: scaleSize(14),
-    paddingTop: scaleSize(12),
-    paddingRight: scaleSize(10),
-    paddingBottom: scaleSize(12),
-    paddingLeft: scaleSize(10),
-    backgroundColor: '#000000',
-  },
-  actionIcon: {
-    width: scaleSize(20),
-    height: scaleSize(20),
-    marginRight: scaleSize(8),
-  },
-  editButtonText: {
-    fontSize: scaleSize(14),
-    color: Colors.light.text,
-    fontFamily: 'PingFang SC',
-  },
-  exportButtonText: {
-    fontSize: scaleSize(14),
-    color: '#FFFFFF',
     fontFamily: 'PingFang SC',
   },
 });

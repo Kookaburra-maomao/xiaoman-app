@@ -5,13 +5,15 @@
 import { Colors } from '@/constants/theme';
 import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
-import { Image, StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 
 interface DiaryCardProps {
   context: string;
   pic?: string;
   gmt_create?: string; // 创建时间
+  diaryId?: string; // 日记ID，用于跳转到详情页
 }
 
 // 格式化日期时间：12.25 星期日 16:33
@@ -70,13 +72,29 @@ const truncateText = (text: string, hasImage: boolean): string => {
   return text.substring(0, maxLength) + '...';
 };
 
-export default function DiaryCard({ context, pic, gmt_create }: DiaryCardProps) {
+export default function DiaryCard({ context, pic, gmt_create, diaryId }: DiaryCardProps) {
+  const router = useRouter();
   const imageUrl = getFirstImageUrl(pic);
   const dateTimeStr = formatDateTime(gmt_create);
   const truncatedContext = truncateText(context, !!imageUrl);
 
+  // 处理点击事件
+  const handlePress = () => {
+    if (diaryId) {
+      router.push({
+        pathname: '/diary-detail',
+        params: { diaryId },
+      } as any);
+    }
+  };
+
   return (
-    <View style={styles.diaryCard}>
+    <TouchableOpacity 
+      style={styles.diaryCard}
+      onPress={handlePress}
+      activeOpacity={0.8}
+      disabled={!diaryId}
+    >
       {/* 第一行：日期时间 */}
       {/* {dateTimeStr && (
         <Text style={styles.dateTimeText}>{dateTimeStr}</Text>
@@ -101,7 +119,7 @@ export default function DiaryCard({ context, pic, gmt_create }: DiaryCardProps) 
           </View>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 

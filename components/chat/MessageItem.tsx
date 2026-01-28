@@ -43,6 +43,7 @@ export default function MessageItem({ message }: MessageItemProps) {
           context={message.diaryData.context} 
           pic={message.diaryData.pic} 
           gmt_create={message.diaryData.gmt_create}
+          diaryId={message.diaryData.id}
         />
       );
     }

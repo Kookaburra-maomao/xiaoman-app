@@ -397,8 +397,14 @@ export default function ChatInput({
     return '松手发送 上移取消';
   };
 
+  // 判断是否应该显示全宽输入框（录音或上划取消时）
+  const shouldShowFullWidth = isRecording || isMovingUp;
+
   return (
-    <View style={styles.inputContainer}>
+    <View style={[
+      styles.inputContainer,
+      shouldShowFullWidth && styles.inputContainerFullWidth,
+    ]}>
       {/* 录音状态提示文字 */}
       {isRecording && (
         <View style={styles.recordingHintContainer}>
@@ -417,23 +423,26 @@ export default function ChatInput({
           isRecording && isMovingUp && styles.inputWrapperRecordingCancel,
           showExpandedStyle && styles.inputWrapperExpanded,
           showExpandedStyle && styles.inputWrapperFlexStart,
+          (isRecording || isMovingUp) && styles.inputWrapperFullWidth,
         ]}
       >
-        {/* 左侧切换图标 */}
-        <TouchableOpacity
-          style={[
-            styles.modeToggleButton,
-          ]}
-          onPress={onToggleInputMode}
-          activeOpacity={0.7}
-          disabled={isGeneratingDiary || isRecording}
-        >
-          <Image
-            source={{ uri: isVoiceMode ? KEYBOARD_ICON_URL : RADIO_ICON_URL }}
-            style={styles.modeToggleIcon}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
+        {/* 左侧切换图标 - 录音或上划取消时隐藏 */}
+        {!(isRecording || isMovingUp) && (
+          <TouchableOpacity
+            style={[
+              styles.modeToggleButton,
+            ]}
+            onPress={onToggleInputMode}
+            activeOpacity={0.7}
+            disabled={isGeneratingDiary || isRecording}
+          >
+            <Image
+              source={{ uri: isVoiceMode ? KEYBOARD_ICON_URL : RADIO_ICON_URL }}
+              style={styles.modeToggleIcon}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        )}
 
         {/* 右侧内容区域 */}
         {isVoiceMode ? (
@@ -513,8 +522,8 @@ export default function ChatInput({
             )}
       </View>
 
-      {/* 右侧图片按钮 - 键盘显示时隐藏 */}
-      {!showExpandedStyle && (
+      {/* 右侧图片按钮 - 键盘显示时隐藏，录音或上划取消时也隐藏 */}
+      {!showExpandedStyle && !(isRecording || isMovingUp) && (
         <TouchableOpacity
           style={styles.imageButton}
           onPress={onImagePicker}
@@ -604,6 +613,13 @@ const styles = StyleSheet.create({
   },
   inputWrapperRecordingCancel: {
     backgroundColor: '#FF326C',
+  },
+  inputWrapperFullWidth: {
+    width: '100%',
+    flex: 1,
+  },
+  inputContainerFullWidth: {
+    paddingHorizontal: 20,
   },
   modeToggleButton: {
     width: scaleSize(20),
@@ -697,11 +713,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FAFAFA',
-  },
-  imageButtonExpanded: {
-    alignSelf: 'flex-end',
     marginBottom: scaleSize(2),
   },
+
   imageButtonIcon: {
     width: 20,
     height: 20,

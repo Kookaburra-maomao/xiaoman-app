@@ -42,6 +42,8 @@ export default function ChatScreen() {
     diaryContent,
     diaryImageUrl,
     currentDiaryId,
+    imageList,
+    diaryImageList,
     setShowDiaryModal,
     sendMessage,
     uploadImageAndUnderstand,
@@ -483,6 +485,7 @@ export default function ChatScreen() {
         visible={showDiaryModal}
         content={diaryContent}
         imageUrl={diaryImageUrl}
+        imageUrls={diaryImageList}
         isGenerating={isGeneratingDiary}
         gmt_create={new Date().toISOString()}
         diaryId={currentDiaryId || undefined}

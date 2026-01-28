@@ -1,6 +1,7 @@
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { DiaryByDateItem, getDiariesByDate } from '@/services/chatService';
+import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -8,11 +9,21 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// 获取第一张图片
+// 获取第一张图片（pic 为 JSON 字符串数组，如 '["/api/files/xxx.png", ...]'）
 const getFirstImage = (pic?: string | null): string | null => {
-  if (!pic) return null;
-  const images = pic.split(',').filter(img => img.trim());
-  return images.length > 0 ? images[0].trim() : null;
+  if (!pic || pic.trim() === '') return null;
+  try {
+    const parsed = JSON.parse(pic);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      const first = parsed[0];
+      return typeof first === 'string' && first.trim() !== '' ? first.trim() : null;
+    }
+  } catch {
+    // 兼容旧格式：逗号分隔
+    const images = pic.split(',').map(img => img.trim()).filter(Boolean);
+    return images.length > 0 ? images[0] : null;
+  }
+  return null;
 };
 
 // 截取前100个字符
@@ -102,21 +113,19 @@ export default function RecordDetailScreen() {
           <View style={styles.timelineContainer}>
             {diaries.map((diary, index) => (
               <View key={diary.id} style={styles.timelineItem}>
-                {/* 时间轴左侧 */}
+                {/* 时间轴左侧：时间在节点上方 */}
                 <View style={styles.timelineLeft}>
+                  <View style={styles.timeContainer}>
+                    <Text style={styles.timeText}>{formatTime(diary.gmt_create)}</Text>
+                    <Text style={styles.timePeriodText}>{formatTimePeriod(diary.gmt_create)}</Text>
+                  </View>
                   <View style={styles.timelineDot} />
                   {index < diaries.length - 1 && <View style={styles.timelineLine} />}
+                  <View style={styles.timelineDot} />
                 </View>
 
                 {/* 内容区域 */}
                 <View style={styles.timelineContent}>
-                  {/* 时间 */}
-                  <View style={styles.timeContainer}>
-                  <Text style={styles.timeText}>{formatTime(diary.gmt_create)}</Text>
-                    <Text style={styles.timePeriodText}>{formatTimePeriod(diary.gmt_create)}</Text>
-                  </View>
-
-                  {/* 日记内容 */}
                   <View style={styles.diaryCard}>
                     {/* 图片 - 只显示第一张 */}
                     {(() => {
@@ -220,9 +229,23 @@ const styles = StyleSheet.create({
   },
   timelineLeft: {
     width: 60,
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginRight: 12,
-    paddingTop: 4,
+  },
+  timeContainer: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  timeText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.light.text,
+  },
+  timePeriodText: {
+    fontSize: scaleSize(12),
+    color: Colors.light.text,
+    marginTop: 2,
   },
   timelineDot: {
     width: 8,
@@ -235,27 +258,12 @@ const styles = StyleSheet.create({
     width: 1,
     flex: 1,
     backgroundColor: '#E5E5E5',
-    marginLeft: 7,
+    marginLeft: 4,
     marginTop: 4,
     borderStyle: 'dashed',
   },
   timelineContent: {
     flex: 1,
-  },
-  timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 8,
-  },
-  timeText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: Colors.light.text,
-    marginRight: 8,
-  },
-  timePeriodText: {
-    fontSize: 14,
-    color: Colors.light.text,
   },
   diaryCard: {
     backgroundColor: '#FFFFFF',
@@ -296,7 +304,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
-    alignSelf: 'flex-start',
+    alignSelf: 'stretch',
   },
   viewFullButtonText: {
     color: '#FFFFFF',
