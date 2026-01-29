@@ -33,10 +33,10 @@ const request = async (url, { method = 'GET', params, body } = {}) => {
     const config = {
         method,
         headers,
+        credentials: 'include',
         ...(body && { body: JSON.stringify(body) }),
     };
     const response = await fetch(requestUrl, config);
-    console.log(response);
     if (!response.ok) {
         const {message, errors} = await response.json().catch(() => null);
         const error = new Error(message);

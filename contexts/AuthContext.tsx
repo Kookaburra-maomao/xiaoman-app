@@ -10,7 +10,7 @@ interface AuthContextType {
   register: (username: string, password: string, nick?: string, phone?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
-  updateUserInfo: (data: { avatar?: string }) => Promise<void>;
+  updateUserInfo: (data: { avatar?: string; diary_secret?: string }) => Promise<void>;
   updateVipExpireTime: (vipExpireTime: string) => Promise<void>;
   setUser: (user: User | null) => void;
 }
@@ -151,7 +151,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(userData);
   }, []);
 
-  const handleUpdateUserInfo = useCallback(async (data: { avatar?: string }) => {
+  const handleUpdateUserInfo = useCallback(async (data: { avatar?: string; diary_secret?: string }) => {
     if (!user?.id) {
       throw new Error('用户信息不存在');
     }

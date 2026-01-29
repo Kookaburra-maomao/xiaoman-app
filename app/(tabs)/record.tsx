@@ -2,10 +2,11 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { DiaryCountItem, getDiaryCount } from '@/services/chatService';
 import { Ionicons } from '@expo/vector-icons';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
@@ -26,13 +27,21 @@ function parseImageUrl(imageUrl?: string | null): { hasImage: boolean; firstImag
   }
 }
 
+const BIOMETRIC_PROMPT_MESSAGE =
+  Platform.OS === 'ios' ? '使用面容 ID 验证身份' : '使用指纹或面部识别验证身份';
+
 export default function RecordScreen() {
-  const { user } = useAuth();
+  const { user, refreshAuth } = useAuth();
   const router = useRouter();
   const [searchText, setSearchText] = useState('');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [diaryCounts, setDiaryCounts] = useState<DiaryCountItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // 是否开启日记加密（以用户信息 diary_secret 为准）
+  const diaryEncryptionEnabled = user?.diary_secret === 'true';
 
   // 获取当前年月
   const year = currentDate.getFullYear();
@@ -70,11 +79,70 @@ export default function RecordScreen() {
     }
   }, [user?.id, year, month, getMonthDateRange]);
 
-  // 进入页面时获取数据
+  // 执行面容/指纹验证
+  const runBiometricAuth = useCallback(async (): Promise<boolean> => {
+    try {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      if (!hasHardware) {
+        setAuthError('设备不支持生物识别');
+        return false;
+      }
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      if (!isEnrolled) {
+        setAuthError('请先录入面容 ID 或指纹');
+        return false;
+      }
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: BIOMETRIC_PROMPT_MESSAGE,
+        cancelLabel: '取消',
+      });
+      if (result.success) {
+        setAuthError(null);
+        setIsUnlocked(true);
+        return true;
+      }
+      setAuthError('验证未通过或已取消');
+      return false;
+    } catch (e) {
+      setAuthError('验证出错，请重试');
+      return false;
+    }
+  }, []);
+
+  // 进入页面时：先拉取最新用户信息，若开启日记加密则先面容校验，通过后再拉数据
   useFocusEffect(
     useCallback(() => {
-      fetchDiaryCounts();
-    }, [fetchDiaryCounts])
+      let cancelled = false;
+      (async () => {
+        await refreshAuth();
+        if (cancelled) return;
+        // 依赖当前 user（refreshAuth 会 setUser，下一帧或同次渲染后 user 会更新）
+        // 这里通过 setTimeout 或在下一次 effect 中读取，更稳妥的方式是依赖 user 的 useFocusEffect
+        // 改为在 useFocusEffect 里先 refreshAuth，然后用一个 state 存「本次是否需加密」
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [refreshAuth])
+  );
+
+  // 根据用户 diary_secret 与解锁状态：加密开启时需先验证
+  useFocusEffect(
+    useCallback(() => {
+      if (!user) return;
+      const enabled = user.diary_secret === 'true';
+      if (!enabled) {
+        setIsUnlocked(true);
+        setAuthError(null);
+        fetchDiaryCounts();
+        return;
+      }
+      setIsUnlocked(false);
+      setAuthError(null);
+      runBiometricAuth().then((ok) => {
+        if (ok) fetchDiaryCounts();
+      });
+    }, [user?.diary_secret, user?.id, runBiometricAuth, fetchDiaryCounts])
   );
 
   // 月份切换时获取数据
@@ -150,6 +218,28 @@ export default function RecordScreen() {
       today.getDate() === day
     );
   };
+
+  // 日记加密开启且未通过面容校验时显示锁屏
+  if (diaryEncryptionEnabled && !isUnlocked) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <StatusBar hidden />
+        <View style={styles.lockScreen}>
+          <Ionicons name="lock-closed" size={64} color={Colors.light.icon} />
+          <Text style={styles.lockTitle}>日记已加密</Text>
+          <Text style={styles.lockHint}>请使用面容 ID 验证身份</Text>
+          {authError ? <Text style={styles.lockError}>{authError}</Text> : null}
+          <TouchableOpacity
+            style={styles.lockButton}
+            onPress={() => runBiometricAuth()}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.lockButtonText}>验证</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -392,5 +482,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 2,
     borderRadius: 4,
+  },
+  lockScreen: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  lockTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  lockHint: {
+    fontSize: 16,
+    color: Colors.light.icon,
+    marginBottom: 16,
+  },
+  lockError: {
+    fontSize: 14,
+    color: '#E74C3C',
+    marginBottom: 24,
+  },
+  lockButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: Colors.light.tint,
+  },
+  lockButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

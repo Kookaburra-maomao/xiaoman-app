@@ -1,6 +1,6 @@
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
-import { autoRegisterByPhone, getUserByPhone, saveUser, sendSmsCode, verifySmsCode } from '@/utils/auth';
+import { autoRegisterByPhone, getUserByPhone, loginByPhone, saveUser, sendSmsCode, verifySmsCode } from '@/utils/auth';
 import { scaleSize } from '@/utils/screen';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -111,44 +111,42 @@ export default function LoginScreen() {
       return;
     }
 
-    if (!trimmedCode || trimmedCode.length !== 4) {
+    // Debug 模式只需手机号；非 Debug 需要 4 位验证码
+    if (!debugMode && (!trimmedCode || trimmedCode.length !== 4)) {
       Alert.alert('提示', '请输入4位验证码');
       return;
     }
 
     try {
       setVerifying(true);
-      
-      // TODO: 上线前移除调试功能 - 调试模式下验证码9999直接通过
-      if (debugMode && trimmedCode === '9999') {
-        // 调试模式：跳过验证码验证，直接查询用户
-        console.log('调试模式：跳过验证码验证');
-      } else {
-        // 1. 验证验证码
+
+      if (!debugMode) {
+        // 1. 非 Debug：先验证验证码
         await verifySmsCode(trimmedPhone, trimmedCode);
       }
-      
-      // 2. 通过手机号查询用户
-      const user = await getUserByPhone(trimmedPhone);
-      console.log("user", user);
+
+      // 2. 手机号登录，建立服务端 session。Debug 模式传 isDebug: 1，后端跳过验证码校验
+      let user = null;
+      try {
+        user = await loginByPhone(trimmedPhone, trimmedCode, debugMode);
+      } catch (e: any) {
+        // 登录失败则尝试自动注册（新用户）
+        try {
+          user = await autoRegisterByPhone(trimmedPhone);
+        } catch (regErr: any) {
+          // 注册失败且提示用户已存在时，仅拉取用户信息并写入本地（此时服务端可能未建立 session，需后端支持手机号登录）
+          if (regErr?.message?.includes('已存在') || regErr?.message?.includes('已注册')) {
+            user = await getUserByPhone(trimmedPhone);
+            if (user) {
+              await saveUser(user);
+            }
+          }
+          if (!user) throw regErr;
+        }
+      }
       if (user) {
-        // 用户已存在，登录成功
-        // 保存用户信息到本地存储
-        await saveUser(user);
-        // 直接更新 AuthContext 状态（不依赖 refreshAuth，因为我们已经有了用户信息）
         setUser(user);
-        // 等待状态更新完成
         await new Promise(resolve => setTimeout(resolve, 100));
-        router.replace('/(tabs)/chat');
-      } else {
-        // 用户不存在，自动注册
-        // autoRegisterByPhone 内部已经保存用户信息
-        const newUser = await autoRegisterByPhone(trimmedPhone);
-        // 直接更新 AuthContext 状态（不依赖 refreshAuth，因为我们已经有了用户信息）
-        setUser(newUser);
-        // 等待状态更新完成
-        await new Promise(resolve => setTimeout(resolve, 100));
-        // 注册成功后直接跳转
         router.replace('/(tabs)/chat');
       }
     } catch (error: any) {

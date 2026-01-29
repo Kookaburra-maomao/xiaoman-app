@@ -3,6 +3,9 @@ import { get, post, put } from './request';
 
 const AUTH_STORAGE_KEY = '@xiaoman_auth_user';
 
+/** 是否开启日记加密（进入记录页需面容/指纹验证） */
+export const DIARY_ENCRYPTION_ENABLED_KEY = '@xiaoman_diary_encryption_enabled';
+
 export interface User {
   id: string;
   username: string;
@@ -12,6 +15,8 @@ export interface User {
   createdAt?: string;
   is_vip?: string;
   vip_expire_time?: string;
+  /** 是否开启日记加密：'1' 开启，'0' 关闭 */
+  diary_secret?: string;
 }
 
 export interface LoginResponse {
@@ -55,7 +60,7 @@ export const clearUser = async (): Promise<void> => {
   }
 };
 
-// 登录
+// 登录（用户名 + 密码）
 export const login = async (username: string, password: string): Promise<User> => {
   const response = await post('/api/auth/login', {
     username,
@@ -67,6 +72,29 @@ export const login = async (username: string, password: string): Promise<User> =
     return response.data;
   }
   
+  throw new Error(response.message || '登录失败');
+};
+
+/** 手机号+验证码登录，建立服务端 session。isDebug=1 时后端跳过验证码校验，仅需 phone，code 可选 */
+export const loginByPhone = async (
+  phone: string,
+  code: string,
+  isDebug?: boolean
+): Promise<User> => {
+  const body: { phone: string; code?: string; isDebug?: number } = { phone };
+  if (isDebug) {
+    body.isDebug = 1;
+    if (code) body.code = code;
+  } else {
+    body.code = code;
+  }
+  const response = await post('/api/auth/login', body) as LoginResponse;
+
+  if (response.code === 200 && response.data) {
+    await saveUser(response.data);
+    return response.data;
+  }
+
   throw new Error(response.message || '登录失败');
 };
 
@@ -208,7 +236,7 @@ export const autoRegisterByPhone = async (phone: string): Promise<User> => {
 };
 
 // 更新用户信息
-export const updateUser = async (userId: string, data: { avatar?: string }): Promise<User> => {
+export const updateUser = async (userId: string, data: { avatar?: string; diary_secret?: string }): Promise<User> => {
   const response = await put(`/api/users/${userId}`, data) as { 
     code: number; 
     message: string; 

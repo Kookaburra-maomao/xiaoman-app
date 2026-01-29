@@ -14,6 +14,7 @@ import {
   ImageBackground,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -27,15 +28,35 @@ export default function SettingsScreen() {
   const router = useRouter();
   const [recentlyDeletedCount] = useState(21); // 最近删除数量，实际应该从API获取
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [diaryEncryptionEnabled, setDiaryEncryptionEnabled] = useState(false);
+  const [updatingDiarySecret, setUpdatingDiarySecret] = useState(false);
 
-  // 页面聚焦时刷新用户信息
+  // 页面聚焦时刷新用户信息，日记加密开关以 user.diary_secret 为准
   useFocusEffect(
     useCallback(() => {
-      // 如果用户信息不存在，尝试刷新
       if (!user && !loading) {
         refreshAuth();
       }
+      if (user?.diary_secret !== undefined) {
+        setDiaryEncryptionEnabled(user.diary_secret === 'true');
+      }
     }, [user, loading, refreshAuth])
+  );
+
+  const onDiaryEncryptionChange = useCallback(
+    async (value: boolean) => {
+      if (!user?.id) return;
+      try {
+        setUpdatingDiarySecret(true);
+        await updateUserInfo({ diary_secret: value ? 'true' : 'false' });
+        setDiaryEncryptionEnabled(value);
+      } catch (e: any) {
+        Alert.alert('错误', e?.message || '更新失败，请重试');
+      } finally {
+        setUpdatingDiarySecret(false);
+      }
+    },
+    [user?.id, updateUserInfo]
   );
 
   // 处理头像选择
@@ -358,6 +379,25 @@ export default function SettingsScreen() {
 
         {/* 设置选项组1 */}
         <View style={styles.settingsGroup}>
+          <View style={styles.settingItem}>
+            <View style={styles.settingItemLeft}>
+              <Ionicons name="lock-closed-outline" size={20} color={Colors.light.text} />
+              <Text style={styles.settingItemText}>日记加密</Text>
+            </View>
+            <View style={styles.settingItemRight}>
+              {updatingDiarySecret ? (
+                <ActivityIndicator size="small" color={Colors.light.tint} />
+              ) : (
+                <Switch
+                  value={diaryEncryptionEnabled}
+                  onValueChange={onDiaryEncryptionChange}
+                  trackColor={{ false: '#E5E5E5', true: Colors.light.tint }}
+                  thumbColor="#FFFFFF"
+                />
+              )}
+            </View>
+          </View>
+
           <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
             <View style={styles.settingItemLeft}>
               <Ionicons name="sunny-outline" size={20} color={Colors.light.text} />
