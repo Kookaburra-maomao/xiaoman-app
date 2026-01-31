@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { DiaryCountItem, getDiaryCount } from '@/services/chatService';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
+import { AuthenticationType, SecurityLevel } from 'expo-local-authentication';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
@@ -29,6 +30,20 @@ function parseImageUrl(imageUrl?: string | null): { hasImage: boolean; firstImag
 
 const BIOMETRIC_PROMPT_MESSAGE =
   Platform.OS === 'ios' ? '使用面容 ID 验证身份' : '使用指纹或面部识别验证身份';
+const FALLBACK_LABEL = '使用密码';
+
+// 调试：安全级别与认证类型文案（便于 console 排查面容 ID 为何不出现）
+const securityLevelLabel: Record<number, string> = {
+  [SecurityLevel.NONE]: 'NONE(未设置任何认证)',
+  [SecurityLevel.SECRET]: 'SECRET(仅设备密码/PIN)',
+  [SecurityLevel.BIOMETRIC_WEAK]: 'BIOMETRIC_WEAK(弱生物识别)',
+  [SecurityLevel.BIOMETRIC_STRONG]: 'BIOMETRIC_STRONG(面容/指纹)',
+};
+const authTypeLabel: Record<number, string> = {
+  [AuthenticationType.FINGERPRINT]: 'FINGERPRINT',
+  [AuthenticationType.FACIAL_RECOGNITION]: 'FACIAL_RECOGNITION',
+  [AuthenticationType.IRIS]: 'IRIS',
+};
 
 export default function RecordScreen() {
   const { user, refreshAuth } = useAuth();
@@ -79,31 +94,79 @@ export default function RecordScreen() {
     }
   }, [user?.id, year, month, getMonthDateRange]);
 
-  // 执行面容/指纹验证
+  // 执行验证：优先面容/指纹，可回退到设备密码；若未设置任何认证则不做校验
   const runBiometricAuth = useCallback(async (): Promise<boolean> => {
     try {
+      const enrolledLevel = await LocalAuthentication.getEnrolledLevelAsync();
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
-      if (!hasHardware) {
-        setAuthError('设备不支持生物识别');
-        return false;
-      }
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-      if (!isEnrolled) {
-        setAuthError('请先录入面容 ID 或指纹');
-        return false;
-      }
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: BIOMETRIC_PROMPT_MESSAGE,
-        cancelLabel: '取消',
-      });
-      if (result.success) {
+      const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+
+      console.log('[record 解锁] getEnrolledLevelAsync:', enrolledLevel, securityLevelLabel[enrolledLevel] ?? `未知(${enrolledLevel})`);
+      console.log('[record 解锁] hasHardwareAsync:', hasHardware, '| isEnrolledAsync(生物识别已录入):', isEnrolled);
+      console.log('[record 解锁] supportedAuthenticationTypesAsync:', supportedTypes, supportedTypes.map((t: number) => authTypeLabel[t] ?? t));
+
+      if (enrolledLevel === SecurityLevel.NONE) {
+        console.log('[record 解锁] 未设置任何认证，跳过校验');
         setAuthError(null);
         setIsUnlocked(true);
         return true;
       }
+      if (!hasHardware) {
+        console.log('[record 解锁] 设备无生物识别硬件，跳过校验');
+        setAuthError(null);
+        setIsUnlocked(true);
+        return true;
+      }
+      if (!isEnrolled) {
+        console.log('[record 解锁] 未录入面容/指纹，系统会走设备密码；若仍只出现密码，多为 enrolledLevel=SECRET(仅密码)');
+      }
+
+      // 先仅用生物识别（面容/指纹），避免 iOS 使用 deviceOwnerAuthentication 时直接弹出密码
+      if (isEnrolled && hasHardware) {
+        console.log('[record 解锁] 先调用 authenticateAsync(仅生物识别)，强制弹出面容 ID...');
+        const biometricOnly = await LocalAuthentication.authenticateAsync({
+          promptMessage: BIOMETRIC_PROMPT_MESSAGE,
+          cancelLabel: '取消',
+          disableDeviceFallback: true,
+          fallbackLabel: FALLBACK_LABEL,
+        });
+        if (biometricOnly.success) {
+          console.log('[record 解锁] 面容/指纹验证成功');
+          setAuthError(null);
+          setIsUnlocked(true);
+          return true;
+        }
+        const err = (biometricOnly as { success: false; error?: string })?.error;
+        console.log('[record 解锁] 仅生物识别未通过:', err, '→ 若为 user_cancel 则不再弹窗，否则继续弹设备密码');
+        if (err === 'user_cancel') {
+          setAuthError('验证未通过或已取消');
+          return false;
+        }
+        // user_fallback / lockout / missing_usage_description / not_available 等均继续弹「允许设备密码」一次
+      }
+
+      // 允许设备密码：用户点「使用密码」、生物识别锁定、或仅生物识别不可用时，弹出带密码的验证
+      console.log('[record 解锁] 调用 authenticateAsync(允许设备密码)...');
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: BIOMETRIC_PROMPT_MESSAGE,
+        cancelLabel: '取消',
+        disableDeviceFallback: false,
+        fallbackLabel: FALLBACK_LABEL,
+      });
+
+      if (result.success) {
+        console.log('[record 解锁] authenticateAsync 成功');
+        setAuthError(null);
+        setIsUnlocked(true);
+        return true;
+      }
+      const err = (result as { success: false; error?: string })?.error;
+      console.log('[record 解锁] authenticateAsync 未通过:', err, result);
       setAuthError('验证未通过或已取消');
       return false;
     } catch (e) {
+      console.log('[record 解锁] authenticateAsync 异常:', e);
       setAuthError('验证出错，请重试');
       return false;
     }
@@ -227,7 +290,7 @@ export default function RecordScreen() {
         <View style={styles.lockScreen}>
           <Ionicons name="lock-closed" size={64} color={Colors.light.icon} />
           <Text style={styles.lockTitle}>日记已加密</Text>
-          <Text style={styles.lockHint}>请使用面容 ID 验证身份</Text>
+          <Text style={styles.lockHint}>请使用面容 ID 或设备密码验证身份</Text>
           {authError ? <Text style={styles.lockError}>{authError}</Text> : null}
           <TouchableOpacity
             style={styles.lockButton}

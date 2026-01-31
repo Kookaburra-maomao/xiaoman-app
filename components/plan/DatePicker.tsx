@@ -1,12 +1,11 @@
 /**
- * 日期选择器组件
+ * 日期选择器组件（使用 @react-native-community/datetimepicker，兼容 New Architecture）
  */
 
 import { Colors } from '@/constants/theme';
-import { generateDays, generateMonths, generateYears, getDaysInMonth } from '@/utils/date-utils';
-import { Picker } from '@react-native-picker/picker';
-import { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 
 interface DatePickerProps {
   visible: boolean;
@@ -15,124 +14,94 @@ interface DatePickerProps {
   onCancel: () => void;
 }
 
+function formatDateToYYYYMMDD(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default function DatePicker({ visible, selectedDate, onConfirm, onCancel }: DatePickerProps) {
+  const initialDate = selectedDate ? new Date(selectedDate) : new Date();
+  const [value, setValue] = useState<Date>(initialDate);
+
+  useEffect(() => {
+    if (visible) {
+      setValue(selectedDate ? new Date(selectedDate) : new Date());
+    }
+  }, [visible, selectedDate]);
+
+  const handleConfirm = () => {
+    onConfirm(formatDateToYYYYMMDD(value));
+  };
+
+  // Android：在 visible 为 true 时打开系统日期选择对话框（只打开一次）
+  useEffect(() => {
+    if (Platform.OS === 'android' && visible) {
+      DateTimePickerAndroid.open({
+        value: selectedDate ? new Date(selectedDate) : new Date(),
+        mode: 'date',
+        display: 'default',
+        onChange: (event, date) => {
+          if (event.type === 'set' && date) {
+            onConfirm(formatDateToYYYYMMDD(date));
+          }
+          onCancel();
+        },
+      });
+    }
+  }, [visible]);
+
+  if (Platform.OS === 'android') {
+    return null;
+  }
+
+  // iOS：Modal + 内联选择器
   if (!visible) return null;
 
-  // 解析当前选中的日期
-  const getInitialDate = () => {
-    if (selectedDate) {
-      const date = new Date(selectedDate);
-      return {
-        year: date.getFullYear(),
-        month: date.getMonth() + 1,
-        day: date.getDate(),
-      };
-    }
-    const now = new Date();
-    return {
-      year: now.getFullYear(),
-      month: now.getMonth() + 1,
-      day: now.getDate(),
-    };
-  };
-
-  const initialDate = getInitialDate();
-  const [selectedYear, setSelectedYear] = useState(initialDate.year);
-  const [selectedMonth, setSelectedMonth] = useState(initialDate.month);
-  const [selectedDay, setSelectedDay] = useState(initialDate.day);
-
-  // 处理年月日变化
-  const handleYearChange = (year: number) => {
-    setSelectedYear(year);
-    // 检查当前日期是否有效（例如2月29日）
-    const maxDay = getDaysInMonth(year, selectedMonth);
-    if (selectedDay > maxDay) {
-      setSelectedDay(maxDay);
-    }
-  };
-
-  const handleMonthChange = (month: number) => {
-    setSelectedMonth(month);
-    // 检查当前日期是否有效
-    const maxDay = getDaysInMonth(selectedYear, month);
-    if (selectedDay > maxDay) {
-      setSelectedDay(maxDay);
-    }
-  };
-
-  // 确认日期选择
-  const handleConfirm = () => {
-    const year = selectedYear;
-    const month = String(selectedMonth).padStart(2, '0');
-    const day = String(selectedDay).padStart(2, '0');
-    onConfirm(`${year}-${month}-${day}`);
-  };
-
   return (
-    <View style={styles.datePickerContainer}>
-      <View style={styles.datePickerHeader}>
-        <TouchableOpacity onPress={onCancel} style={styles.datePickerButton}>
-          <Text style={styles.datePickerCancelText}>取消</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleConfirm} style={styles.datePickerButton}>
-          <Text style={styles.datePickerButtonText}>确定</Text>
-        </TouchableOpacity>
+    <Modal transparent visible={visible} animationType="slide">
+      <TouchableOpacity
+        style={styles.backdrop}
+        activeOpacity={1}
+        onPress={onCancel}
+      />
+      <View style={styles.datePickerContainer}>
+        <View style={styles.datePickerHeader}>
+          <TouchableOpacity onPress={onCancel} style={styles.datePickerButton}>
+            <Text style={styles.datePickerCancelText}>取消</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleConfirm} style={styles.datePickerButton}>
+            <Text style={styles.datePickerButtonText}>确定</Text>
+          </TouchableOpacity>
+        </View>
+        <DateTimePicker
+          value={value}
+          mode="date"
+          display="spinner"
+          onChange={(_, date) => date && setValue(date)}
+          style={styles.picker}
+        />
       </View>
-      <View style={styles.customDatePicker}>
-        {/* 年份选择 */}
-        <View style={styles.pickerColumnYear}>
-          <Picker
-            selectedValue={selectedYear}
-            onValueChange={handleYearChange}
-            style={styles.picker}
-          >
-            {generateYears().map((year) => (
-              <Picker.Item key={year} label={`${year}`} value={year} />
-            ))}
-          </Picker>
-        </View>
-        
-        {/* 月份选择 */}
-        <View style={styles.pickerColumnMonth}>
-          <Picker
-            selectedValue={selectedMonth}
-            onValueChange={handleMonthChange}
-            style={styles.picker}
-          >
-            {generateMonths().map((month) => (
-              <Picker.Item key={month} label={`${month}`} value={month} />
-            ))}
-          </Picker>
-        </View>
-        
-        {/* 日期选择 */}
-        <View style={styles.pickerColumnDay}>
-          <Picker
-            selectedValue={selectedDay}
-            onValueChange={setSelectedDay}
-            style={styles.picker}
-          >
-            {generateDays(selectedYear, selectedMonth).map((day) => (
-              <Picker.Item key={day} label={`${day}`} value={day} />
-            ))}
-          </Picker>
-        </View>
-      </View>
-    </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
   datePickerContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    marginTop: 8,
-    overflow: 'hidden',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    paddingBottom: 24,
   },
   datePickerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
@@ -150,21 +119,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.light.text,
   },
-  customDatePicker: {
-    flexDirection: 'row',
-    height: 200,
-  },
-  pickerColumnYear: {
-    flex: 2,
-  },
-  pickerColumnMonth: {
-    flex: 1.2,
-  },
-  pickerColumnDay: {
-    flex: 1.2,
-  },
   picker: {
     height: 200,
   },
 });
-
