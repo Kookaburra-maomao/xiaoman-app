@@ -10,11 +10,12 @@ import { useChat } from '@/hooks/useChat';
 import { useRecording } from '@/hooks/useRecording';
 import * as chatService from '@/services/chatService';
 import { OperationCard, getOperationCards } from '@/services/chatService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, KeyboardAvoidingView, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleSheet } from 'react-native';
+import { Alert, Animated, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ChatScreen() {
@@ -25,24 +26,25 @@ export default function ChatScreen() {
   const cardTranslateY = useRef(new Animated.Value(0)).current; // 卡片垂直位移动画值（从0开始，收起时移动到-60，即title区域上边界）
   const [inputText, setInputText] = useState('');
   const [isVoiceMode, setIsVoiceMode] = useState(false);
-  const [isCardExpanded, setIsCardExpanded] = useState(true);
-  const [showCard, setShowCard] = useState(true);
+  const [showCard, setShowCard] = useState(false); // 默认不展示，等待检查缓存后决定
+  const [cardStateBeforeKeyboard, setCardStateBeforeKeyboard] = useState(true); // 记录键盘弹出前的卡片状态
   // 移除 MenuModal，改为跳转到设置页面
   const [operationCards, setOperationCards] = useState<OperationCard[]>([]);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [selectedPlanMessage, setSelectedPlanMessage] = useState<{ id: string; plans: any } | null>(null);
+
+  // 缓存键名
+  const CARD_TIMESTAMP_KEY = '@operation_card_last_shown';
 
   const {
     messages,
     setMessages,
     isSending,
     isGeneratingDiary,
-    isLoadingHistory,
     showDiaryModal,
     diaryContent,
     diaryImageUrl,
     currentDiaryId,
-    imageList,
     diaryImageList,
     setShowDiaryModal,
     sendMessage,
@@ -75,6 +77,65 @@ export default function ChatScreen() {
     }
   }, []);
 
+  // 检查是否应该展示运营卡片
+  const checkShouldShowCard = useCallback(async () => {
+    try {
+      const lastShownTimestamp = await AsyncStorage.getItem(CARD_TIMESTAMP_KEY);
+      
+      if (!lastShownTimestamp) {
+        // 没有缓存，首次进入，展示卡片并记录时间戳
+        setShowCard(true);
+        await AsyncStorage.setItem(CARD_TIMESTAMP_KEY, Date.now().toString());
+        return;
+      }
+
+      const lastShownTime = parseInt(lastShownTimestamp, 10);
+      const currentTime = Date.now();
+      const timeDiff = currentTime - lastShownTime;
+      const thirtyMinutesInMs = 30 * 60 * 1000; // 30分钟
+
+      if (timeDiff > thirtyMinutesInMs) {
+        // 超过30分钟，展示卡片并更新时间戳
+        setShowCard(true);
+        await AsyncStorage.setItem(CARD_TIMESTAMP_KEY, currentTime.toString());
+      } else {
+        // 未超过30分钟，不展示卡片
+        setShowCard(false);
+      }
+    } catch (error) {
+      console.error('检查运营卡片展示状态失败:', error);
+      // 出错时默认展示卡片
+      setShowCard(true);
+    }
+  }, [CARD_TIMESTAMP_KEY]);
+
+  // 监听键盘显示/隐藏事件
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        // 键盘弹出时，保存当前卡片状态并隐藏卡片
+        setCardStateBeforeKeyboard(showCard);
+        if (showCard) {
+          setShowCard(false);
+        }
+      }
+    );
+
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        // 键盘收起时，恢复之前的卡片状态
+        setShowCard(cardStateBeforeKeyboard);
+      }
+    );
+
+    return () => {
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+    };
+  }, [showCard, cardStateBeforeKeyboard]);
+
   // 监听页面聚焦，加载历史记录和待发送的消息
   useFocusEffect(
     useCallback(() => {
@@ -84,7 +145,9 @@ export default function ChatScreen() {
       loadPendingMessages();
       // 加载运营卡片
       fetchOperationCards();
-    }, [loadChatHistory, loadPendingMessages, fetchOperationCards])
+      // 检查是否应该展示运营卡片
+      checkShouldShowCard();
+    }, [loadChatHistory, loadPendingMessages, fetchOperationCards, checkShouldShowCard])
   );
 
   // 运营卡片显示/隐藏动画（渐显/渐隐 + 下拉/上拉）
@@ -204,7 +267,7 @@ export default function ChatScreen() {
   }, [isGeneratingDiary, isRecording, cancelRecording, handleStopRecording]);
 
   // 处理手势移动（上滑检测）
-  const handleVoiceButtonMove = useCallback((isMovingUp: boolean) => {
+  const handleVoiceButtonMove = useCallback(() => {
     // 这个回调主要用于UI状态更新，实际逻辑在ChatInput中处理
     // 可以在这里添加额外的逻辑，比如震动反馈等
   }, []);
@@ -235,8 +298,8 @@ export default function ChatScreen() {
 
             // 打开摄像头
             const result = await ImagePicker.launchCameraAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
-              allowsEditing: true,
+              mediaTypes: ['images'],
+              allowsEditing: false,
               quality: 1,
             });
 
@@ -258,8 +321,8 @@ export default function ChatScreen() {
 
             // 打开相册
             const result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
-              allowsEditing: true,
+              mediaTypes: ['images'],
+              allowsEditing: false,
               quality: 1,
             });
 
@@ -367,8 +430,20 @@ export default function ChatScreen() {
 
   // 处理发送消息
   const handleSendMessage = useCallback(() => {
+    let messageToSend = inputText;
+    
+    // 检查字数限制
+    if (inputText.length > 1000) {
+      // 截取前1000个字
+      messageToSend = inputText.substring(0, 1000);
+      // 显示提示
+      Alert.alert('提示', '最多输入1000字');
+      // 更新输入框内容为截取后的内容
+      setInputText(messageToSend);
+    }
+    
     setShowCard(false);
-    sendMessage(inputText, scrollToBottom);
+    sendMessage(messageToSend, scrollToBottom);
     setInputText('');
   }, [inputText, sendMessage, scrollToBottom]);
 
@@ -399,7 +474,7 @@ export default function ChatScreen() {
   }, [logout]);
 
   // 处理滚动事件，当发生滚动时自动隐藏运营卡片
-  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const handleScroll = useCallback(() => {
     // 只要发生滚动事件，就隐藏运营卡片
     if (showCard) {
       setShowCard(false);

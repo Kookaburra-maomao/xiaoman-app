@@ -200,12 +200,11 @@ export default function RecordScreen() {
         fetchDiaryCounts();
         return;
       }
+      // 加密开启时，设置为未解锁状态，但不自动弹出验证弹窗
       setIsUnlocked(false);
       setAuthError(null);
-      runBiometricAuth().then((ok) => {
-        if (ok) fetchDiaryCounts();
-      });
-    }, [user?.diary_secret, user?.id, runBiometricAuth, fetchDiaryCounts])
+      // 移除自动调用 runBiometricAuth()，等待用户点击"验证"按钮
+    }, [user?.diary_secret, user?.id, fetchDiaryCounts])
   );
 
   // 月份切换时获取数据
@@ -294,7 +293,12 @@ export default function RecordScreen() {
           {authError ? <Text style={styles.lockError}>{authError}</Text> : null}
           <TouchableOpacity
             style={styles.lockButton}
-            onPress={() => runBiometricAuth()}
+            onPress={async () => {
+              const success = await runBiometricAuth();
+              if (success) {
+                fetchDiaryCounts();
+              }
+            }}
             activeOpacity={0.7}
           >
             <Text style={styles.lockButtonText}>验证</Text>
