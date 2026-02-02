@@ -122,18 +122,18 @@ export default function ChatScreen() {
       }
     );
 
-    const keyboardWillHideListener = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => {
-        // 键盘收起时，恢复之前的卡片状态
-        setShowCard(cardStateBeforeKeyboard);
-      }
-    );
+    // const keyboardWillHideListener = Keyboard.addListener(
+    //   Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+    //   () => {
+    //     // 键盘收起时，恢复之前的卡片状态
+    //     setShowCard(cardStateBeforeKeyboard);
+    //   }
+    // );
 
-    return () => {
-      keyboardWillShowListener.remove();
-      keyboardWillHideListener.remove();
-    };
+    // return () => {
+    //   keyboardWillShowListener.remove();
+    //   keyboardWillHideListener.remove();
+    // };
   }, [showCard, cardStateBeforeKeyboard]);
 
   // 监听页面聚焦，加载历史记录和待发送的消息
@@ -494,6 +494,7 @@ export default function ChatScreen() {
           showCard={showCard}
           onToggleCard={() => setShowCard(!showCard)}
           onShowMenu={() => router.push('/settings' as any)}
+          isStreaming={isSending}
         />
 
         {/* 悬浮的运营卡片 */}
@@ -551,6 +552,7 @@ export default function ChatScreen() {
           onVoiceButtonMove={handleVoiceButtonMove}
           onSend={handleSendMessage}
           onImagePicker={openImagePicker}
+          onInputFocus={() => setShowCard(false)}
         />
       </KeyboardAvoidingView>
 

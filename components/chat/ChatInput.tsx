@@ -32,6 +32,7 @@ interface ChatInputProps {
   onVoiceButtonMove: (isMovingUp: boolean) => void;
   onSend: () => void;
   onImagePicker: () => void;
+  onInputFocus?: () => void; // 输入框获得焦点时的回调
 }
 
 export default function ChatInput({
@@ -50,6 +51,7 @@ export default function ChatInput({
   onVoiceButtonMove,
   onSend,
   onImagePicker,
+  onInputFocus,
 }: ChatInputProps) {
   const [isMovingUp, setIsMovingUp] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -359,7 +361,11 @@ export default function ChatInput({
               placeholderTextColor={Colors.light.icon}
               value={inputText}
               onChangeText={onInputChange}
-              onFocus={() => setIsInputFocused(true)}
+              onFocus={() => {
+                setIsInputFocused(true);
+                // 通知父组件隐藏运营卡片
+                onInputFocus?.();
+              }}
               onBlur={() => {
                 // 延迟检查，确保键盘状态已更新
                 setTimeout(() => {
