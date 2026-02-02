@@ -4,12 +4,10 @@
 
 import { WEEKDAYS } from '@/constants/chat';
 import { Colors } from '@/constants/theme';
+import { HEADER_DOWN_ICON_URL, HEADER_UP_ICON_URL } from '@/constants/urls';
 import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-const HEADER_UP_ICON_URL = 'http://xiaomanriji.com/api/files/header-up.png';
-const HEADER_DOWN_ICON_URL = 'http://xiaomanriji.com/api/files/header-down.png';
 
 interface ChatHeaderProps {
   showCard: boolean;

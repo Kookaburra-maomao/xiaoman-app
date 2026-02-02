@@ -1,4 +1,5 @@
 import { Colors } from '@/constants/theme';
+import { LOGO_URL, SLOGAN_URL } from '@/constants/urls';
 import { useAuth } from '@/contexts/AuthContext';
 import { autoRegisterByPhone, getUserByPhone, loginByPhone, saveUser, sendSmsCode, verifySmsCode } from '@/utils/auth';
 import { scaleSize } from '@/utils/screen';
@@ -20,9 +21,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const LOGO_URL = 'http://xiaomanriji.com/api/files/xiaoman.png';
-const SLOGAN_URL = 'http://xiaomanriji.com/api/files/xiaoman-slogan.png';
 
 export default function LoginScreen() {
   const [phone, setPhone] = useState('');

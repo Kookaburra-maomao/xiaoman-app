@@ -23,8 +23,6 @@ import {
 } from 'react-native';
 import DatePicker from './DatePicker';
 
-const FALLBACK_IMAGE_BASE_URL = 'http://xiaomanriji.com/api/files/plan';
-
 export interface EditPlanFormData {
   name: string;
   description: string;
@@ -119,8 +117,8 @@ export default function PlanEditModal({
         const randomIndex = Math.floor(Math.random() * 5) + 1;
         
         // 生成 image 和 image_preview URL
-        const image = `http://xiaomanriji.com/api/files/${planTag}${randomIndex}.jpg`;
-        const image_preview = `http://xiaomanriji.com/api/files/${planTag}${randomIndex}_preview.jpg`;
+        const image = getPlanImageUrl(planTag, randomIndex);
+        const image_preview = getPlanImagePreviewUrl(planTag, randomIndex);
         
         // 更新表单数据
         setEditFormData((prev) => ({

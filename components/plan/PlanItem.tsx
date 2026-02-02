@@ -4,15 +4,13 @@
 
 import { CYCLE_MAP } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
+import { FALLBACK_IMAGE_BASE_URL, PIN_IMAGE_URL } from '@/constants/urls';
 import { Plan } from '@/types/plan';
 import { calculateFinishTimes } from '@/utils/plan-utils';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-const FALLBACK_IMAGE_BASE_URL = 'http://xiaomanriji.com/api/files/plan';
-const PIN_IMAGE_URL = 'http://xiaomanriji.com/api/files/Pin.png';
 
 interface PlanItemProps {
   plan: Plan & { isFinish?: boolean };
@@ -45,7 +43,7 @@ export default function PlanItem({ plan, onCheckIn, loading = false }: PlanItemP
       if (plan.image.startsWith('http://') || plan.image.startsWith('https://')) {
         return plan.image;
       }
-      return `http://xiaomanriji.com${plan.image}`;
+      return getFullImageUrl(plan.image);
     }
     // 兜底：基于plan.id生成1-18的稳定随机数（相同plan.id总是返回相同的随机数）
     // 使用plan.id的hash值来生成稳定的随机数

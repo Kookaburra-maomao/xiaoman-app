@@ -4,6 +4,7 @@
 
 import { CYCLE_MAP } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
+import { FALLBACK_IMAGE_BASE_URL, ICON_RETURN_URL } from '@/constants/urls';
 import { GeneratePlanResponse } from '@/services/chatService';
 import * as planService from '@/services/planService';
 import { emitPlanRefresh } from '@/utils/planRefreshEvent';
@@ -23,9 +24,6 @@ import {
     View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const FALLBACK_IMAGE_BASE_URL = 'http://xiaomanriji.com/api/files/plan';
-const ICON_RETURN_URL = 'http://xiaomanriji.com/api/files/xiaoman-icon-return.png';
 
 interface PlanAddModalProps {
   visible: boolean;
@@ -95,8 +93,8 @@ export default function PlanAddModal({
                   return {
                     ...plan,
                     plan_tag: planTag,
-                    image: `http://xiaomanriji.com/api/files/${planTag}${randomNum}.jpg`,
-                    image_preview: `http://xiaomanriji.com/api/files/${planTag}${randomNum}_preview.jpg`,
+                    image: getPlanImageUrl(planTag, randomNum),
+                    image_preview: getPlanImagePreviewUrl(planTag, randomNum),
                   };
                 }
                 // 如果获取失败，返回原始 plan（不包含图片信息）

@@ -2,6 +2,7 @@
  * 计划列表组件
  */
 
+import { ICON_DOT_URL } from '@/constants/urls';
 import { Message } from '@/types/chat';
 import { scaleSize } from '@/utils/screen';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -23,7 +24,7 @@ export default function PlanList({ message, onAddToPlan }: PlanListProps) {
         {message.plans.plans.map((plan, index) => (
           <View key={index} style={styles.planItem}>
             <Image
-              source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-icon-dot.png' }}
+              source={{ uri: ICON_DOT_URL }}
               style={styles.planItemIcon}
               resizeMode="contain"
             />
@@ -38,7 +39,7 @@ export default function PlanList({ message, onAddToPlan }: PlanListProps) {
       <TouchableOpacity style={styles.addButton} onPress={onAddToPlan} activeOpacity={0.7}>
         <Text style={styles.addButtonText}>添加我的计划</Text>
         <Image
-          source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-icon-right.png' }}
+          source={{ uri: RIGHT_ICON_URL }}
           style={styles.addButtonIcon}
           resizeMode="contain"
         />

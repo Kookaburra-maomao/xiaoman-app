@@ -3,18 +3,19 @@
  */
 
 import { Colors } from '@/constants/theme';
+import {
+  KEYBOARD_ICON_URL,
+  LOTTIE_RADIO_URL,
+  PIC_ICON_URL,
+  RADIO_DOT_IMAGE_URL,
+  RADIO_ICON_URL,
+  SEND_MSG_ICON_URL,
+} from '@/constants/urls';
 import { scaleSize } from '@/utils/screen';
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView, { type AnimationObject } from 'lottie-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Keyboard, Modal, PanResponder, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
-const RADIO_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-chat-radio.png';
-const KEYBOARD_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-chat-keyboard.png';
-const PIC_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-chat-pic.png';
-const SEND_MSG_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-chat-sendmsg.png';
-const LOTTIE_RADIO_URL = 'http://xiaomanriji.com/api/files/lottie-radio.json';
-const RADIO_DOT_IMAGE_URL = 'http://xiaomanriji.com/api/files/xiaoman-radio-dot.png';
 
 interface ChatInputProps {
   inputText: string;

@@ -299,7 +299,7 @@ export default function SettingsScreen() {
               // 显示会员标签
               return (
                 <Image
-                  source={{ uri: 'http://xiaomanriji.com/api/files/vip-tag.png' }}
+                  source={{ uri: VIP_TAG_URL }}
                   style={styles.vipTag}
                   resizeMode="contain"
                 />
@@ -309,7 +309,7 @@ export default function SettingsScreen() {
               return (
                 <View style={styles.membershipStatus}>
                   <Image
-                    source={{ uri: 'http://xiaomanriji.com/api/files/vip-no.png' }}
+                    source={{ uri: VIP_NO_URL }}
                     style={styles.membershipStatusIcon}
                     resizeMode="contain"
                   />
@@ -321,7 +321,7 @@ export default function SettingsScreen() {
         </View>
         {/* 会员推广横幅 */}
         <ImageBackground
-          source={{ uri: 'http://xiaomanriji.com/api/files/vip-card.png' }}
+          source={{ uri: VIP_CARD_URL }}
           style={styles.membershipBanner}
           resizeMode="cover"
         >

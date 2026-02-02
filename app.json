@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "xiaoman-app",
-    "slug": "xiaomanriji-8ykl5r",
+    "slug": "xiaoman-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -11,8 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSFaceIDUsageDescription": "用于验证身份以查看加密日记",
-        "ITSAppUsesNonExemptEncryption": false
+        "NSFaceIDUsageDescription": "用于验证身份以查看加密日记"
       },
       "bundleIdentifier": "com.anonymous.xiaomanapp"
     },
@@ -30,7 +29,9 @@
         "android.permission.USE_FINGERPRINT"
       ],
       "package": "com.xiaomanriji.xiaomanapp",
-      "versionCode": 1
+      "versionCode": 1,
+      "usesCleartextTraffic": true,
+      "networkSecurityConfig": "./network_security_config.xml"
     },
     "web": {
       "output": "static",
@@ -55,20 +56,11 @@
             "backgroundColor": "#000000"
           }
         }
-      ],
-      "@react-native-community/datetimepicker",
-      "expo-web-browser"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "201f5467-3fd9-40bf-aae3-5a54c2d18fad"
-      }
-    },
-    "owner": "xiaomanriji"
+    }
   }
 }

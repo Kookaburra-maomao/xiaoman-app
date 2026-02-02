@@ -6,6 +6,7 @@ import DiaryActionButtons from '@/components/diary/DiaryActionButtons';
 import DiaryImageCarousel from '@/components/diary/DiaryImageCarousel';
 import ShareModal from '@/components/diary/ShareModal';
 import { Colors } from '@/constants/theme';
+import { RETURN_ICON_URL } from '@/constants/urls';
 import * as imageService from '@/services/imageService';
 import { diaryModalMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
@@ -15,8 +16,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import ViewShot from 'react-native-view-shot';
-
-const RETURN_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-icon-return.png';
 
 interface DiaryGenerateModalProps {
   visible: boolean;

@@ -1,5 +1,6 @@
 import { CYCLE_MAP } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
+import { FALLBACK_IMAGE_BASE_URL, PIN_IMAGE_URL, PIN_NORMAL_IMAGE_URL } from '@/constants/urls';
 import { useAuth } from '@/contexts/AuthContext';
 import { get, put } from '@/utils/request';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,10 +9,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const FALLBACK_IMAGE_BASE_URL = 'http://xiaomanriji.com/api/files/plan';
-const PIN_IMAGE_URL = 'http://xiaomanriji.com/api/files/Pin.png';
-const PIN_NORMAL_IMAGE_URL = 'http://xiaomanriji.com/api/files/Pin-normal.png';
 
 interface PlanRecord {
   id: string;
@@ -120,7 +117,7 @@ export default function PlanManageScreen() {
       if (plan.image.startsWith('http://') || plan.image.startsWith('https://')) {
         return plan.image;
       }
-      return `http://xiaomanriji.com${plan.image}`;
+      return getFullImageUrl(plan.image);
     }
     // 兜底：基于plan.id生成1-18的稳定随机数
     let hash = 0;

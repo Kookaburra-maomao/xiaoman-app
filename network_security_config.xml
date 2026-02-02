@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 允许所有明文 HTTP 流量（开发和生产环境） -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- 特别允许 xiaomanriji.com 域名的明文流量 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">xiaomanriji.com</domain>
+        <domain includeSubdomains="true">39.103.63.159</domain>
+    </domain-config>
+</network-security-config>

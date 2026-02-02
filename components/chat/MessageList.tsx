@@ -2,13 +2,12 @@
  * 消息列表组件
  */
 
+import { RIGHT_ICON_URL } from '@/constants/urls';
 import { Message } from '@/types/chat';
 import { scaleSize } from '@/utils/screen';
 import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MessageItem from './MessageItem';
 import PlanList from './PlanList';
-
-const RIGHT_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-icon-right.png';
 
 interface MessageListProps {
   messages: Message[];

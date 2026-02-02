@@ -3,6 +3,18 @@
  */
 
 import { Colors } from '@/constants/theme';
+import {
+    ICON_OPTION_DARK_URL,
+    ICON_RETURN_DARK_URL,
+    ICON_VIP_URL,
+    VIP_BANNER_URL,
+    VIP_HEADER_BG_URL,
+    VIP_NEW_FLAG_URL,
+    VIP_NORMAL_URL,
+    VIP_RIGHT_ICON_URL,
+    VIP_SELECTED_URL,
+    VIP_TEXT_GRADIENT_URL,
+} from '@/constants/urls';
 import { useAuth } from '@/contexts/AuthContext';
 import { post } from '@/utils/request';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,17 +36,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const VIP_HEADER_BG_URL = 'http://xiaomanriji.com/api/files/vip-header-bg.png';
-const VIP_BANNER_URL = 'http://xiaomanriji.com/api/files/vip-banner.png';
-const ICON_RETURN_DARK_URL = 'http://xiaomanriji.com/api/files/icon-return-dark.png';
-const ICON_OPTION_DARK_URL = 'http://xiaomanriji.com/api/files/icon-option-dark.png';
-const ICON_VIP_URL = 'http://xiaomanriji.com/api/files/icon-vip.png';
-const VIP_SELECTED_URL = 'http://xiaomanriji.com/api/files/vip-selected.png';
-const VIP_NORMAL_URL = 'http://xiaomanriji.com/api/files/vip-normal.png';
-const VIP_NEW_FLAG_URL = 'http://xiaomanriji.com/api/files/vip-new-flag.png';
-const VIP_RIGHT_ICON_URL = 'http://xiaomanriji.com/api/files/vip-right.png';
-const VIP_TEXT_GRADIENT_URL = 'http://xiaomanriji.com/api/files/vip-text.png';
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 

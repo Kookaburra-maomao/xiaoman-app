@@ -3,19 +3,17 @@
  */
 
 import { Colors } from '@/constants/theme';
+import { EDIT_ICON_URL, EXPORT_ICON_URL } from '@/constants/urls';
 import { scaleSize } from '@/utils/screen';
 import React from 'react';
 import {
-    ActivityIndicator,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-
-const EDIT_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-icon-edit.png';
-const EXPORT_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-icon-export.png';
 
 export interface DiaryActionButtonsProps {
   onEdit: () => void;

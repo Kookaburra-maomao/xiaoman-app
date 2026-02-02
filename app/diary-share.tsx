@@ -4,6 +4,7 @@
  */
 
 import { Colors } from '@/constants/theme';
+import { QR_CODE_URL } from '@/constants/urls';
 import { DiaryDetail, getDiaryDetail } from '@/services/chatService';
 import { Ionicons } from '@expo/vector-icons';
 import * as MediaLibrary from 'expo-media-library';
@@ -11,14 +12,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ViewShot from 'react-native-view-shot';
@@ -48,7 +49,6 @@ function useImageAspectRatios(uris: string[]) {
 }
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
-const QR_CODE_URL = 'http://xiaomanriji.com/api/files/xiaoman-qrcode.png';
 
 // 解析图片列表（与 diary-detail 一致）
 const parseImages = (pic?: string | null): string[] => {
