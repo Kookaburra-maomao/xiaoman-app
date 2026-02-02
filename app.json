@@ -29,9 +29,7 @@
         "android.permission.USE_FINGERPRINT"
       ],
       "package": "com.xiaomanriji.xiaomanapp",
-      "versionCode": 1,
-      "usesCleartextTraffic": true,
-      "networkSecurityConfig": "./network_security_config.xml"
+      "versionCode": 1
     },
     "web": {
       "output": "static",
@@ -61,6 +59,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f925d07f-aca1-4883-bc4e-2d5b7df75f21"
+      }
     }
   }
 }

@@ -1,0 +1,81 @@
+const withAndroidNetworkSecurityConfig = require('./plugins/withAndroidNetworkSecurityConfig');
+const withAndroidNetworkSecurityConfigFile = require('./plugins/withAndroidNetworkSecurityConfigFile');
+
+module.exports = ({ config }) => {
+  // 基础配置
+  const baseConfig = {
+    name: "xiaoman-app",
+    slug: "xiaoman-app",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/images/icon.png",
+    scheme: "xiaomanapp",
+    userInterfaceStyle: "automatic",
+    newArchEnabled: true,
+    ios: {
+      supportsTablet: true,
+      infoPlist: {
+        NSFaceIDUsageDescription: "用于验证身份以查看加密日记"
+      },
+      bundleIdentifier: "com.anonymous.xiaomanapp"
+    },
+    android: {
+      adaptiveIcon: {
+        backgroundColor: "#E6F4FE",
+        foregroundImage: "./assets/images/android-icon-foreground.png",
+        backgroundImage: "./assets/images/android-icon-background.png",
+        monochromeImage: "./assets/images/android-icon-monochrome.png"
+      },
+      edgeToEdgeEnabled: true,
+      predictiveBackGestureEnabled: false,
+      permissions: [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ],
+      package: "com.xiaomanriji.xiaomanapp",
+      versionCode: 1
+    },
+    web: {
+      output: "static",
+      favicon: "./assets/images/favicon.png"
+    },
+    plugins: [
+      "expo-router",
+      [
+        "expo-local-authentication",
+        {
+          faceIDPermission: "允许使用面容 ID 验证日记身份"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          image: "./assets/images/splash-icon.png",
+          imageWidth: 200,
+          resizeMode: "contain",
+          backgroundColor: "#ffffff",
+          dark: {
+            backgroundColor: "#000000"
+          }
+        }
+      ]
+    ],
+    experiments: {
+      typedRoutes: true,
+      reactCompiler: true
+    },
+    extra: {
+      router: {},
+      eas: {
+        projectId: "f925d07f-aca1-4883-bc4e-2d5b7df75f21"
+      }
+    }
+  };
+  
+  // 应用网络安全配置插件
+  let finalConfig = { ...config, ...baseConfig };
+  finalConfig = withAndroidNetworkSecurityConfig(finalConfig);
+  finalConfig = withAndroidNetworkSecurityConfigFile(finalConfig);
+  
+  return finalConfig;
+};
