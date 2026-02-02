@@ -8,8 +8,8 @@ import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const HEADER_UP_ICON_URL = 'http://39.103.63.159/api/files/header-up.png';
-const HEADER_DOWN_ICON_URL = 'http://39.103.63.159/api/files/header-down.png';
+const HEADER_UP_ICON_URL = 'http://xiaomanriji.com/api/files/header-up.png';
+const HEADER_DOWN_ICON_URL = 'http://xiaomanriji.com/api/files/header-down.png';
 
 interface ChatHeaderProps {
   showCard: boolean;

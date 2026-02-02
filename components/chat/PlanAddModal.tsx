@@ -12,20 +12,20 @@ import { scaleSize } from '@/utils/screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import {
-  Alert,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const FALLBACK_IMAGE_BASE_URL = 'http://39.103.63.159/api/files/plan';
-const ICON_RETURN_URL = 'http://39.103.63.159/api/files/xiaoman-icon-return.png';
+const FALLBACK_IMAGE_BASE_URL = 'http://xiaomanriji.com/api/files/plan';
+const ICON_RETURN_URL = 'http://xiaomanriji.com/api/files/xiaoman-icon-return.png';
 
 interface PlanAddModalProps {
   visible: boolean;
@@ -95,8 +95,8 @@ export default function PlanAddModal({
                   return {
                     ...plan,
                     plan_tag: planTag,
-                    image: `http://39.103.63.159/api/files/${planTag}${randomNum}.jpg`,
-                    image_preview: `http://39.103.63.159/api/files/${planTag}${randomNum}_preview.jpg`,
+                    image: `http://xiaomanriji.com/api/files/${planTag}${randomNum}.jpg`,
+                    image_preview: `http://xiaomanriji.com/api/files/${planTag}${randomNum}_preview.jpg`,
                   };
                 }
                 // 如果获取失败，返回原始 plan（不包含图片信息）

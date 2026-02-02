@@ -11,15 +11,17 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import ViewShot from 'react-native-view-shot';
 
 // 根据图片 URI 获取宽高比，用于高度自适应
 function useImageAspectRatios(uris: string[]) {
@@ -44,11 +46,9 @@ function useImageAspectRatios(uris: string[]) {
   }, [uris.join(',')]);
   return ratios;
 }
-import { SafeAreaView } from 'react-native-safe-area-context';
-import ViewShot from 'react-native-view-shot';
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
-const QR_CODE_URL = 'http://39.103.63.159/api/files/xiaoman-qrcode.png';
+const QR_CODE_URL = 'http://xiaomanriji.com/api/files/xiaoman-qrcode.png';
 
 // 解析图片列表（与 diary-detail 一致）
 const parseImages = (pic?: string | null): string[] => {

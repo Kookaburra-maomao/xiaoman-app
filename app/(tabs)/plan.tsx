@@ -54,7 +54,7 @@ export default function PlanScreen() {
       if (!imageUrl) {
         // 如果没有通过 plan_tag 生成的图片，使用默认图片
         const randomNum = Math.floor(Math.random() * 18) + 1;
-        imageUrl = `http://39.103.63.159/api/files/plan${randomNum}.png`;
+        imageUrl = `http://xiaomanriji.com/api/files/plan${randomNum}.png`;
       }
       
       const success = await handleCreatePlan({

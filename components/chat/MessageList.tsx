@@ -8,7 +8,7 @@ import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } fr
 import MessageItem from './MessageItem';
 import PlanList from './PlanList';
 
-const RIGHT_ICON_URL = 'http://39.103.63.159/api/files/xiaoman-icon-right.png';
+const RIGHT_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-icon-right.png';
 
 interface MessageListProps {
   messages: Message[];

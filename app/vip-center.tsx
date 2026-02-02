@@ -10,31 +10,31 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  Image,
-  ImageBackground,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    Image,
+    ImageBackground,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const VIP_HEADER_BG_URL = 'http://39.103.63.159/api/files/vip-header-bg.png';
-const VIP_BANNER_URL = 'http://39.103.63.159/api/files/vip-banner.png';
-const ICON_RETURN_DARK_URL = 'http://39.103.63.159/api/files/icon-return-dark.png';
-const ICON_OPTION_DARK_URL = 'http://39.103.63.159/api/files/icon-option-dark.png';
-const ICON_VIP_URL = 'http://39.103.63.159/api/files/icon-vip.png';
-const VIP_SELECTED_URL = 'http://39.103.63.159/api/files/vip-selected.png';
-const VIP_NORMAL_URL = 'http://39.103.63.159/api/files/vip-normal.png';
-const VIP_NEW_FLAG_URL = 'http://39.103.63.159/api/files/vip-new-flag.png';
-const VIP_RIGHT_ICON_URL = 'http://39.103.63.159/api/files/vip-right.png';
-const VIP_TEXT_GRADIENT_URL = 'http://39.103.63.159/api/files/vip-text.png';
+const VIP_HEADER_BG_URL = 'http://xiaomanriji.com/api/files/vip-header-bg.png';
+const VIP_BANNER_URL = 'http://xiaomanriji.com/api/files/vip-banner.png';
+const ICON_RETURN_DARK_URL = 'http://xiaomanriji.com/api/files/icon-return-dark.png';
+const ICON_OPTION_DARK_URL = 'http://xiaomanriji.com/api/files/icon-option-dark.png';
+const ICON_VIP_URL = 'http://xiaomanriji.com/api/files/icon-vip.png';
+const VIP_SELECTED_URL = 'http://xiaomanriji.com/api/files/vip-selected.png';
+const VIP_NORMAL_URL = 'http://xiaomanriji.com/api/files/vip-normal.png';
+const VIP_NEW_FLAG_URL = 'http://xiaomanriji.com/api/files/vip-new-flag.png';
+const VIP_RIGHT_ICON_URL = 'http://xiaomanriji.com/api/files/vip-right.png';
+const VIP_TEXT_GRADIENT_URL = 'http://xiaomanriji.com/api/files/vip-text.png';
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 

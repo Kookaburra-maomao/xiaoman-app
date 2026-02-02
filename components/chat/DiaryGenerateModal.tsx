@@ -16,7 +16,7 @@ import { ActivityIndicator, Alert, Image, SafeAreaView, ScrollView, StyleSheet, 
 import Markdown from 'react-native-markdown-display';
 import ViewShot from 'react-native-view-shot';
 
-const RETURN_ICON_URL = 'http://39.103.63.159/api/files/xiaoman-icon-return.png';
+const RETURN_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-icon-return.png';
 
 interface DiaryGenerateModalProps {
   visible: boolean;

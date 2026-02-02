@@ -23,7 +23,7 @@ export default function PlanList({ message, onAddToPlan }: PlanListProps) {
         {message.plans.plans.map((plan, index) => (
           <View key={index} style={styles.planItem}>
             <Image
-              source={{ uri: 'http://39.103.63.159/api/files/xiaoman-icon-dot.png' }}
+              source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-icon-dot.png' }}
               style={styles.planItemIcon}
               resizeMode="contain"
             />
@@ -38,7 +38,7 @@ export default function PlanList({ message, onAddToPlan }: PlanListProps) {
       <TouchableOpacity style={styles.addButton} onPress={onAddToPlan} activeOpacity={0.7}>
         <Text style={styles.addButtonText}>添加我的计划</Text>
         <Image
-          source={{ uri: 'http://39.103.63.159/api/files/xiaoman-icon-right.png' }}
+          source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-icon-right.png' }}
           style={styles.addButtonIcon}
           resizeMode="contain"
         />

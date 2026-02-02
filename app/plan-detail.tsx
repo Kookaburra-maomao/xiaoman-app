@@ -23,14 +23,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const FALLBACK_IMAGE_BASE_URL = 'http://39.103.63.159/api/files/plan';
-const ICON_RETURN_URL = 'http://39.103.63.159/api/files/icon-return.png';
-const OPTION_ICON_URL = 'http://39.103.63.159/api/files/icon-option.png';
-const MISSION_COMPLETED_ICON_URL = 'http://39.103.63.159/api/files/MissionConpleted.png';
-const ICON_REPEAT_URL = 'http://39.103.63.159/api/files/icon-repeat.png';
-const ICON_CALC_URL = 'http://39.103.63.159/api/files/icon-calc.png';
-const ICON_OK_URL = 'http://39.103.63.159/api/files/icon-ok.png';
-const ICON_WARNING_URL = 'http://39.103.63.159/api/files/icon-warning.png';
+const FALLBACK_IMAGE_BASE_URL = 'http://xiaomanriji.com/api/files/plan';
+const ICON_RETURN_URL = 'http://xiaomanriji.com/api/files/icon-return.png';
+const OPTION_ICON_URL = 'http://xiaomanriji.com/api/files/icon-option.png';
+const MISSION_COMPLETED_ICON_URL = 'http://xiaomanriji.com/api/files/MissionConpleted.png';
+const ICON_REPEAT_URL = 'http://xiaomanriji.com/api/files/icon-repeat.png';
+const ICON_CALC_URL = 'http://xiaomanriji.com/api/files/icon-calc.png';
+const ICON_OK_URL = 'http://xiaomanriji.com/api/files/icon-ok.png';
+const ICON_WARNING_URL = 'http://xiaomanriji.com/api/files/icon-warning.png';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_ASPECT_RATIO = 295 / 360;
@@ -252,7 +252,7 @@ export default function PlanDetailScreen() {
       if (plan.image.startsWith('http://') || plan.image.startsWith('https://')) {
         return plan.image;
       }
-      return `http://39.103.63.159${plan.image}`;
+      return `http://xiaomanriji.com${plan.image}`;
     }
     // 兜底：基于plan.id生成1-18的稳定随机数
     let hash = 0;

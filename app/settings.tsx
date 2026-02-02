@@ -8,16 +8,16 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  ImageBackground,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    ImageBackground,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -299,7 +299,7 @@ export default function SettingsScreen() {
               // 显示会员标签
               return (
                 <Image
-                  source={{ uri: 'http://39.103.63.159/api/files/vip-tag.png' }}
+                  source={{ uri: 'http://xiaomanriji.com/api/files/vip-tag.png' }}
                   style={styles.vipTag}
                   resizeMode="contain"
                 />
@@ -309,7 +309,7 @@ export default function SettingsScreen() {
               return (
                 <View style={styles.membershipStatus}>
                   <Image
-                    source={{ uri: 'http://39.103.63.159/api/files/vip-no.png' }}
+                    source={{ uri: 'http://xiaomanriji.com/api/files/vip-no.png' }}
                     style={styles.membershipStatusIcon}
                     resizeMode="contain"
                   />
@@ -321,7 +321,7 @@ export default function SettingsScreen() {
         </View>
         {/* 会员推广横幅 */}
         <ImageBackground
-          source={{ uri: 'http://39.103.63.159/api/files/vip-card.png' }}
+          source={{ uri: 'http://xiaomanriji.com/api/files/vip-card.png' }}
           style={styles.membershipBanner}
           resizeMode="cover"
         >

@@ -9,12 +9,12 @@ import LottieView, { type AnimationObject } from 'lottie-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Keyboard, Modal, PanResponder, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-const RADIO_ICON_URL = 'http://39.103.63.159/api/files/xiaoman-chat-radio.png';
-const KEYBOARD_ICON_URL = 'http://39.103.63.159/api/files/xiaoman-chat-keyboard.png';
-const PIC_ICON_URL = 'http://39.103.63.159/api/files/xiaoman-chat-pic.png';
-const SEND_MSG_ICON_URL = 'http://39.103.63.159/api/files/xiaoman-chat-sendmsg.png';
-const LOTTIE_RADIO_URL = 'http://39.103.63.159/api/files/lottie-radio.json';
-const RADIO_DOT_IMAGE_URL = 'http://39.103.63.159/api/files/xiaoman-radio-dot.png';
+const RADIO_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-chat-radio.png';
+const KEYBOARD_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-chat-keyboard.png';
+const PIC_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-chat-pic.png';
+const SEND_MSG_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-chat-sendmsg.png';
+const LOTTIE_RADIO_URL = 'http://xiaomanriji.com/api/files/lottie-radio.json';
+const RADIO_DOT_IMAGE_URL = 'http://xiaomanriji.com/api/files/xiaoman-radio-dot.png';
 
 interface ChatInputProps {
   inputText: string;

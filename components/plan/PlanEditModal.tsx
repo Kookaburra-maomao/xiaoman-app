@@ -9,21 +9,21 @@ import { get } from '@/utils/request';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View
+    ActivityIndicator,
+    Alert,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View
 } from 'react-native';
 import DatePicker from './DatePicker';
 
-const FALLBACK_IMAGE_BASE_URL = 'http://39.103.63.159/api/files/plan';
+const FALLBACK_IMAGE_BASE_URL = 'http://xiaomanriji.com/api/files/plan';
 
 export interface EditPlanFormData {
   name: string;
@@ -119,8 +119,8 @@ export default function PlanEditModal({
         const randomIndex = Math.floor(Math.random() * 5) + 1;
         
         // 生成 image 和 image_preview URL
-        const image = `http://39.103.63.159/api/files/${planTag}${randomIndex}.jpg`;
-        const image_preview = `http://39.103.63.159/api/files/${planTag}${randomIndex}_preview.jpg`;
+        const image = `http://xiaomanriji.com/api/files/${planTag}${randomIndex}.jpg`;
+        const image_preview = `http://xiaomanriji.com/api/files/${planTag}${randomIndex}_preview.jpg`;
         
         // 更新表单数据
         setEditFormData((prev) => ({

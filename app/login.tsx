@@ -21,8 +21,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const LOGO_URL = 'http://39.103.63.159/api/files/xiaoman.png';
-const SLOGAN_URL = 'http://39.103.63.159/api/files/xiaoman-slogan.png';
+const LOGO_URL = 'http://xiaomanriji.com/api/files/xiaoman.png';
+const SLOGAN_URL = 'http://xiaomanriji.com/api/files/xiaoman-slogan.png';
 
 export default function LoginScreen() {
   const [phone, setPhone] = useState('');
