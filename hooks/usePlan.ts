@@ -128,19 +128,8 @@ export const usePlan = () => {
       const finishTimes = calculateFinishTimes(updatedPlan);
       const { totalTimes } = calculateKeepTimes(updatedPlan);
 
-      // 判断是否需要发送完成消息和显示未读提示
-      // cycle === 'no' 或 加上当前这次打卡，打卡次数等于当前周期目标
-      const shouldNotify = plan.cycle === 'no' || (finishTimes >= plan.times);
-      
-      if (shouldNotify) {
-        // 增加未读消息数量
-        await incrementUnreadCount();
-        // 发送用户消息并获取小满的回复
-        await sendCheckInMessage(plan.name);
-      }
-
-      // 返回成功弹窗数据
-      return {
+      // 准备弹窗数据
+      const modalData: SuccessModalData = {
         totalTimes: totalTimes,
         planName: plan.name,
         cycle: CYCLE_MAP[plan.cycle] || plan.cycle,
@@ -148,6 +137,21 @@ export const usePlan = () => {
         finishTimes: finishTimes,
         times: plan.times,
       };
+
+      // 异步发送打卡消息（不阻塞弹窗显示）
+      (async () => {
+        try {
+          // 增加未读消息数量
+          await incrementUnreadCount();
+          // 发送用户消息并获取小满的回复
+          await sendCheckInMessage(plan.name);
+        } catch (error) {
+          console.error('发送打卡消息失败:', error);
+        }
+      })();
+
+      // 立即返回成功弹窗数据，不等待消息发送完成
+      return modalData;
     } catch (error: any) {
       console.error('打卡失败:', error);
       Alert.alert('错误', error.message || '打卡失败，请重试');

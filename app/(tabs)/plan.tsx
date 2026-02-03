@@ -3,6 +3,7 @@ import PlanItem from '@/components/plan/PlanItem';
 import PlanSuccessModal from '@/components/plan/PlanSuccessModal';
 import { WEEKDAYS } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
+import { API_BASE_URL } from '@/constants/urls';
 import { usePlan } from '@/hooks/usePlan';
 import { Plan, SuccessModalData } from '@/types/plan';
 import { onPlanRefresh } from '@/utils/planRefreshEvent';
