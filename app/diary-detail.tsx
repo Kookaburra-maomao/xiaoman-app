@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
+    borderBottomWidth: 0,
     borderBottomColor: '#E5E5E5',
     position: 'relative',
     zIndex: 1001,
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   },
   deleteMenuContainer: {
     position: 'absolute',
-    top: 68,
+    top: 108,
     right: 16,
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
