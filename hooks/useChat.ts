@@ -93,7 +93,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
               return newHistory;
             });
           }
-          
+
           // 显示系统回复（如果有）
           if (conversation.systemMessage) {
             const systemMessageId = (Date.now() + Math.random() + 1).toString();
@@ -113,7 +113,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         // 清除未读消息数量
         await clearUnreadCount();
       }
-      
+
       // 然后检查旧的待发送消息（兼容旧逻辑）
       const pendingMessages = await getPendingMessages();
       if (pendingMessages.length > 0) {
@@ -162,7 +162,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     }
 
     const userMessageId = Date.now().toString();
-    
+
     // 添加用户消息到界面
     setMessages((prev) => [
       ...prev,
@@ -197,7 +197,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     targetTextRef.current = '';
     typewriterMessageIdRef.current = systemMessageId;
     stopTypewriter();
-    
+
     // 立即启动打字机效果（即使还没有内容）
     startTypewriter();
 
@@ -208,7 +208,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       // 使用打字机效果显示
       currentSystemMessageRef.current = fullText;
       updateTypewriterTarget(fullText, systemMessageId);
-      
+
       // 等待打字机效果完成
       await waitForTypewriter();
 
@@ -235,7 +235,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     } catch (error: any) {
       console.error('发送消息失败:', error);
       Alert.alert('错误', error.message || '发送消息失败，请重试');
-      
+
       // 移除失败的系统消息
       setMessages((prev) => prev.filter((msg) => msg.id !== systemMessageId));
     } finally {
@@ -252,11 +252,11 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
 
     try {
       setIsSending(true);
-      
+
       // 上传图片
       const uploadResult = await imageService.uploadImage(imageUri);
       const imageUrl = `${uploadResult.url}`;
-      
+
       // 将图片添加到列表（最多3张，FIFO）
       setImageList((prev) => {
         const newList = [...prev, imageUrl];
@@ -265,7 +265,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         console.log('添加图片到列表:', { imageUrl, prev, result });
         return result;
       });
-      
+
       // 在右侧显示图片消息（用户消息）
       const imageMessage: Message = {
         id: Date.now().toString(),
@@ -273,10 +273,10 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         text: '',
         imageUrl: imageUrl,
       };
-      
+
       setMessages((prev) => [...prev, imageMessage]);
       if (scrollToBottomFn) scrollToBottomFn();
-      
+
       // 添加到历史记录
       setAssistantHistory((prev) => {
         const newHistory = [...prev, `user:[图片]`];
@@ -307,19 +307,19 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
 
       // 停止之前的打字机效果
       stopTypewriter();
-      
+
       // 重置打字机状态
       displayedTextRef.current = '';
       targetTextRef.current = '';
       typewriterMessageIdRef.current = systemMessageId;
-      
+
       // 立即启动打字机效果
       startTypewriter();
 
       // 使用打字机效果逐字显示内容
       const chars = content.split('');
       let currentIndex = 0;
-      
+
       const typeInterval = setInterval(() => {
         if (currentIndex < chars.length) {
           const partialText = content.substring(0, currentIndex + 1);
@@ -327,7 +327,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
           currentIndex++;
         } else {
           clearInterval(typeInterval);
-          
+
           // 等待打字机效果完成
           waitForTypewriter().then(() => {
             // 流式传输完成，标记消息为已完成
@@ -356,7 +356,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     } catch (error: any) {
       console.error('上传图片或理解失败:', error);
       Alert.alert('错误', error.message || '图片上传或理解失败，请重试');
-      
+
       // 移除失败的消息
       setMessages((prev) => prev.filter((msg) => !msg.id.startsWith('vl_')));
       stopTypewriter();
@@ -440,8 +440,8 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
           }
         } else if (record.type === 'image') {
           // 图片类型
-          const imageUrl = record.chat_context.startsWith('http') 
-            ? record.chat_context 
+          const imageUrl = record.chat_context.startsWith('http')
+            ? record.chat_context
             : `${apiUrl}${record.chat_context}`;
           const message: Message = {
             id: record.id,
@@ -470,15 +470,15 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
             text: record.chat_context,
             recordType: record.type,
           };
-          
+
           // 如果是包含计划提示的系统消息，标记为已处理（因为计划数据不会从数据库恢复）
           // 如果用户已经看到过这个消息，说明计划可能已经被处理过，或者用户已经选择不添加计划
-          if (message.type === 'system' && 
-              message.text.includes('日记生成完成') && 
-              message.text.includes('计划')) {
+          if (message.type === 'system' &&
+            message.text.includes('日记生成完成') &&
+            message.text.includes('计划')) {
             message.plansProcessed = true;
           }
-          
+
           newMessages.push(message);
         }
 
@@ -530,12 +530,12 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       setShowDiaryModal(true);
       setDiaryContent('');
       setDiaryImageUrl(undefined);
-      
+
       // 收集用户消息内容（从 assistantHistory 中提取 user: 开头的消息）
       const userContent: string[] = assistantHistory
         .filter((item) => item.startsWith('user:'))
         .map((item) => item.replace(/^user:/, ''));
-      
+
       // 找到最后一次生成日记的位置（从后往前找最后一个 recordType === 'diary' 的消息）
       let lastDiaryIndex = -1;
       for (let i = messages.length - 1; i >= 0; i--) {
@@ -544,12 +544,12 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
           break;
         }
       }
-      
+
       // 从最后一次生成日记之后的消息中提取图片 URL（查找最后一张图片）
-      const messagesAfterLastDiary = lastDiaryIndex >= 0 
+      const messagesAfterLastDiary = lastDiaryIndex >= 0
         ? messages.slice(lastDiaryIndex + 1)
         : messages;
-      
+
       const imageMessages = messagesAfterLastDiary.filter(msg => msg.imageUrl);
       let currentImageUrl: string | undefined = undefined;
       if (imageMessages.length > 0) {
@@ -557,7 +557,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         currentImageUrl = lastImage.imageUrl;
         setDiaryImageUrl(currentImageUrl);
       }
-      
+
       // 调用生成日记接口（流式）
       const history = await getAssistantHistory();
       const fullContent = await chatService.generateDiary(
@@ -601,7 +601,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         // 保存日记并获取返回的ID
         const diaryId = await chatService.saveDiary(fullContent, user.id, picJson, assistantEmoji);
         setCurrentDiaryId(diaryId); // 保存当前生成的日记ID
-        
+
         // 清空图片列表（日记生成后清空）
         setImageList([]);
 
@@ -625,7 +625,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
           },
         };
         setMessages((prev) => [...prev, diaryMessage]);
-        
+
         // 滚动到底部
         setTimeout(() => {
           scrollToBottom();
@@ -635,7 +635,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         try {
           const planHistory = await getAssistantHistory();
           const planData = await chatService.generatePlan(planHistory, user.id);
-          
+
           // 如果返回的plans长度>0,添加系统消息
           if (planData.plans && planData.plans.length > 0) {
             const systemMessageText = '日记生成完成，我发现日记中几处需要你未来去做的计划，需要我帮你加入计划列表吗？';
@@ -646,7 +646,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
               plans: planData,
             };
             setMessages((prev) => [...prev, planSystemMessage]);
-            
+
             // 添加到历史记录（但不保存到chats表）
             setAssistantHistory((prev) => {
               const newHistory = [...prev, `system:${systemMessageText}`];
@@ -667,6 +667,12 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         // 保存日记成功后，清空 assistantHistory，确保接下来的对话和生成日记不受之前的影响
         await clearAssistantHistory();
         setAssistantHistory([]);
+
+        // 流式展示完成后，显示保存成功提示
+        // 使用setTimeout确保在isGeneratingDiary设置为false之后显示
+        setTimeout(() => {
+          Alert.alert('成功', '日记已保存在记录中');
+        }, 100);
       } catch (saveError: any) {
         console.error('保存日记失败:', saveError);
         Alert.alert('提示', '日记生成成功，但保存失败：' + (saveError.message || '请稍后重试'));
@@ -678,7 +684,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     } finally {
       setIsGeneratingDiary(false);
     }
-  }, [user?.id, assistantHistory, messages, imageList, assistantEmoji, scrollToBottom]);
+  }, [user?.id, assistantHistory, messages, imageList, assistantEmoji, scrollToBottom, currentDiaryId]);
 
   return {
     messages,
