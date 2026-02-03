@@ -64,6 +64,7 @@ export default function MessageItem({ message }: MessageItemProps) {
           styles.messageText,
           isUserMessage ? styles.messageTextUser : styles.messageTextSystem,
         ]}
+        selectable={true}
       >
         {message.text || (message.type === 'system' ? '正在输入...' : '')}
       </Text>
