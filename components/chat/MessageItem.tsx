@@ -5,14 +5,17 @@
 import { Colors } from '@/constants/theme';
 import { Message } from '@/types/chat';
 import { scaleSize } from '@/utils/screen';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import DiaryCard from './DiaryCard';
+import ImagePreviewModal from './ImagePreviewModal';
 
 interface MessageItemProps {
   message: Message;
 }
 
 export default function MessageItem({ message }: MessageItemProps) {
+  const [previewVisible, setPreviewVisible] = useState(false);
   // 判断消息类型
   const isDiary = message.recordType === 'diary' && message.diaryData;
   const isDiaryCard = isDiary; // 日记卡片（type 可能是 'user' 或 'system'）
@@ -50,11 +53,24 @@ export default function MessageItem({ message }: MessageItemProps) {
     
     if (message.imageUrl) {
       return (
-        <Image
-          source={{ uri: message.imageUrl }}
-          style={styles.messageImage}
-          resizeMode="cover"
-        />
+        <>
+          <TouchableOpacity 
+            activeOpacity={0.8} 
+            onPress={() => setPreviewVisible(true)}
+          >
+            <Image
+              source={{ uri: message.imageUrl }}
+              style={styles.messageImage}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
+          
+          <ImagePreviewModal
+            visible={previewVisible}
+            imageUrl={message.imageUrl}
+            onClose={() => setPreviewVisible(false)}
+          />
+        </>
       );
     }
     
