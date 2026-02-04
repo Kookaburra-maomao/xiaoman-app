@@ -1,6 +1,6 @@
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
-import { DeletedDiaryItem, getDeletedDiaries, restoreDiary } from '@/services/chatService';
+import { DeletedDiaryItem, getDeletedDiaries, permanentDeleteDiary, restoreDiary } from '@/services/chatService';
 import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
@@ -70,6 +70,7 @@ export default function DiaryRecycleBinScreen() {
   const [diaries, setDiaries] = useState<DeletedDiaryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // 获取已删除日记列表
   const fetchDeletedDiaries = async () => {
@@ -114,6 +115,40 @@ export default function DiaryRecycleBinScreen() {
               Alert.alert('错误', error.message || '恢复日记失败，请重试');
             } finally {
               setRestoringId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // 彻底删除日记
+  const handlePermanentDelete = async (diaryId: string) => {
+    if (!user?.id) return;
+
+    Alert.alert(
+      '彻底删除',
+      '彻底删除后将无法恢复，确定要删除吗？',
+      [
+        {
+          text: '取消',
+          style: 'cancel',
+        },
+        {
+          text: '删除',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeletingId(diaryId);
+              await permanentDeleteDiary(diaryId, user.id);
+              Alert.alert('成功', '日记已彻底删除');
+              // 刷新列表
+              await fetchDeletedDiaries();
+            } catch (error: any) {
+              console.error('彻底删除日记失败:', error);
+              Alert.alert('错误', error.message || '彻底删除日记失败，请重试');
+            } finally {
+              setDeletingId(null);
             }
           },
         },
@@ -200,25 +235,48 @@ export default function DiaryRecycleBinScreen() {
                         </View>
                       )}
 
-                      {/* 恢复按钮 */}
-                      <TouchableOpacity
-                        style={[
-                          styles.restoreButton,
-                          restoringId === diary.id && styles.restoreButtonDisabled,
-                        ]}
-                        onPress={() => handleRestoreDiary(diary.id)}
-                        disabled={restoringId === diary.id}
-                        activeOpacity={0.7}
-                      >
-                        {restoringId === diary.id ? (
-                          <ActivityIndicator size="small" color="#FFFFFF" />
-                        ) : (
-                          <>
-                            <Ionicons name="refresh" size={16} color="#FFFFFF" />
-                            <Text style={styles.restoreButtonText}>恢复日记</Text>
-                          </>
-                        )}
-                      </TouchableOpacity>
+                      {/* 操作按钮 */}
+                      <View style={styles.buttonContainer}>
+                        {/* 恢复按钮 */}
+                        <TouchableOpacity
+                          style={[
+                            styles.restoreButton,
+                            restoringId === diary.id && styles.restoreButtonDisabled,
+                          ]}
+                          onPress={() => handleRestoreDiary(diary.id)}
+                          disabled={restoringId === diary.id || deletingId === diary.id}
+                          activeOpacity={0.7}
+                        >
+                          {restoringId === diary.id ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                          ) : (
+                            <>
+                              <Ionicons name="refresh" size={16} color="#FFFFFF" />
+                              <Text style={styles.restoreButtonText}>恢复日记</Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+
+                        {/* 彻底删除按钮 */}
+                        <TouchableOpacity
+                          style={[
+                            styles.deleteButton,
+                            deletingId === diary.id && styles.deleteButtonDisabled,
+                          ]}
+                          onPress={() => handlePermanentDelete(diary.id)}
+                          disabled={deletingId === diary.id || restoringId === diary.id}
+                          activeOpacity={0.7}
+                        >
+                          {deletingId === diary.id ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                          ) : (
+                            <>
+                              <Ionicons name="trash" size={16} color="#FFFFFF" />
+                              <Text style={styles.deleteButtonText}>彻底删除</Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
                 </View>
@@ -359,6 +417,10 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 16,
   },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
   restoreButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -369,12 +431,33 @@ const styles = StyleSheet.create({
     paddingRight: scaleSize(12),
     backgroundColor: '#000000',
     borderRadius: scaleSize(10),
-    alignSelf: 'flex-start',
   },
   restoreButtonDisabled: {
     opacity: 0.6,
   },
   restoreButtonText: {
+    color: '#FFFFFF',
+    fontSize: scaleSize(12),
+    lineHeight: scaleSize(18),
+    fontWeight: '400',
+    fontFamily: 'PingFang SC',
+    marginLeft: 4,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: scaleSize(98),
+    height: scaleSize(34),
+    paddingLeft: scaleSize(16),
+    paddingRight: scaleSize(12),
+    backgroundColor: 'rgb(235, 71, 106)',
+    borderRadius: scaleSize(10),
+  },
+  deleteButtonDisabled: {
+    opacity: 0.6,
+  },
+  deleteButtonText: {
     color: '#FFFFFF',
     fontSize: scaleSize(12),
     lineHeight: scaleSize(18),

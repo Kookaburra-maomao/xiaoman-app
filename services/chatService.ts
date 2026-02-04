@@ -685,6 +685,31 @@ export const restoreDiary = async (diaryId: string): Promise<void> => {
   }
 };
 
+// 彻底删除日记（永久删除）
+export const permanentDeleteDiary = async (diaryId: string, userId: string): Promise<void> => {
+  const params = new URLSearchParams({
+    user_id: userId,
+  });
+
+  const response = await fetch(`${apiUrl}/api/diaries/${diaryId}/permanent?${params.toString()}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || '彻底删除日记失败');
+  }
+
+  const result = await response.json();
+
+  if (result.code !== 200) {
+    throw new Error(result.message || '彻底删除日记失败');
+  }
+};
+
 // 运营卡片接口返回的数据结构
 export interface RecordItem {
   emoji: string;
