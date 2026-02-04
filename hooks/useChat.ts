@@ -686,6 +686,23 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     }
   }, [user?.id, assistantHistory, messages, imageList, assistantEmoji, scrollToBottom, currentDiaryId]);
 
+  // 刷新聊天历史（用于删除日记后刷新列表）
+  const refreshChatHistory = useCallback(async () => {
+    if (!user?.id) {
+      return;
+    }
+
+    try {
+      // 重置加载标记，允许重新加载
+      hasLoadedHistoryRef.current = false;
+      
+      // 重新加载历史记录
+      await loadChatHistory();
+    } catch (error: any) {
+      console.error('刷新历史记录失败:', error);
+    }
+  }, [user?.id, loadChatHistory]);
+
   return {
     messages,
     setMessages,
@@ -708,6 +725,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     generateDiary,
     loadPendingMessages,
     loadChatHistory,
+    refreshChatHistory,
     scrollToBottom,
   };
 };

@@ -4,6 +4,7 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { deleteDiary, DiaryDetail, getDiaryDetail } from '@/services/chatService';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
@@ -108,15 +109,23 @@ export default function DiaryDetailScreen() {
 
   // 处理删除
   const handleDelete = async () => {
-    if (!diaryId) return;
+    if (!diaryId || !user?.id) return;
 
     try {
       setDeleting(true);
-      await deleteDiary(diaryId);
+      // 删除日记并获取当天更新后的日记列表
+      const updatedDiaries = await deleteDiary(diaryId, user.id);
+      
+      // 设置刷新标记，通知聊天页面需要刷新
+      await AsyncStorage.setItem('@chat_needs_refresh', 'true');
+      
       Alert.alert('成功', '日记已删除', [
         {
           text: '确定',
-          onPress: () => router.back(),
+          onPress: () => {
+            // 返回到聊天页面，触发刷新
+            router.back();
+          },
         },
       ]);
     } catch (error: any) {

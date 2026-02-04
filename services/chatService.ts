@@ -26,6 +26,7 @@ export interface DiaryDetail {
   creator: string;
   context: string;
   pic?: string;
+  status?: string; // 日记状态：normal-正常, deleted-已删除
 }
 
 // 日记统计信息接口返回的数据结构
@@ -49,6 +50,20 @@ export interface DiaryByDateItem {
   context: string;
   pic?: string | null;
   emoji?: string | null;
+  status?: string; // 日记状态：normal-正常, deleted-已删除
+}
+
+// 已删除日记接口返回的数据结构
+export interface DeletedDiaryItem {
+  id: string;
+  gmt_create: string;
+  gmt_modified: string;
+  creator: string;
+  context: string;
+  pic?: string | null;
+  emoji?: string | null;
+  status: string;
+  gmt_delete: string; // 删除时间
 }
 
 // 解析流式响应的辅助函数
@@ -596,7 +611,7 @@ export const getDiariesByDate = async (
 };
 
 // 删除日记
-export const deleteDiary = async (diaryId: string): Promise<void> => {
+export const deleteDiary = async (diaryId: string, userId: string): Promise<DiaryByDateItem[]> => {
   const response = await fetch(`${apiUrl}/api/diaries/${diaryId}`, {
     method: 'DELETE',
     headers: {
@@ -613,6 +628,60 @@ export const deleteDiary = async (diaryId: string): Promise<void> => {
 
   if (result.code !== 200) {
     throw new Error(result.message || '删除日记失败');
+  }
+
+  // 删除成功后，获取当天的日记列表
+  const today = new Date().toISOString().split('T')[0]; // 格式：YYYY-MM-DD
+  const diariesList = await getDiariesByDate(userId, today);
+  
+  return diariesList;
+};
+
+// 获取最近删除的日记列表（最近一个月内）
+export const getDeletedDiaries = async (userId: string): Promise<DeletedDiaryItem[]> => {
+  const params = new URLSearchParams({
+    user_id: userId,
+  });
+
+  const response = await fetch(`${apiUrl}/api/diaries/deleted/recent?${params.toString()}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || '获取已删除日记失败');
+  }
+
+  const result = await response.json();
+
+  if (result.code === 200 && result.data?.list) {
+    return result.data.list;
+  } else {
+    throw new Error(result.message || '获取已删除日记失败');
+  }
+};
+
+// 恢复日记（将状态从 deleted 改为 active）
+export const restoreDiary = async (diaryId: string): Promise<void> => {
+  const response = await fetch(`${apiUrl}/api/diaries/${diaryId}/restore`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || '恢复日记失败');
+  }
+
+  const result = await response.json();
+
+  if (result.code !== 200) {
+    throw new Error(result.message || '恢复日记失败');
   }
 };
 

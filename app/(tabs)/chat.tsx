@@ -52,6 +52,7 @@ export default function ChatScreen() {
     generateDiary,
     loadPendingMessages,
     loadChatHistory,
+    refreshChatHistory,
     scrollToBottom,
     setAssistantEmoji,
   } = useChat(scrollViewRef);
@@ -139,15 +140,34 @@ export default function ChatScreen() {
   // 监听页面聚焦，加载历史记录和待发送的消息
   useFocusEffect(
     useCallback(() => {
-      // 先加载历史记录
-      loadChatHistory();
+      // 检查是否需要刷新（从日记详情页返回）
+      const checkRefreshNeeded = async () => {
+        try {
+          const needsRefresh = await AsyncStorage.getItem('@chat_needs_refresh');
+          if (needsRefresh === 'true') {
+            // 清除标记
+            await AsyncStorage.removeItem('@chat_needs_refresh');
+            // 刷新聊天历史
+            await refreshChatHistory();
+          } else {
+            // 正常加载历史记录
+            loadChatHistory();
+          }
+        } catch (error) {
+          console.error('检查刷新状态失败:', error);
+          // 出错时正常加载
+          loadChatHistory();
+        }
+      };
+      
+      checkRefreshNeeded();
       // 然后加载待发送的消息
       loadPendingMessages();
       // 加载运营卡片
       fetchOperationCards();
       // 检查是否应该展示运营卡片
       checkShouldShowCard();
-    }, [loadChatHistory, loadPendingMessages, fetchOperationCards, checkShouldShowCard])
+    }, [loadChatHistory, refreshChatHistory, loadPendingMessages, fetchOperationCards, checkShouldShowCard])
   );
 
   // 运营卡片显示/隐藏动画（渐显/渐隐 + 下拉/上拉）

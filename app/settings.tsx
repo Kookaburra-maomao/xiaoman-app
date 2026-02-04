@@ -1,4 +1,5 @@
 import { Colors } from '@/constants/theme';
+import { VIP_CARD_URL, VIP_NO_URL, VIP_TAG_URL } from '@/constants/urls';
 import { useAuth } from '@/contexts/AuthContext';
 import * as imageService from '@/services/imageService';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,16 +9,16 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    ImageBackground,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -398,6 +399,20 @@ export default function SettingsScreen() {
             </View>
           </View>
 
+          <TouchableOpacity 
+            style={styles.settingItem} 
+            activeOpacity={0.7}
+            onPress={() => router.push('/diary-recycle-bin' as any)}
+          >
+            <View style={styles.settingItemLeft}>
+              <Ionicons name="trash-bin-outline" size={20} color={Colors.light.text} />
+              <Text style={styles.settingItemText}>日记回收站</Text>
+            </View>
+            <View style={styles.settingItemRight}>
+              <Ionicons name="chevron-forward" size={18} color={Colors.light.icon} />
+            </View>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
             <View style={styles.settingItemLeft}>
               <Ionicons name="sunny-outline" size={20} color={Colors.light.text} />
@@ -474,7 +489,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
+    borderBottomWidth: 0,
     borderBottomColor: '#E5E5E5',
     backgroundColor: Colors.light.background,
   },

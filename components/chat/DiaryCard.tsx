@@ -3,10 +3,12 @@
  */
 
 import { Colors } from '@/constants/theme';
+import * as chatService from '@/services/chatService';
 import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
 import { useRouter } from 'expo-router';
-import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 
 interface DiaryCardProps {
@@ -74,17 +76,36 @@ const truncateText = (text: string, hasImage: boolean): string => {
 
 export default function DiaryCard({ context, pic, gmt_create, diaryId }: DiaryCardProps) {
   const router = useRouter();
+  const [isChecking, setIsChecking] = useState(false);
   const imageUrl = getFirstImageUrl(pic);
   const dateTimeStr = formatDateTime(gmt_create);
   const truncatedContext = truncateText(context, !!imageUrl);
 
   // 处理点击事件
-  const handlePress = () => {
-    if (diaryId) {
+  const handlePress = async () => {
+    if (!diaryId || isChecking) return;
+
+    try {
+      setIsChecking(true);
+      // 查询日记详情，检查状态
+      const diaryDetail = await chatService.getDiaryDetail(diaryId);
+      
+      // 检查日记状态
+      if (diaryDetail.status === 'deleted') {
+        Alert.alert('提示', '该日记已被删除');
+        return;
+      }
+
+      // 状态正常，跳转到详情页
       router.push({
         pathname: '/diary-detail',
         params: { diaryId },
       } as any);
+    } catch (error) {
+      console.error('获取日记详情失败:', error);
+      Alert.alert('错误', '获取日记详情失败，请重试');
+    } finally {
+      setIsChecking(false);
     }
   };
 
@@ -93,7 +114,7 @@ export default function DiaryCard({ context, pic, gmt_create, diaryId }: DiaryCa
       style={styles.diaryCard}
       onPress={handlePress}
       activeOpacity={0.8}
-      disabled={!diaryId}
+      disabled={!diaryId || isChecking}
     >
       {/* 第一行：日期时间 */}
       {/* {dateTimeStr && (
@@ -118,6 +139,13 @@ export default function DiaryCard({ context, pic, gmt_create, diaryId }: DiaryCa
             </Markdown>
           </View>
         )}
+        
+        {/* 加载指示器 */}
+        {isChecking && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="small" color={Colors.light.tint} />
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -139,6 +167,7 @@ const styles = StyleSheet.create({
   diaryContentContainer: {
     // marginTop: scaleSize(12),
     flex: 1,
+    position: 'relative',
   },
   diaryContentWithImage: {
     flexDirection: 'row',
@@ -161,5 +190,16 @@ const styles = StyleSheet.create({
     fontSize: scaleSize(14),
     lineHeight: scaleSize(20),
     color: Colors.light.text,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: scaleSize(8),
   },
 });
