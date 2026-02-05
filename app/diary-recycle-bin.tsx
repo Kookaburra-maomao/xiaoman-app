@@ -8,14 +8,14 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -71,6 +71,7 @@ export default function DiaryRecycleBinScreen() {
   const [loading, setLoading] = useState(true);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [batchDeleting, setBatchDeleting] = useState(false);
 
   // 获取已删除日记列表
   const fetchDeletedDiaries = async () => {
@@ -156,6 +157,54 @@ export default function DiaryRecycleBinScreen() {
     );
   };
 
+  // 批量彻底删除所有日记
+  const handleBatchPermanentDelete = async () => {
+    if (!user?.id || diaries.length === 0) return;
+
+    Alert.alert(
+      '全部删除',
+      `确定要彻底删除所有 ${diaries.length} 篇日记吗？删除后将无法恢复。`,
+      [
+        {
+          text: '取消',
+          style: 'cancel',
+        },
+        {
+          text: '删除',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setBatchDeleting(true);
+              const diaryIds = diaries.map(d => d.id).join(',');
+              const response = await fetch(
+                `${apiUrl}/api/diaries/batch/permanent?user_id=${user.id}&diary_list=${diaryIds}`,
+                {
+                  method: 'DELETE',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                }
+              );
+
+              if (!response.ok) {
+                throw new Error('批量删除失败');
+              }
+
+              Alert.alert('成功', '所有日记已彻底删除');
+              // 刷新列表
+              await fetchDeletedDiaries();
+            } catch (error: any) {
+              console.error('批量删除日记失败:', error);
+              Alert.alert('错误', error.message || '批量删除日记失败，请重试');
+            } finally {
+              setBatchDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   useEffect(() => {
     fetchDeletedDiaries();
   }, [user?.id]);
@@ -189,6 +238,31 @@ export default function DiaryRecycleBinScreen() {
         </View>
       ) : (
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* 全部删除按钮 */}
+          <View style={styles.batchDeleteContainer}>
+            <TouchableOpacity
+              style={[
+                styles.batchDeleteButton,
+                batchDeleting && styles.batchDeleteButtonDisabled,
+              ]}
+              onPress={handleBatchPermanentDelete}
+              disabled={batchDeleting}
+              activeOpacity={0.7}
+            >
+              {batchDeleting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="trash-bin" size={18} color="#FFFFFF" />
+                  <Text style={styles.batchDeleteButtonText}>全部删除</Text>
+                </>
+              )}
+            </TouchableOpacity>
+            <Text style={styles.batchDeleteHint}>
+              共 {diaries.length} 篇日记
+            </Text>
+          </View>
+
           <View style={styles.timelineContainer}>
             {diaries.map((diary, index) => {
               const remainingDays = calculateRemainingDays(diary.gmt_delete);
@@ -345,6 +419,44 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  batchDeleteContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  batchDeleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#FF6B6B',
+    borderRadius: 20,
+    shadowColor: '#FF6B6B',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  batchDeleteButtonDisabled: {
+    opacity: 0.6,
+  },
+  batchDeleteButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  batchDeleteHint: {
+    fontSize: 13,
+    color: Colors.light.icon,
   },
   timelineContainer: {
     padding: 16,

@@ -90,6 +90,12 @@ export default function DiaryCard({ context, pic, gmt_create, diaryId }: DiaryCa
       // 查询日记详情，检查状态
       const diaryDetail = await chatService.getDiaryDetail(diaryId);
       
+      // 如果日记不存在或已被删除
+      if (!diaryDetail) {
+        Alert.alert('提示', '该日记已被删除');
+        return;
+      }
+      
       // 检查日记状态
       if (diaryDetail.status === 'deleted') {
         Alert.alert('提示', '该日记已被删除');
@@ -101,9 +107,6 @@ export default function DiaryCard({ context, pic, gmt_create, diaryId }: DiaryCa
         pathname: '/diary-detail',
         params: { diaryId },
       } as any);
-    } catch (error) {
-      console.error('获取日记详情失败:', error);
-      Alert.alert('错误', '获取日记详情失败，请重试');
     } finally {
       setIsChecking(false);
     }

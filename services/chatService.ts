@@ -523,26 +523,35 @@ export const getChatRecords = async (
   }
 };
 
-// 获取日记详情
-export const getDiaryDetail = async (diaryId: string): Promise<DiaryDetail> => {
-  const response = await fetch(`${apiUrl}/api/diaries/${diaryId}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+// 获取日记详情（如果日记已被删除或不存在，返回 null）
+export const getDiaryDetail = async (diaryId: string): Promise<DiaryDetail | null> => {
+  try {
+    const response = await fetch(`${apiUrl}/api/diaries/${diaryId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    throw new Error(errorData?.message || '获取日记详情失败');
-  }
+    if (!response.ok) {
+      // 日记可能已被删除，返回 null 而不是抛出错误
+      console.log(`日记 ${diaryId} 获取失败，可能已被删除`);
+      return null;
+    }
 
-  const result = await response.json();
+    const result = await response.json();
 
-  if (result.code === 200 && result.data) {
-    return result.data;
-  } else {
-    throw new Error(result.message || '获取日记详情失败');
+    if (result.code === 200 && result.data) {
+      return result.data;
+    } else {
+      // 日记可能已被删除，返回 null
+      console.log(`日记 ${diaryId} 不存在或已被删除`);
+      return null;
+    }
+  } catch (error) {
+    // 网络错误或其他异常，返回 null
+    console.error(`获取日记 ${diaryId} 详情失败:`, error);
+    return null;
   }
 };
 
@@ -688,10 +697,11 @@ export const restoreDiary = async (diaryId: string): Promise<void> => {
 // 彻底删除日记（永久删除）
 export const permanentDeleteDiary = async (diaryId: string, userId: string): Promise<void> => {
   const params = new URLSearchParams({
+    id: diaryId,
     user_id: userId,
   });
 
-  const response = await fetch(`${apiUrl}/api/diaries/${diaryId}/permanent?${params.toString()}`, {
+  const response = await fetch(`${apiUrl}/api/diaries/single/permanent?${params.toString()}`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -707,6 +717,32 @@ export const permanentDeleteDiary = async (diaryId: string, userId: string): Pro
 
   if (result.code !== 200) {
     throw new Error(result.message || '彻底删除日记失败');
+  }
+};
+
+// 批量彻底删除日记（永久删除）
+export const batchPermanentDeleteDiaries = async (diaryIds: string[], userId: string): Promise<void> => {
+  const params = new URLSearchParams({
+    user_id: userId,
+    diary_list: diaryIds.join(','),
+  });
+
+  const response = await fetch(`${apiUrl}/api/diaries/batch/permanent?${params.toString()}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || '批量删除日记失败');
+  }
+
+  const result = await response.json();
+
+  if (result.code !== 200) {
+    throw new Error(result.message || '批量删除日记失败');
   }
 };
 

@@ -419,25 +419,27 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
 
         if (record.type === 'diary') {
           // 日记类型，需要获取详情
-          try {
-            const diaryDetail = await chatService.getDiaryDetail(record.chat_context);
-            const message: Message = {
-              id: record.id,
-              type: record.chat_from === 'user' ? 'user' : 'system',
-              text: '',
-              recordType: 'diary',
-              diaryData: {
-                id: diaryDetail.id,
-                context: diaryDetail.context,
-                pic: diaryDetail.pic,
-                gmt_create: record.gmt_create,
-              },
-            };
-            newMessages.push(message);
-          } catch (error) {
-            console.error('获取日记详情失败:', error);
-            // 如果获取失败，跳过这条记录
+          const diaryDetail = await chatService.getDiaryDetail(record.chat_context);
+          
+          // 如果日记已被删除或不存在，跳过这条记录
+          if (!diaryDetail) {
+            console.log(`日记 ${record.chat_context} 不存在或已被删除，跳过显示`);
+            continue;
           }
+          
+          const message: Message = {
+            id: record.id,
+            type: record.chat_from === 'user' ? 'user' : 'system',
+            text: '',
+            recordType: 'diary',
+            diaryData: {
+              id: diaryDetail.id,
+              context: diaryDetail.context,
+              pic: diaryDetail.pic,
+              gmt_create: record.gmt_create,
+            },
+          };
+          newMessages.push(message);
         } else if (record.type === 'image') {
           // 图片类型
           const imageUrl = record.chat_context.startsWith('http')
