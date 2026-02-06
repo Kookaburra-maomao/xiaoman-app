@@ -75,6 +75,9 @@ export default function DiaryGenerateModal({
   const [localScreenshotUri, setLocalScreenshotUri] = useState<string | null>(null);
   const contentViewRef = useRef<ViewShot>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+  
+  // 判断流式展示是否完成
+  const isStreamingComplete = !isGenerating && displayedContent === content && content.length > 0;
 
   // 更新目标文本（当 content 变化时，实时更新）
   useEffect(() => {
@@ -307,15 +310,17 @@ export default function DiaryGenerateModal({
               </View>
             </ViewShot>
 
-            {/* 操作区域 - 公共按钮组件 */}
-            <DiaryActionButtons
-              onEdit={handleEdit}
-              onExport={handleExport}
-              editDisabled={isGenerating || !diaryId}
-              exportDisabled={isGenerating}
-              exportLoading={sharing}
-              exportLabel="导出"
-            />
+            {/* 操作区域 - 公共按钮组件（仅在流式展示完成后显示） */}
+            {isStreamingComplete && (
+              <DiaryActionButtons
+                onEdit={handleEdit}
+                onExport={handleExport}
+                editDisabled={isGenerating || !diaryId}
+                exportDisabled={isGenerating}
+                exportLoading={sharing}
+                exportLabel="导出"
+              />
+            )}
           </ScrollView>
 
           {/* 分享弹窗 */}
