@@ -54,9 +54,8 @@ export default function RecordScreen() {
   const [loading, setLoading] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-
   // 是否开启日记加密（以用户信息 diary_secret 为准）
-  const diaryEncryptionEnabled = user?.diary_secret === 'true';
+  const diaryEncryptionEnabled = false && user?.diary_secret === 'true';
 
   // 获取当前年月
   const year = currentDate.getFullYear();
