@@ -106,6 +106,10 @@ export default function PlanScreen() {
       if (uploadResult) {
         setUploadedImageUrl(uploadResult.imageUrl);
         Alert.alert('成功', '图片上传成功');
+        
+        // 关闭弹窗并跳转到聊天页面
+        setShowSuccessModal(false);
+        router.push('/(tabs)/chat');
       }
     } catch (error: any) {
       console.error('上传图片失败:', error);
