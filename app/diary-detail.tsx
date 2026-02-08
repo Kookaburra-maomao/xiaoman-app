@@ -1,5 +1,6 @@
 import DiaryActionButtons from '@/components/diary/DiaryActionButtons';
 import DiaryImageCarousel from '@/components/diary/DiaryImageCarousel';
+// import LinedText from '@/components/diary/LinedText';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { deleteDiary, DiaryDetail, getDiaryDetail } from '@/services/chatService';
@@ -80,8 +81,10 @@ export default function DiaryDetailScreen() {
     try {
       setLoading(true);
       const data = await getDiaryDetail(diaryId);
-      console.log('获取日记详情:', { diaryId, data, pic: data.pic });
-      setDiary(data);
+      if (data) {
+        console.log('获取日记详情:', { diaryId, data, pic: data.pic });
+        setDiary(data);
+      }
     } catch (error) {
       console.error('获取日记详情失败:', error);
       Alert.alert('错误', '获取日记详情失败，请重试');

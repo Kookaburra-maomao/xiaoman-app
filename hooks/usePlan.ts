@@ -9,7 +9,7 @@ import * as imageService from '@/services/imageService';
 import * as planService from '@/services/planService';
 import { CreatePlanForm, Plan, SuccessModalData } from '@/types/plan';
 import { calculateFinishTimes, calculateKeepTimes } from '@/utils/plan-utils';
-import { addPendingConversation, getAssistantHistory, incrementUnreadCount, saveAssistantHistory } from '@/utils/unread-messages';
+import { AssistantHistoryItem, addPendingConversation, getAssistantHistory, incrementUnreadCount, saveAssistantHistory } from '@/utils/unread-messages';
 import { useCallback, useState } from 'react';
 import { Alert } from 'react-native';
 
@@ -81,7 +81,11 @@ export const usePlan = () => {
       const fullText = await chatService.sendChatMessage(userMessage, userId, assistantHistory);
 
       // 将用户消息和系统回复添加到assistantHistory
-      const updatedHistory = [...assistantHistory, `user:${userMessage}`, `system:${fullText}`];
+      const updatedHistory: AssistantHistoryItem[] = [
+        ...assistantHistory, 
+        { role: 'user', content: userMessage }, 
+        { role: 'assistant', content: fullText }
+      ];
       await saveAssistantHistory(updatedHistory);
       
       // 将用户消息和系统回复存储到待发送对话中
@@ -219,7 +223,10 @@ export const usePlan = () => {
         const vlContent = await chatService.callVL(imageUrl, user.id, assistantHistory);
         
         // 将小满的图片理解回复添加到assistantHistory
-        const updatedHistory = [...assistantHistory, `system:${vlContent}`];
+        const updatedHistory: AssistantHistoryItem[] = [
+          ...assistantHistory, 
+          { role: 'assistant', content: vlContent }
+        ];
         await saveAssistantHistory(updatedHistory);
         
         // 将图片作为用户消息和系统回复存储到待发送对话中

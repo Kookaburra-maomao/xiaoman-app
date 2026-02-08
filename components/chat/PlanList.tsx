@@ -2,7 +2,7 @@
  * 计划列表组件
  */
 
-import { ICON_DOT_URL } from '@/constants/urls';
+import { ICON_DOT_URL, RIGHT_ICON_URL } from '@/constants/urls';
 import { Message } from '@/types/chat';
 import { scaleSize } from '@/utils/screen';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -31,6 +31,11 @@ export default function PlanList({ message, onAddToPlan }: PlanListProps) {
             <Text style={styles.planName}>
               {plan.plan_name}
             </Text>
+            {plan.repeat?.plan_quality_score !== undefined && (
+              <Text style={styles.qualityScore}>
+                推荐指数:{plan.repeat.plan_quality_score}分
+              </Text>
+            )}
           </View>
         ))}
       </View>
@@ -63,7 +68,6 @@ const styles = StyleSheet.create({
     marginBottom: scaleSize(4),
     paddingVertical: scaleSize(8),
     borderRadius: scaleSize(8),
-
   },
   planItemIcon: {
     width: scaleSize(20),
@@ -75,6 +79,14 @@ const styles = StyleSheet.create({
     lineHeight: scaleSize(24),
     color: '#222222',
     fontFamily: 'PingFang SC',
+    flex: 1,
+  },
+  qualityScore: {
+    fontSize: scaleSize(12),
+    lineHeight: scaleSize(18),
+    color: '#999999',
+    fontFamily: 'PingFang SC',
+    marginRight: scaleSize(20),
   },
   addButton: {
     flexDirection: 'row',

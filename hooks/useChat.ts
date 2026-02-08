@@ -7,7 +7,7 @@ import { useTypewriter } from '@/hooks/useTypewriter';
 import * as chatService from '@/services/chatService';
 import * as imageService from '@/services/imageService';
 import { Message } from '@/types/chat';
-import { clearAssistantHistory, clearPendingConversations, clearPendingMessages, clearUnreadCount, getAssistantHistory, getPendingConversations, getPendingMessages, saveAssistantHistory } from '@/utils/unread-messages';
+import { AssistantHistoryItem, clearAssistantHistory, clearPendingConversations, clearPendingMessages, clearUnreadCount, getAssistantHistory, getPendingConversations, getPendingMessages, saveAssistantHistory } from '@/utils/unread-messages';
 import { RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
@@ -16,7 +16,7 @@ const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 export const useChat = (scrollViewRef?: RefObject<any>) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [assistantHistory, setAssistantHistory] = useState<string[]>([]);
+  const [assistantHistory, setAssistantHistory] = useState<AssistantHistoryItem[]>([]);
   const [assistantEmoji, setAssistantEmoji] = useState<string>(''); // 当前心情emoji
   const [isSending, setIsSending] = useState(false);
   const [isGeneratingDiary, setIsGeneratingDiary] = useState(false);
@@ -77,7 +77,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
               { id: userMessageId, type: 'user', text: '', imageUrl: conversation.userImageUrl },
             ]);
             setAssistantHistory((prev) => {
-              const newHistory = [...prev, `user:[图片]`];
+              const newHistory = [...prev, { role: 'user' as const, content: '[图片]' }];
               saveAssistantHistory(newHistory);
               return newHistory;
             });
@@ -88,7 +88,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
               { id: userMessageId, type: 'user', text: conversation.userMessage },
             ]);
             setAssistantHistory((prev) => {
-              const newHistory = [...prev, `user:${conversation.userMessage}`];
+              const newHistory = [...prev, { role: 'user' as const, content: conversation.userMessage }];
               saveAssistantHistory(newHistory);
               return newHistory;
             });
@@ -102,7 +102,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
               { id: systemMessageId, type: 'system', text: conversation.systemMessage },
             ]);
             setAssistantHistory((prev) => {
-              const newHistory = [...prev, `system:${conversation.systemMessage}`];
+              const newHistory = [...prev, { role: 'assistant' as const, content: conversation.systemMessage }];
               saveAssistantHistory(newHistory);
               return newHistory;
             });
@@ -126,7 +126,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
           ]);
           // 添加到历史记录
           setAssistantHistory((prev) => {
-            const newHistory = [...prev, `system:${messageText}`];
+            const newHistory = [...prev, { role: 'assistant' as const, content: messageText }];
             saveAssistantHistory(newHistory);
             return newHistory;
           });
@@ -171,7 +171,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
 
     // 添加到历史记录
     setAssistantHistory((prev) => {
-      const newHistory = [...prev, `user:${userContent}`];
+      const newHistory = [...prev, { role: 'user' as const, content: userContent }];
       saveAssistantHistory(newHistory);
       return newHistory;
     });
@@ -223,7 +223,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
 
       // 将完整的系统回复添加到历史记录
       setAssistantHistory((prev) => {
-        const newHistory = [...prev, `system:${fullText}`];
+        const newHistory = [...prev, { role: 'assistant' as const, content: fullText }];
         saveAssistantHistory(newHistory);
         return newHistory;
       });
@@ -279,7 +279,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
 
       // 添加到历史记录
       setAssistantHistory((prev) => {
-        const newHistory = [...prev, `user:[图片]`];
+        const newHistory = [...prev, { role: 'user' as const, content: '[图片]' }];
         saveAssistantHistory(newHistory);
         return newHistory;
       });
@@ -341,7 +341,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
 
             // 将理解结果添加到历史记录
             setAssistantHistory((prev) => {
-              const newHistory = [...prev, `system:${content}`];
+              const newHistory = [...prev, { role: 'assistant' as const, content: content }];
               saveAssistantHistory(newHistory);
               return newHistory;
             });
@@ -409,7 +409,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       }
 
       // 收集需要添加到 assistantHistory 的记录
-      const historyItems: string[] = [];
+      const historyItems: AssistantHistoryItem[] = [];
 
       // 处理每条记录
       for (let i = 0; i < records.length; i++) {
@@ -487,10 +487,10 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         // 如果是当天的记录，且在最新一次 diary 之后（不包含 diary），添加到 historyItems
         if (isToday && i > lastDiaryIndex) {
           if (record.chat_from === 'user') {
-            const prefix = record.type === 'image' ? 'user:[图片]' : `user:${record.chat_context}`;
-            historyItems.push(prefix);
+            const content = record.type === 'image' ? '[图片]' : record.chat_context;
+            historyItems.push({ role: 'user', content });
           } else {
-            historyItems.push(`system:${record.chat_context}`);
+            historyItems.push({ role: 'assistant', content: record.chat_context });
           }
         }
       }
@@ -533,10 +533,10 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       setDiaryContent('');
       setDiaryImageUrl(undefined);
 
-      // 收集用户消息内容（从 assistantHistory 中提取 user: 开头的消息）
+      // 收集用户消息内容（从 assistantHistory 中提取 role === 'user' 的消息）
       const userContent: string[] = assistantHistory
-        .filter((item) => item.startsWith('user:'))
-        .map((item) => item.replace(/^user:/, ''));
+        .filter((item) => item.role === 'user')
+        .map((item) => item.content);
 
       // 找到最后一次生成日记的位置（从后往前找最后一个 recordType === 'diary' 的消息）
       let lastDiaryIndex = -1;
@@ -651,7 +651,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
 
             // 添加到历史记录（但不保存到chats表）
             setAssistantHistory((prev) => {
-              const newHistory = [...prev, `system:${systemMessageText}`];
+              const newHistory = [...prev, { role: 'assistant' as const, content: systemMessageText }];
               saveAssistantHistory(newHistory);
               return newHistory;
             });

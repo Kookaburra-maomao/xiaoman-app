@@ -7,20 +7,22 @@ import { Colors } from '@/constants/theme';
 import { getPlanImagePreviewUrl, getPlanImageUrl } from '@/constants/urls';
 import { formatDateForDisplay } from '@/utils/date-utils';
 import { get } from '@/utils/request';
+import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View
 } from 'react-native';
 import DatePicker from './DatePicker';
 
@@ -50,6 +52,15 @@ interface PlanEditModalProps {
   onClose: () => void;
   onSave: (formData: EditPlanFormData) => Promise<void>;
 }
+
+// 重复周期选项配置
+const CYCLE_OPTIONS = [
+  { value: 'no', label: '不重复' },
+  { value: 'day', label: '每天' },
+  { value: 'week', label: '每周' },
+  { value: 'month', label: '每月' },
+  { value: 'year', label: '每年' },
+] as const;
 
 export default function PlanEditModal({
   visible,
@@ -239,82 +250,30 @@ export default function PlanEditModal({
                     <Text style={styles.editFormSelectText}>
                       {editFormData.cycle === 'no' ? '不重复' : CYCLE_MAP[editFormData.cycle]}
                     </Text>
-                    <Ionicons name="chevron-down" size={18} color={Colors.light.icon} />
+                    <Image 
+                      source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-sort.png' }} 
+                      style={styles.sortIcon} 
+                    />
                   </TouchableOpacity>
                   {/* 重复选择气泡菜单 */}
                   {showCycleMenu && (
                     <View style={styles.cycleMenuBubble}>
-                      <TouchableOpacity
-                        style={styles.cycleMenuItem}
-                        onPress={() => {
-                          console.log('不重复');
-                          setEditFormData({ ...editFormData, cycle: 'no' });
-                          setShowCycleMenu(false);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.cycleMenuText}>不重复</Text>
-                        {editFormData.cycle === 'no' && (
-                          <Ionicons name="checkmark" size={18} color="#222" />
-                        )}
-                      </TouchableOpacity>
-                      <View style={styles.cycleMenuDivider} />
-                      <TouchableOpacity
-                        style={styles.cycleMenuItem}
-                        onPress={() => {
-                          console.log('day');
-                          setEditFormData({ ...editFormData, cycle: 'day' });
-                          setShowCycleMenu(false);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.cycleMenuText}>每天</Text>
-                        {editFormData.cycle === 'day' && (
-                          <Ionicons name="checkmark" size={18} color="#222" />
-                        )}
-                      </TouchableOpacity>
-                      <View style={styles.cycleMenuDivider} />
-                      <TouchableOpacity
-                        style={styles.cycleMenuItem}
-                        onPress={() => {
-                          setEditFormData({ ...editFormData, cycle: 'week' });
-                          setShowCycleMenu(false);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.cycleMenuText}>每周</Text>
-                        {editFormData.cycle === 'week' && (
-                          <Ionicons name="checkmark" size={18} color="#222" />
-                        )}
-                      </TouchableOpacity>
-                      <View style={styles.cycleMenuDivider} />
-                      <TouchableOpacity
-                        style={styles.cycleMenuItem}
-                        onPress={() => {
-                          setEditFormData({ ...editFormData, cycle: 'month' });
-                          setShowCycleMenu(false);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.cycleMenuText}>每月</Text>
-                        {editFormData.cycle === 'month' && (
-                          <Ionicons name="checkmark" size={18} color="#222" />
-                        )}
-                      </TouchableOpacity>
-                      <View style={styles.cycleMenuDivider} />
-                      <TouchableOpacity
-                        style={styles.cycleMenuItem}
-                        onPress={() => {
-                          setEditFormData({ ...editFormData, cycle: 'year' });
-                          setShowCycleMenu(false);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.cycleMenuText}>每年</Text>
-                        {editFormData.cycle === 'year' && (
-                          <Ionicons name="checkmark" size={18} color="#222" />
-                        )}
-                      </TouchableOpacity>
+                      {CYCLE_OPTIONS.map((option) => (
+                        <TouchableOpacity
+                          key={option.value}
+                          style={styles.cycleMenuItem}
+                          onPress={() => {
+                            setEditFormData({ ...editFormData, cycle: option.value });
+                            setShowCycleMenu(false);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.cycleMenuText}>{option.label}</Text>
+                          {editFormData.cycle === option.value && (
+                            <Ionicons name="checkmark" size={18} color="#222" />
+                          )}
+                        </TouchableOpacity>
+                      ))}
                     </View>
                   )}
                 </View>
@@ -358,7 +317,10 @@ export default function PlanEditModal({
                     activeOpacity={0.7}
                   >
                     <Text style={styles.editFormSelectText}>{editFormData.times}次</Text>
-                    <Ionicons name="chevron-down" size={18} color={Colors.light.icon} />
+                    <Image 
+                      source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-sort.png' }} 
+                      style={styles.sortIcon} 
+                    />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -382,7 +344,10 @@ export default function PlanEditModal({
                   <Text style={[styles.editFormSelectText, !editFormData.gmt_limit && styles.editFormSelectPlaceholder]}>
                     {editFormData.gmt_limit ? formatDateForDisplay(editFormData.gmt_limit) : '请选择截止日期'}
                   </Text>
-                  <Ionicons name="chevron-down" size={18} color={Colors.light.icon} />
+                  <Image 
+                    source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-sort.png' }} 
+                    style={styles.sortIcon} 
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -450,10 +415,11 @@ const styles = StyleSheet.create({
   },
   editModalBody: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: scaleSize(16),
+    paddingBottom: scaleSize(40),
   },
   editFormItem: {
-    marginBottom: 16,
+    // marginBottom: 16,
   },
   editFormItemRow: {
     flexDirection: 'row',
@@ -504,7 +470,7 @@ const styles = StyleSheet.create({
     color: '#222',
   },
   editFormSelectPlaceholder: {
-    color: Colors.light.icon,
+    color: '#222',
   },
   editFormSelectContainer: {
     position: 'relative',
@@ -512,9 +478,9 @@ const styles = StyleSheet.create({
   cycleMenuBubble: {
     position: 'absolute',
     top: -80,
-    right: 100,
+    right: scaleSize(25),
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: scaleSize(20),
     paddingVertical: 8,
     minWidth: 120,
     shadowColor: '#000',
@@ -550,5 +516,9 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 998,
+  },
+  sortIcon: {
+    width: scaleSize(16),
+    height: scaleSize(16),
   },
 });

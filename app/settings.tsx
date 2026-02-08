@@ -2,6 +2,7 @@ import { Colors } from '@/constants/theme';
 import { VIP_CARD_URL, VIP_NO_URL, VIP_TAG_URL } from '@/constants/urls';
 import { useAuth } from '@/contexts/AuthContext';
 import * as imageService from '@/services/imageService';
+import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -420,7 +421,10 @@ export default function SettingsScreen() {
             </View>
             <View style={styles.settingItemRight}>
               <Text style={styles.settingItemValue}>系统</Text>
-              <Ionicons name="chevron-down" size={18} color={Colors.light.icon} />
+              <Image 
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-sort.png' }} 
+                style={{ width: scaleSize(16), height: scaleSize(16) }} 
+              />
             </View>
           </TouchableOpacity>
 

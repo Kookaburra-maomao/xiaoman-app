@@ -107,8 +107,14 @@ export const clearPendingConversations = async (): Promise<void> => {
 // 对话历史记录存储
 const ASSISTANT_HISTORY_KEY = 'chat_assistant_history';
 
+// 对话历史记录项的类型定义
+export interface AssistantHistoryItem {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 // 获取对话历史记录
-export const getAssistantHistory = async (): Promise<string[]> => {
+export const getAssistantHistory = async (): Promise<AssistantHistoryItem[]> => {
   try {
     const history = await AsyncStorage.getItem(ASSISTANT_HISTORY_KEY);
     return history ? JSON.parse(history) : [];
@@ -119,7 +125,7 @@ export const getAssistantHistory = async (): Promise<string[]> => {
 };
 
 // 保存对话历史记录
-export const saveAssistantHistory = async (history: string[]): Promise<void> => {
+export const saveAssistantHistory = async (history: AssistantHistoryItem[]): Promise<void> => {
   try {
     await AsyncStorage.setItem(ASSISTANT_HISTORY_KEY, JSON.stringify(history));
   } catch (error) {
@@ -128,7 +134,7 @@ export const saveAssistantHistory = async (history: string[]): Promise<void> => 
 };
 
 // 添加对话历史记录项
-export const addAssistantHistoryItem = async (item: string): Promise<void> => {
+export const addAssistantHistoryItem = async (item: AssistantHistoryItem): Promise<void> => {
   try {
     const history = await getAssistantHistory();
     history.push(item);

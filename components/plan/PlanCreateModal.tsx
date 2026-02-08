@@ -6,8 +6,9 @@ import { CYCLE_MAP } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
 import { CreatePlanForm } from '@/types/plan';
 import { formatDateForDisplay } from '@/utils/date-utils';
+import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DatePicker from './DatePicker';
 
 interface PlanCreateModalProps {
@@ -102,7 +103,7 @@ export default function PlanCreateModal({
                         <Text style={styles.selectButtonText}>
                           {CYCLE_MAP[formData.cycle] || formData.cycle}
                         </Text>
-                        <Ionicons name="chevron-down" size={20} color={Colors.light.text} />
+                        <Image source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-sort.png' }} style={styles.sortIcon} />
                       </TouchableOpacity>
                     </View>
                     <Text style={styles.repeatText}>至少完成</Text>
@@ -340,6 +341,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  sortIcon: {
+    width: scaleSize(16),
+    height: scaleSize(16),
   },
 });
 

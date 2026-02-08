@@ -3,7 +3,7 @@
  */
 
 import { CYCLE_MAP } from '@/constants/plan';
-import { getAssistantHistory } from '@/utils/unread-messages';
+import { AssistantHistoryItem, getAssistantHistory } from '@/utils/unread-messages';
 import { fetchActivePlans } from './planService';
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
@@ -171,9 +171,9 @@ const processStreamResponse = async (response: Response): Promise<string> => {
 export const sendChatMessage = async (
   userContent: string,
   userId: string,
-  assistantHistory?: string[]
+  assistantHistory?: AssistantHistoryItem[]
 ): Promise<string> => {
-  const history = assistantHistory;
+  const history = assistantHistory || [];
 
   const response = await fetch(`${apiUrl}/api/chat`, {
     method: 'POST',
@@ -181,8 +181,7 @@ export const sendChatMessage = async (
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      userContent,
-      assistantHistory: history,
+      userContent: [...history, { role: 'user', content: userContent }],
       userId,
     }),
   });
@@ -198,7 +197,7 @@ export const sendChatMessage = async (
 export const callVL = async (
   imageUrl: string,
   userId: string,
-  assistantHistory?: string[]
+  assistantHistory?: AssistantHistoryItem[]
 ): Promise<string> => {
   // 确保 userHistory 是数组格式，如果未提供则从存储中获取
   const userHistory = assistantHistory || await getAssistantHistory();
@@ -265,7 +264,7 @@ export const callVL = async (
 // 生成日记（流式接口，支持回调）
 export const generateDiary = async (
   userContent: string[],
-  assistantHistory: string[],
+  assistantHistory: AssistantHistoryItem[],
   userId: string,
   onProgress?: (text: string) => void
 ): Promise<string> => {
@@ -815,7 +814,7 @@ export interface GeneratePlanResponse {
 
 // 生成计划
 export const generatePlan = async (
-  assistantHistory: string[],
+  assistantHistory: AssistantHistoryItem[],
   userId: string
 ): Promise<GeneratePlanResponse> => {
   // 获取用户的所有有效计划
@@ -836,10 +835,10 @@ export const generatePlan = async (
     return `计划：${plan.name}，${cycleText}${deadlineText}`;
   });
 
-  // 过滤 assistantHistory，移除所有以 system: 开头的项
-  const filteredUserContent = assistantHistory.filter(
-    (item) => !item.startsWith('system:')
-  );
+  // 过滤 assistantHistory，移除所有 role === 'assistant' 的项，只保留用户消息
+  const filteredUserContent = assistantHistory
+    .filter((item) => item.role === 'user')
+    .map((item) => item.content);
 
   const response = await fetch(`${apiUrl}/api/chat/generate-plan`, {
     method: 'POST',
@@ -847,7 +846,7 @@ export const generatePlan = async (
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      userContent: filteredUserContent, // 过滤后的 assistantHistory（移除 system: 开头的项）作为 userContent
+      userContent: filteredUserContent, // 过滤后的用户消息
       assistantHistory: plansHistory, // 有效计划列表作为 assistantHistory
       userId: userId,
     }),
@@ -861,14 +860,7 @@ export const generatePlan = async (
   const result = await response.json();
 
   if (result.code === 200 && result.data) {
-    // 过滤计划：只保留 plan_quality_score >= 8 的计划
-    const filteredData: GeneratePlanResponse = {
-      ...result.data,
-      plans: result.data.plans.filter(
-        (plan: GeneratedPlan) => plan.repeat?.plan_quality_score >= 8
-      ),
-    };
-    return filteredData;
+    return result.data;
   } else {
     throw new Error(result.message || '生成计划失败');
   }
