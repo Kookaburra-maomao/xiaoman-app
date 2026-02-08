@@ -358,21 +358,21 @@ export default function ChatScreen() {
   }, [isGeneratingDiary, uploadImageAndUnderstand, scrollToBottom]);
 
   // 处理运营卡片选项选择
-  const handleOperationItemSelect = useCallback((promptRule: string, emoji: string) => {
-    // 更新assistantEmoji状态
+  const handleOperationItemSelect = useCallback((promptRule: string, text: string, emoji: string) => {
+    // 更新assistantEmoji状态 - 保存text参数
     if (emoji) {
       setAssistantEmoji(emoji);
     }
     
     // 保存聊天记录：type=emoji, chat_from=user, chat_context=emoji内容
     if (user?.id && emoji) {
-      chatService.saveChatRecord(user.id, 'emoji', 'user', emoji).catch(() => {
+      chatService.saveChatRecord(user.id, 'emoji', 'user', text).catch(() => {
         // 静默处理错误
       });
     }
     
-    // 发送消息：${prompt_rule} : ${emoji}
-    const message = `${promptRule} : ${emoji}`;
+    // 发送消息：${promptRule} : ${text}
+    const message = `${promptRule} : ${text}`;
     setShowCard(false);
     // 跳过保存用户消息记录，因为已经保存了emoji记录
     sendMessage(message, scrollToBottom, true);

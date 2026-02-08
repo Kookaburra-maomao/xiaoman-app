@@ -381,7 +381,14 @@ export default function RecordScreen() {
                     </View>
                   ) : hasEmoji ? (
                     // 情况2：无图片有emoji
-                    <Text style={styles.dayEmoji}>{dayData.emoji}</Text>
+                    <View style={styles.dayCellWithImage}>
+                      <Image source={{ uri: dayData.emoji }} style={styles.dayImage}
+                        resizeMode="cover"/>
+                      <View style={styles.dayImageOverlay} >
+                        <Text style={styles.dayTextOnImage}>{day}</Text>
+                      </View>
+                    </View>
+                    
                   ) : (
                     // 情况3和4：正常展示或特殊背景色
                     day !== null && (

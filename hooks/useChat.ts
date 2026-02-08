@@ -601,6 +601,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         const picJson = picPaths.length > 0 ? JSON.stringify(picPaths) : '';
 
         // 保存日记并获取返回的ID
+        console.log("assistantEmoji:"+ assistantEmoji);
         const diaryId = await chatService.saveDiary(fullContent, user.id, picJson, assistantEmoji);
         setCurrentDiaryId(diaryId); // 保存当前生成的日记ID
 

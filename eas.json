@@ -11,11 +11,15 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "applicationArchivePath": "小满日记.apk"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "android": {
+        "applicationArchivePath": "xiaoman-diary-production.apk"
+      }
     }
   },
   "submit": {

@@ -20,7 +20,7 @@ const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 interface OperationCardProps {
   cards: OperationCard[];
   username: string;
-  onItemSelect: (promptRule: string, emoji: string) => void;
+  onItemSelect: (promptRule: string, text: string, emoji: string) => void;
 }
 
 export default function OperationCardCarousel({ cards, username, onItemSelect }: OperationCardProps) {
@@ -45,7 +45,7 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
   const handleItemPress = (card: OperationCard, itemIndex: number) => {
     const item = card.record_item[itemIndex];
     if (item && item.text) {
-      onItemSelect(card.prompt_rule, item.text);
+      onItemSelect(card.prompt_rule, item.text, item.emoji);
     }
   };
 

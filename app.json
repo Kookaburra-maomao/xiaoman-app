@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "xiaoman-app",
-    "slug": "xiaoman-app",
-    "version": "1.0.0",
+    "name": "小满日记",
+    "slug": "xiaoman",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "xiaomanapp",
