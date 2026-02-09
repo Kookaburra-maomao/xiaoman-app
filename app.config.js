@@ -4,8 +4,8 @@ const withAndroidNetworkSecurityConfigFile = require('./plugins/withAndroidNetwo
 module.exports = ({ config }) => {
   // 基础配置
   const baseConfig = {
-    name: "xiaoman-app",
-    slug: "xiaoman-app",
+    name: "xiaoman",
+    slug: "xiaoman",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
