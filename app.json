@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "小满日记",
+    "displayName": "小满日记",
     "slug": "xiaoman",
     "version": "1.0.1",
     "orientation": "portrait",
