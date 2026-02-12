@@ -6,6 +6,7 @@
 import { Colors } from '@/constants/theme';
 import { QR_CODE_URL } from '@/constants/urls';
 import { DiaryDetail, getDiaryDetail } from '@/services/chatService';
+import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
 import * as MediaLibrary from 'expo-media-library';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -69,7 +70,7 @@ const formatDate = (dateStr: string) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
-  return `${year}/${month}/${day}`;
+  return `${year} / ${month} / ${day}`;
 };
 
 const formatTime = (dateStr: string) => {
@@ -186,8 +187,17 @@ export default function DiaryShareScreen() {
           style={styles.contentView}
         >
           <View style={styles.infoCard}>
-            <View style={styles.dateContainer}>
-              <Text style={styles.dateText}>Date {formatDate(diary.gmt_create)}</Text>
+            {/* 日期和天气区域 */}
+            <View style={styles.dateWeatherContainer}>
+              <View style={styles.dateContainer}>
+                <Text style={styles.dateText}>Date</Text>
+                <Text style={styles.dateValue}>{formatDate(diary.gmt_create)}</Text>
+              </View>
+              {(diary.city || diary.weather) && (
+                <Text style={styles.weatherText}>
+                  {diary.city && diary.weather ? `${diary.city} · ${diary.weather}` : diary.city || diary.weather}
+                </Text>
+              )}
             </View>
 
             {/* 图片竖向排列，宽度 100% 高度按原图比例自适应 */}
@@ -207,6 +217,7 @@ export default function DiaryShareScreen() {
               </View>
             )}
 
+            {/* 时间显示 */}
             <View style={styles.timeContainer}>
               <Text style={styles.timeText}>{formatTime(diary.gmt_create)}</Text>
             </View>
@@ -286,13 +297,27 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  dateContainer: {
+  dateWeatherContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingBottom: 8,
+  },
+  dateContainer: {
+    display: 'flex',
     alignItems: 'flex-start',
   },
   dateText: {
-    fontSize: 14,
-    color: Colors.light.icon,
+    fontSize: scaleSize(12),
+    color: '#666666',
+  },
+  dateValue: {
+    fontSize: scaleSize(12),
+    color: '#222222',
+  },
+  weatherText: {
+    fontSize: scaleSize(12),
+    color: '#999999',
   },
   imageColumn: {
     marginTop: 8,
@@ -308,8 +333,8 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   timeText: {
-    fontSize: 14,
-    color: Colors.light.icon,
+    fontSize: scaleSize(18),
+    color: '#222222',
   },
   textContainer: {
     paddingTop: 16,

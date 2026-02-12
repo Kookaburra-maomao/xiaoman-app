@@ -4,6 +4,7 @@ import DiaryImageCarousel from '@/components/diary/DiaryImageCarousel';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { deleteDiary, DiaryDetail, getDiaryDetail } from '@/services/chatService';
+import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -51,7 +52,7 @@ const formatDate = (dateStr: string) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
-  return `${year}/${month}/${day}`;
+  return `${year} / ${month} / ${day}`;
 };
 
 // 格式化时间显示
@@ -200,9 +201,16 @@ export default function DiaryDetailScreen() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.contentView}>
           <View style={styles.infoCard}>
-            {/* 日期显示 */}
-            <View style={styles.dateContainer}>
-              <Text style={styles.dateText}>Date {formatDate(diary.gmt_create)}</Text>
+            {/* 日期和天气区域 */}
+            <View style={styles.dateWeatherContainer}>
+              <View style={styles.dateContainer}>
+                <Text style={styles.dateText}>Date <Text style={styles.dateValue}>{formatDate(diary.gmt_create)}</Text></Text>
+              </View>
+              {(diary.city || diary.weather) && (
+                <Text style={styles.weatherText}>
+                  {diary.city && diary.weather ? `${diary.city} · ${diary.weather}` : diary.city || diary.weather}
+                </Text>
+              )}
             </View>
 
             {/* 图片区域 - 与生成弹窗统一的轮播组件 */}
@@ -214,7 +222,7 @@ export default function DiaryDetailScreen() {
               />
             )}
 
-            {/* 时间戳 */}
+            {/* 时间显示 */}
             <View style={styles.timeContainer}>
               <Text style={styles.timeText}>{formatTime(diary.gmt_create)}</Text>
             </View>
@@ -372,21 +380,36 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  dateContainer: {
+  dateWeatherContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingBottom: 8,
+  },
+  dateContainer: {
     alignItems: 'flex-start',
+    display: 'flex',
+    direction: 'inherit',
   },
   dateText: {
-    fontSize: 14,
-    color: Colors.light.icon,
+    fontSize: scaleSize(12),
+    color: '#666666',
+  },
+  dateValue: {
+    fontSize: scaleSize(12),
+    color: '#222222',
+  },
+  weatherText: {
+    fontSize: scaleSize(12),
+    color: '#999999',
   },
   timeContainer: {
     paddingTop: 16,
     paddingBottom: 8,
   },
   timeText: {
-    fontSize: 14,
-    color: Colors.light.icon,
+    fontSize: scaleSize(18),
+    color: '#222222',
   },
   textContainer: {
     paddingTop: 16,

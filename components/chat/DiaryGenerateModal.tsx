@@ -8,6 +8,7 @@ import ShareModal from '@/components/diary/ShareModal';
 import { Colors } from '@/constants/theme';
 import { RETURN_ICON_URL } from '@/constants/urls';
 import * as imageService from '@/services/imageService';
+import { getLocationAndWeather } from '@/services/locationService';
 import { diaryModalMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
 import * as MediaLibrary from 'expo-media-library';
@@ -35,7 +36,7 @@ const formatDate = (gmt_create?: string): string => {
     const year = now.getFullYear();
     const month = (now.getMonth() + 1).toString().padStart(2, '0');
     const day = now.getDate().toString().padStart(2, '0');
-    return `Date ${year}/${month}/${day}`;
+    return `Date ${year} / ${month} / ${day}`;
   }
   
   try {
@@ -43,14 +44,24 @@ const formatDate = (gmt_create?: string): string => {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
-    return `Date ${year}/${month}/${day}`;
+    return `Date ${year} / ${month} / ${day}`;
   } catch {
     const now = new Date();
     const year = now.getFullYear();
     const month = (now.getMonth() + 1).toString().padStart(2, '0');
     const day = now.getDate().toString().padStart(2, '0');
-    return `Date ${year}/${month}/${day}`;
+    return `Date ${year} / ${month} / ${day}`;
   }
+};
+
+// 格式化时间：星期日 16:33
+const formatTime = (gmt_create?: string): string => {
+  const date = gmt_create ? new Date(gmt_create) : new Date();
+  const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+  const weekday = weekdays[date.getDay()];
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `星期${weekday} ${hours}:${minutes}`;
 };
 
 export default function DiaryGenerateModal({
@@ -75,9 +86,30 @@ export default function DiaryGenerateModal({
   const [localScreenshotUri, setLocalScreenshotUri] = useState<string | null>(null);
   const contentViewRef = useRef<ViewShot>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+  const [city, setCity] = useState<string>('');
+  const [weather, setWeather] = useState<string>('');
   
   // 判断流式展示是否完成
   const isStreamingComplete = !isGenerating && displayedContent === content && content.length > 0;
+
+  // 获取位置和天气信息
+  useEffect(() => {
+    if (visible) {
+      // 每次弹窗打开时获取位置和天气
+      getLocationAndWeather().then(({ city: fetchedCity, weather: fetchedWeather }) => {
+        setCity(fetchedCity);
+        setWeather(fetchedWeather);
+      }).catch((error) => {
+        console.error('获取位置和天气失败:', error);
+        setCity('');
+        setWeather('');
+      });
+    } else {
+      // 弹窗关闭时清空
+      setCity('');
+      setWeather('');
+    }
+  }, [visible]);
 
   // 更新目标文本（当 content 变化时，实时更新）
   useEffect(() => {
@@ -291,8 +323,15 @@ export default function DiaryGenerateModal({
               style={styles.contentView}
             >
               <View style={styles.diaryContainer}>
-                {/* 日期区域 */}
-                <Text style={styles.dateText}>{dateStr}</Text>
+                {/* 日期和天气区域 */}
+                <View style={styles.dateWeatherContainer}>
+                  <Text style={styles.dateText}>{dateStr}</Text>
+                  {(city || weather) && (
+                    <Text style={styles.weatherText}>
+                      {city && weather ? `${city} · ${weather}` : city || weather}
+                    </Text>
+                  )}
+                </View>
                 
                 {/* 图片区域 - 公共轮播组件 */}
                 {carouselImageUrls.length > 0 && (
@@ -302,6 +341,11 @@ export default function DiaryGenerateModal({
                     showIndicator={false}
                   />
                 )}
+
+                {/* 时间显示 */}
+                <View style={styles.timeContainer}>
+                  <Text style={styles.timeText}>{formatTime(gmt_create)}</Text>
+                </View>
 
                 {/* 日记内容区域 */}
                 <View style={styles.diaryContentContainer}>
@@ -411,12 +455,32 @@ const styles = StyleSheet.create({
     borderRadius: scaleSize(8),
     paddingTop: scaleSize(20),
   },
+  dateWeatherContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: scaleSize(20),
+  },
   dateText: {
     fontSize: scaleSize(12),
     lineHeight: scaleSize(18),
     color: Colors.light.text,
     fontFamily: 'PingFang SC',
+  },
+  weatherText: {
+    fontSize: scaleSize(12),
+    lineHeight: scaleSize(18),
+    color: Colors.light.textSecondary,
+    fontFamily: 'PingFang SC',
+  },
+  timeContainer: {
+    marginTop: scaleSize(16),
     paddingHorizontal: scaleSize(20),
+  },
+  timeText: {
+    fontSize: scaleSize(18),
+    color: '#222222',
+    fontFamily: 'PingFang SC',
   },
   diaryContentContainer: {
     marginTop: scaleSize(20),

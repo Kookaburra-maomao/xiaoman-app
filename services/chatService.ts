@@ -27,6 +27,8 @@ export interface DiaryDetail {
   context: string;
   pic?: string;
   status?: string; // 日记状态：normal-正常, deleted-已删除
+  city?: string; // 城市
+  weather?: string; // 天气
 }
 
 // 日记统计信息接口返回的数据结构
@@ -395,7 +397,9 @@ export const saveDiary = async (
   creator: string,
   pic?: string,
   emoji?: string,
-  id?: string
+  id?: string,
+  city?: string,
+  weather?: string
 ): Promise<string> => {
   const response = await fetch(`${apiUrl}/api/diaries`, {
     method: 'POST',
@@ -408,6 +412,8 @@ export const saveDiary = async (
       creator: creator,
       pic: pic || '',
       emoji: emoji || '',
+      city: city || '',
+      weather: weather || '',
     }),
   });
 

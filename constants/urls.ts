@@ -43,7 +43,7 @@ export const ICON_WARNING_URL = `${API_BASE_URL}/api/files/icon-warning.png`;
 export const RETURN_ICON_URL = `${API_BASE_URL}/api/files/xiaoman-icon-return.png`;
 export const EDIT_ICON_URL = `${API_BASE_URL}/api/files/xiaoman-icon-edit.png`;
 export const EXPORT_ICON_URL = `${API_BASE_URL}/api/files/xiaoman-icon-export.png`;
-export const QR_CODE_URL = `${API_BASE_URL}/api/files/xiaoman-qrcode.png`;
+export const QR_CODE_URL = `${API_BASE_URL}/api/files/xiaoman-qr.png`
 
 // VIP 中心
 export const VIP_HEADER_BG_URL = `${API_BASE_URL}/api/files/vip-header-bg.png`;

@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTypewriter } from '@/hooks/useTypewriter';
 import * as chatService from '@/services/chatService';
 import * as imageService from '@/services/imageService';
+import { getLocationAndWeather } from '@/services/locationService';
 import { Message } from '@/types/chat';
 import { AssistantHistoryItem, clearAssistantHistory, clearPendingConversations, clearPendingMessages, clearUnreadCount, getAssistantHistory, getPendingConversations, getPendingMessages, saveAssistantHistory } from '@/utils/unread-messages';
 import { RefObject, useCallback, useEffect, useRef, useState } from 'react';
@@ -600,9 +601,12 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         // 将图片路径数组转为JSON字符串
         const picJson = picPaths.length > 0 ? JSON.stringify(picPaths) : '';
 
+        // 获取用户当前位置和天气信息
+        const { city, weather } = await getLocationAndWeather();
+
         // 保存日记并获取返回的ID
         console.log("assistantEmoji:"+ assistantEmoji);
-        const diaryId = await chatService.saveDiary(fullContent, user.id, picJson, assistantEmoji);
+        const diaryId = await chatService.saveDiary(fullContent, user.id, picJson, assistantEmoji, undefined, city, weather);
         setCurrentDiaryId(diaryId); // 保存当前生成的日记ID
 
         // 清空图片列表（日记生成后清空）
