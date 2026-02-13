@@ -15,7 +15,18 @@ module.exports = ({ config }) => {
     ios: {
       supportsTablet: true,
       infoPlist: {
-        NSFaceIDUsageDescription: "用于验证身份以查看加密日记"
+        NSFaceIDUsageDescription: "用于验证身份以查看加密日记",
+        NSLocationWhenInUseUsageDescription: "需要获取您的位置信息以记录日记的城市和天气",
+        ITSAppUsesNonExemptEncryption: false,
+        NSAppTransportSecurity: {
+          NSAllowsArbitraryLoads: true,
+          NSExceptionDomains: {
+            "xiaomanriji.com": {
+              NSExceptionAllowsInsecureHTTPLoads: true,
+              NSIncludesSubdomains: true
+            }
+          }
+        }
       },
       bundleIdentifier: "com.anonymous.xiaomanapp"
     },
