@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
   weatherText: {
     fontSize: scaleSize(12),
     lineHeight: scaleSize(18),
-    color: Colors.light.textSecondary,
+    color: '#999999',
     fontFamily: 'PingFang SC',
   },
   timeContainer: {

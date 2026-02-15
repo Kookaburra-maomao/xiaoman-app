@@ -4,6 +4,43 @@
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 
+// 获取用户当前经纬度
+export const getCurrentLocation = async (): Promise<{
+  latitude: number;
+  longitude: number;
+} | null> => {
+  try {
+    // 动态导入 expo-location，如果未安装则返回 null
+    const Location = await import('expo-location').catch(() => null);
+    
+    if (!Location) {
+      console.log('expo-location 未安装');
+      return null;
+    }
+
+    // 请求位置权限
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    
+    if (status !== 'granted') {
+      console.log('位置权限未授予');
+      return null;
+    }
+
+    // 获取当前位置
+    const location = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
+
+    return {
+      latitude: location.coords.latitude,
+      longitude: location.coords.longitude,
+    };
+  } catch (error) {
+    console.error('获取位置失败:', error);
+    return null;
+  }
+};
+
 // 获取用户当前位置和天气信息
 export const getLocationAndWeather = async (): Promise<{
   city: string;

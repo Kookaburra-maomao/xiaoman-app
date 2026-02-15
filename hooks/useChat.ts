@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTypewriter } from '@/hooks/useTypewriter';
 import * as chatService from '@/services/chatService';
 import * as imageService from '@/services/imageService';
-import { getLocationAndWeather } from '@/services/locationService';
+import { getCurrentLocation, getLocationAndWeather } from '@/services/locationService';
 import { Message } from '@/types/chat';
 import { AssistantHistoryItem, clearAssistantHistory, clearPendingConversations, clearPendingMessages, clearUnreadCount, getAssistantHistory, getPendingConversations, getPendingMessages, saveAssistantHistory } from '@/utils/unread-messages';
 import { RefObject, useCallback, useEffect, useRef, useState } from 'react';
@@ -202,9 +202,47 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     // 立即启动打字机效果（即使还没有内容）
     startTypewriter();
 
+    // 设置超时定时器（60秒）
+    let timeoutTriggered = false;
+    const timeoutId = setTimeout(() => {
+      console.error('请求超时');
+      timeoutTriggered = true;
+      setIsSending(false);
+      stopTypewriter();
+      
+      // 更新消息为错误状态
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === systemMessageId
+            ? { ...msg, text: '请求超时，请重试', isStreaming: false, isError: true }
+            : msg
+        )
+      );
+      
+      Alert.alert('提示', '请求超时，请检查网络连接后重试');
+    }, 60000); // 60秒超时
+
     try {
       const history = await getAssistantHistory();
-      const fullText = await chatService.sendChatMessage(userContent, user.id, history);
+      
+      // 获取当前位置
+      const location = await getCurrentLocation();
+      
+      // 发送消息，包含位置信息
+      const fullText = await chatService.sendChatMessage(
+        userContent, 
+        user.id, 
+        history,
+        location || undefined
+      );
+
+      // 清除超时定时器
+      clearTimeout(timeoutId);
+      
+      // 如果超时已触发，不再处理响应
+      if (timeoutTriggered) {
+        return;
+      }
 
       // 使用打字机效果显示
       currentSystemMessageRef.current = fullText;
@@ -234,11 +272,26 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         // 静默处理错误
       });
     } catch (error: any) {
+      // 清除超时定时器
+      clearTimeout(timeoutId);
+      
+      // 如果超时已触发，不再处理错误
+      if (timeoutTriggered) {
+        return;
+      }
+      
       console.error('发送消息失败:', error);
+      
+      // 更新消息为错误状态，而不是删除
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === systemMessageId
+            ? { ...msg, text: error.message || '发送失败，请重试', isStreaming: false, isError: true }
+            : msg
+        )
+      );
+      
       Alert.alert('错误', error.message || '发送消息失败，请重试');
-
-      // 移除失败的系统消息
-      setMessages((prev) => prev.filter((msg) => msg.id !== systemMessageId));
     } finally {
       setIsSending(false);
     }
@@ -250,6 +303,16 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       Alert.alert('错误', '用户信息不存在');
       return;
     }
+
+    // 设置超时定时器（90秒，因为图片上传和理解需要更长时间）
+    let timeoutTriggered = false;
+    const timeoutId = setTimeout(() => {
+      console.error('图片上传超时');
+      timeoutTriggered = true;
+      setIsSending(false);
+      stopTypewriter();
+      Alert.alert('提示', '图片上传超时，请检查网络连接后重试');
+    }, 90000); // 90秒超时
 
     try {
       setIsSending(true);
@@ -293,6 +356,14 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       // 调用图片理解接口
       const history = await getAssistantHistory();
       const content = await chatService.callVL(imageUrl, user.id, history);
+
+      // 清除超时定时器
+      clearTimeout(timeoutId);
+      
+      // 如果超时已触发，不再处理响应
+      if (timeoutTriggered) {
+        return;
+      }
 
       // 创建系统消息用于显示理解结果，标记为流式传输中
       const systemMessageId = `vl_${Date.now()}`;
@@ -355,6 +426,14 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         }
       }, 20); // 每20ms更新一次目标文本
     } catch (error: any) {
+      // 清除超时定时器
+      clearTimeout(timeoutId);
+      
+      // 如果超时已触发，不再处理错误
+      if (timeoutTriggered) {
+        return;
+      }
+      
       console.error('上传图片或理解失败:', error);
       Alert.alert('错误', error.message || '图片上传或理解失败，请重试');
 
@@ -381,13 +460,12 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       await clearAssistantHistory();
       setAssistantHistory([]);
 
-      // 计算时间范围：昨天的 00:00:00 到当前时间
+      // 计算时间范围：今天的 00:00:00 到当前时间
       const now = new Date();
-      const yesterday = new Date(now);
-      yesterday.setDate(yesterday.getDate() - 1);
-      yesterday.setHours(0, 0, 0, 0);
+      const today = new Date(now);
+      today.setHours(0, 0, 0, 0);
 
-      const startTime = yesterday.toISOString();
+      const startTime = today.toISOString();
       const endTime = now.toISOString();
 
       // 获取对话记录
@@ -395,8 +473,6 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
 
       // 转换记录为消息格式
       const newMessages: Message[] = [];
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
       const todayStart = today.getTime();
 
       // 找到当天最新一次 type=diary 的记录位置（不包含这条记录）

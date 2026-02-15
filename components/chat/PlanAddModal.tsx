@@ -13,17 +13,18 @@ import { scaleSize } from '@/utils/screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import {
-    Alert,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import PlanEditModal, { EditPlanFormData } from '../plan/PlanEditModal';
 
 interface PlanAddModalProps {
   visible: boolean;
@@ -33,6 +34,16 @@ interface PlanAddModalProps {
   onPlanAdded: (planIndex: number) => void;
   onPlanCreated?: () => void; // 计划创建成功后的回调
 }
+
+// 根据 plan_tag 和随机数生成计划图片 URL
+const getPlanImageUrl = (planTag: string, randomNum: number): string => {
+  return `${FALLBACK_IMAGE_BASE_URL}${planTag}/${randomNum}.png`;
+};
+
+// 根据 plan_tag 和随机数生成计划预览图片 URL
+const getPlanImagePreviewUrl = (planTag: string, randomNum: number): string => {
+  return `${FALLBACK_IMAGE_BASE_URL}${planTag}/${randomNum}_preview.png`;
+};
 
 export default function PlanAddModal({
   visible,
@@ -56,6 +67,8 @@ export default function PlanAddModal({
   const [isInitialized, setIsInitialized] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [currentDatePickerIndex, setCurrentDatePickerIndex] = useState<number | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingPlanIndex, setEditingPlanIndex] = useState<number | null>(null);
 
   // 初始化编辑计划数据
   useEffect(() => {
@@ -191,6 +204,38 @@ export default function PlanAddModal({
     setCurrentDatePickerIndex(null);
   };
 
+  // 处理修改计划
+  const handleModifyPlan = (index: number) => {
+    setEditingPlanIndex(index);
+    setShowEditModal(true);
+  };
+
+  // 处理编辑保存
+  const handleEditSave = async (formData: EditPlanFormData) => {
+    if (editingPlanIndex === null) return;
+
+    try {
+      // 更新编辑计划数据
+      const newPlans = [...editingPlans];
+      newPlans[editingPlanIndex] = {
+        ...newPlans[editingPlanIndex],
+        plan_name: formData.name,
+        plan_description: formData.description,
+        times: formData.times,
+        cycle: formData.cycle,
+        gmt_limit: formData.gmt_limit,
+        image: formData.image,
+        image_preview: formData.image_preview,
+      };
+      setEditingPlans(newPlans);
+      setShowEditModal(false);
+      setEditingPlanIndex(null);
+    } catch (error: any) {
+      console.error('修改计划失败:', error);
+      Alert.alert('错误', error.message || '修改计划失败，请重试');
+    }
+  };
+
   // 删除计划
   const removePlan = (index: number) => {
     const newPlans = editingPlans.filter((_, i) => i !== index);
@@ -280,7 +325,7 @@ export default function PlanAddModal({
   };
 
   // 获取计划图片URL（优先使用 image_preview，否则使用基于索引生成稳定随机数）
-  const getPlanImageUrl = (index: number): string => {
+  const getPlanImageUrlByIndex = (index: number): string => {
     const plan = editingPlans[index];
     // 如果 plan item 中有 image_preview，优先使用
     if (plan?.image_preview) {
@@ -331,7 +376,7 @@ export default function PlanAddModal({
                 <View style={styles.planCardTop}>
                   {/* 左侧：计划图片 */}
                   <Image
-                    source={{ uri: getPlanImageUrl(index) }}
+                    source={{ uri: getPlanImageUrlByIndex(index) }}
                     style={styles.planImage}
                     resizeMode="cover"
                   />
@@ -360,9 +405,7 @@ export default function PlanAddModal({
                 <View style={styles.buttonRow}>
                   <TouchableOpacity
                     style={styles.modifyButton}
-                    onPress={() => {
-                      // TODO: 实现修改功能
-                    }}
+                    onPress={() => handleModifyPlan(index)}
                     disabled={isSubmitting}
                   >
                     <Text style={styles.modifyButtonText}>修改</Text>
@@ -379,6 +422,28 @@ export default function PlanAddModal({
             ))}
           </ScrollView>
         </SafeAreaView>
+
+        {/* 编辑计划弹窗 */}
+        {editingPlanIndex !== null && (
+          <PlanEditModal
+            visible={showEditModal}
+            plan={{
+              id: '', // 临时ID，因为这是新建计划
+              name: editingPlans[editingPlanIndex].plan_name,
+              description: editingPlans[editingPlanIndex].plan_description,
+              cycle: editingPlans[editingPlanIndex].cycle,
+              times: editingPlans[editingPlanIndex].times,
+              gmt_limit: editingPlans[editingPlanIndex].gmt_limit,
+              image: editingPlans[editingPlanIndex].image,
+            }}
+            saving={false}
+            onClose={() => {
+              setShowEditModal(false);
+              setEditingPlanIndex(null);
+            }}
+            onSave={handleEditSave}
+          />
+        )}
       </View>
     </Modal>
   );

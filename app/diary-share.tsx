@@ -333,6 +333,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   timeText: {
+    lineHeight: scaleSize(18),
     fontSize: scaleSize(18),
     color: '#222222',
   },

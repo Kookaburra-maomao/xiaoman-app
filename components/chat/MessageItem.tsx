@@ -36,6 +36,7 @@ export default function MessageItem({ message }: MessageItemProps) {
     isUserMessage && styles.messageBubbleUser,
     isSystemMessage && styles.messageBubbleSystem,
     isDiaryCard && styles.messageBubbleDiary,
+    message.isError && styles.messageBubbleError,
   ];
   
   // 渲染内容
@@ -79,6 +80,7 @@ export default function MessageItem({ message }: MessageItemProps) {
         style={[
           styles.messageText,
           isUserMessage ? styles.messageTextUser : styles.messageTextSystem,
+          message.isError && styles.messageTextError,
         ]}
         selectable={true}
       >
@@ -117,12 +119,12 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   messageBubble: {
-    maxWidth: '75%',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 16,
   },
   messageBubbleUser: {
+    maxWidth: '75%',
     // backgroundColor: Colors.light.tint,
     borderRadius: scaleSize(12),
     paddingTop: scaleSize(8),
@@ -163,6 +165,14 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 12,
+  },
+  messageBubbleError: {
+    backgroundColor: '#FFE5E5',
+    borderWidth: 1,
+    borderColor: '#FF4444',
+  },
+  messageTextError: {
+    color: '#FF4444',
   },
 });
 

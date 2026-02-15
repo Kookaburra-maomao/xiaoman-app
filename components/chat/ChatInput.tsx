@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: scaleSize(16),
     paddingTop: scaleSize(12),
-    paddingBottom: 0,
+    paddingBottom: scaleSize(12),
     // backgroundColor: Colors.light.background,
     gap: scaleSize(8),
     position: 'relative',

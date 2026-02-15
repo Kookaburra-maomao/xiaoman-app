@@ -8,15 +8,20 @@ import { HEADER_DOWN_ICON_URL, HEADER_UP_ICON_URL } from '@/constants/urls';
 import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ChatHeaderProps {
+  title?: string; // 标题文本，默认为"小满日记"
   showCard: boolean;
   onToggleCard: () => void;
   onShowMenu: () => void;
   isStreaming?: boolean;
 }
 
-export default function ChatHeader({ showCard, onToggleCard, onShowMenu, isStreaming = false }: ChatHeaderProps) {
+export default function ChatHeader({ title = '小满日记', showCard, onToggleCard, onShowMenu, isStreaming = false }: ChatHeaderProps) {
+  // 获取安全区域边距
+  const insets = useSafeAreaInsets();
+  
   // 获取当前日期信息
   const today = new Date();
   const month = today.getMonth() + 1;
@@ -37,7 +42,7 @@ export default function ChatHeader({ showCard, onToggleCard, onShowMenu, isStrea
     <View style={styles.header}>
       {/* 左边：标题和日期信息 */}
       <View style={styles.headerLeft}>
-        <Text style={styles.headerTitle}>小满日记</Text>
+        <Text style={styles.headerTitle}>{title}</Text>
         <Text style={styles.headerDate}>
           {month}月{date}日 · {weekday}
         </Text>
@@ -79,7 +84,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 16,
     paddingBottom: 20,
     backgroundColor: Colors.light.background,
   },

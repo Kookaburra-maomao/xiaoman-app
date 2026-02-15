@@ -173,19 +173,31 @@ const processStreamResponse = async (response: Response): Promise<string> => {
 export const sendChatMessage = async (
   userContent: string,
   userId: string,
-  assistantHistory?: AssistantHistoryItem[]
+  assistantHistory?: AssistantHistoryItem[],
+  location?: { latitude: number; longitude: number }
 ): Promise<string> => {
   const history = assistantHistory || [];
+
+  // 构建请求体
+  const requestBody: any = {
+    userContent: [...history, { role: 'user', content: userContent }],
+    userId,
+  };
+
+  // 如果有位置信息，添加到请求体
+  if (location) {
+    requestBody.location = JSON.stringify({
+      latitude: location.latitude,
+      longitude: location.longitude,
+    });
+  }
 
   const response = await fetch(`${apiUrl}/api/chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      userContent: [...history, { role: 'user', content: userContent }],
-      userId,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
@@ -872,3 +884,89 @@ export const generatePlan = async (
   }
 };
 
+
+// 我的记录统计数据接口返回的数据结构
+export interface MyRecordStats {
+  todayRecords: number; // 今天对话轮数
+  weekDays: number; // 本周累计记录天数
+  weekDiaryCount: number; // 本周生成日记篇数
+}
+
+// 获取今天的对话轮数
+export const getTodayRecordsCount = async (userId: string): Promise<number> => {
+  try {
+    const today = new Date();
+    const todayStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} 00:00:00`;
+    const todayEnd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} 23:59:59`;
+    
+    const records = await getChatRecords(userId, todayStart, todayEnd);
+    
+    // 只统计用户发送的消息（chat_from === 'user'）
+    const userRecordsCount = records.filter(record => record.chat_from === 'user').length;
+    
+    return userRecordsCount;
+  } catch (error) {
+    console.error('获取今天对话轮数失败:', error);
+    return 0;
+  }
+};
+
+// 获取本周的日记统计数据（累计记录天数和生成日记篇数）
+export const getWeekDiaryStats = async (userId: string): Promise<{ weekDays: number; weekDiaryCount: number }> => {
+  try {
+    const today = new Date();
+    
+    // 计算本周一的日期
+    const dayOfWeek = today.getDay();
+    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 周日是0，需要特殊处理
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - diff);
+    monday.setHours(0, 0, 0, 0);
+    
+    const weekStart = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+    const weekEnd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
+    const weekDiaryData = await getDiaryCount(userId, weekStart, weekEnd);
+    
+    // 计算本周累计记录天数（diary_count >= 1 的天数）
+    const daysWithRecords = weekDiaryData.filter(item => item.diary_count >= 1).length;
+    
+    // 计算本周生成日记总篇数（所有 diary_count 的累加）
+    const totalDiaryCount = weekDiaryData.reduce((sum, item) => sum + item.diary_count, 0);
+    
+    return {
+      weekDays: daysWithRecords,
+      weekDiaryCount: totalDiaryCount,
+    };
+  } catch (error) {
+    console.error('获取本周日记统计数据失败:', error);
+    return {
+      weekDays: 0,
+      weekDiaryCount: 0,
+    };
+  }
+};
+
+// 获取我的记录统计数据（一次性获取所有数据）
+export const getMyRecordStats = async (userId: string): Promise<MyRecordStats> => {
+  try {
+    // 并行获取所有数据
+    const [todayRecords, weekStats] = await Promise.all([
+      getTodayRecordsCount(userId),
+      getWeekDiaryStats(userId),
+    ]);
+    
+    return {
+      todayRecords,
+      weekDays: weekStats.weekDays,
+      weekDiaryCount: weekStats.weekDiaryCount,
+    };
+  } catch (error) {
+    console.error('获取我的记录统计数据失败:', error);
+    return {
+      todayRecords: 0,
+      weekDays: 0,
+      weekDiaryCount: 0,
+    };
+  }
+};

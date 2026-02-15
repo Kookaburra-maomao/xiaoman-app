@@ -7,34 +7,44 @@ import PlanAddModal from '@/components/chat/PlanAddModal';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/hooks/useChat';
+import { useOperationCard } from '@/hooks/useOperationCard';
 import { useRecording } from '@/hooks/useRecording';
 import * as chatService from '@/services/chatService';
-import { OperationCard, getOperationCards } from '@/services/chatService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, Animated, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ChatScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const params = useLocalSearchParams(); // 获取路由参数
   const scrollViewRef = useRef<ScrollView>(null);
-  const cardSlideAnim = useRef(new Animated.Value(0)).current; // 卡片透明度动画值
-  const cardTranslateY = useRef(new Animated.Value(0)).current; // 卡片垂直位移动画值（从0开始，收起时移动到-60，即title区域上边界）
   const [inputText, setInputText] = useState('');
   const [isVoiceMode, setIsVoiceMode] = useState(false);
-  const [showCard, setShowCard] = useState(false); // 默认不展示，等待检查缓存后决定
   const [cardStateBeforeKeyboard, setCardStateBeforeKeyboard] = useState(true); // 记录键盘弹出前的卡片状态
   // 移除 MenuModal，改为跳转到设置页面
-  const [operationCards, setOperationCards] = useState<OperationCard[]>([]);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [selectedPlanMessage, setSelectedPlanMessage] = useState<{ id: string; plans: any } | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  
+  // 获取安全区域边距，用于计算header高度
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets.top + 16 + 24 + 14 + 20; // top inset + paddingTop + title height + date height + paddingBottom
 
-  // 缓存键名
-  const CARD_TIMESTAMP_KEY = '@operation_card_last_shown';
+  // 使用运营卡片 Hook
+  const {
+    showCard,
+    operationCards,
+    cardSlideAnim,
+    cardTranslateY,
+    setShowCard,
+    fetchOperationCards,
+    checkShouldShowCard,
+  } = useOperationCard({ autoCheck: true });
 
   const {
     messages,
@@ -66,49 +76,6 @@ export default function ChatScreen() {
     cancelRecording,
     uploadAndRecognize,
   } = useRecording();
-
-  // 获取运营卡片
-  const fetchOperationCards = useCallback(async () => {
-    try {
-      const cards = await getOperationCards();
-      setOperationCards(cards);
-    } catch (error) {
-      console.error('获取运营卡片失败:', error);
-      setOperationCards([]);
-    }
-  }, []);
-
-  // 检查是否应该展示运营卡片
-  const checkShouldShowCard = useCallback(async () => {
-    try {
-      const lastShownTimestamp = await AsyncStorage.getItem(CARD_TIMESTAMP_KEY);
-      
-      if (!lastShownTimestamp) {
-        // 没有缓存，首次进入，展示卡片并记录时间戳
-        setShowCard(true);
-        await AsyncStorage.setItem(CARD_TIMESTAMP_KEY, Date.now().toString());
-        return;
-      }
-
-      const lastShownTime = parseInt(lastShownTimestamp, 10);
-      const currentTime = Date.now();
-      const timeDiff = currentTime - lastShownTime;
-      const thirtyMinutesInMs = 30 * 60 * 1000; // 30分钟
-
-      if (timeDiff > thirtyMinutesInMs) {
-        // 超过30分钟，展示卡片并更新时间戳
-        setShowCard(true);
-        await AsyncStorage.setItem(CARD_TIMESTAMP_KEY, currentTime.toString());
-      } else {
-        // 未超过30分钟，不展示卡片
-        setShowCard(false);
-      }
-    } catch (error) {
-      console.error('检查运营卡片展示状态失败:', error);
-      // 出错时默认展示卡片
-      setShowCard(true);
-    }
-  }, [CARD_TIMESTAMP_KEY]);
 
   // 监听键盘显示/隐藏事件
   useEffect(() => {
@@ -170,38 +137,25 @@ export default function ChatScreen() {
     }, [loadChatHistory, refreshChatHistory, loadPendingMessages, fetchOperationCards, checkShouldShowCard])
   );
 
-  // 运营卡片显示/隐藏动画（渐显/渐隐 + 下拉/上拉）
+  // 处理从 record 页面跳转过来的运营卡片参数
   useEffect(() => {
-    if (showCard) {
-      // 显示：渐显 + 下拉出现（从-60到0，即从title区域上边界下拉到正常位置）
-      Animated.parallel([
-        Animated.timing(cardSlideAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(cardTranslateY, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      // 隐藏：渐隐 + 上拉消失（从0到-60，即移动到title区域上边界就停止）
-      Animated.parallel([
-        Animated.timing(cardSlideAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(cardTranslateY, {
-          toValue: -60,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
+    if (params.operationPromptRule && params.operationText && params.operationEmoji) {
+      // 展示运营卡片
+      setShowCard(true);
+      
+      // 延迟执行运营卡片选项选择逻辑，确保页面已加载
+      setTimeout(() => {
+        handleOperationItemSelect(
+          params.operationPromptRule as string,
+          params.operationText as string,
+          params.operationEmoji as string
+        );
+        
+        // 清除路由参数（通过替换当前路由）
+        router.replace('/(tabs)/chat');
+      }, 300);
     }
-  }, [showCard, cardSlideAnim, cardTranslateY]);
+  }, [params.operationPromptRule, params.operationText, params.operationEmoji]);
 
   // 切换语音/文字输入
   const toggleInputMode = useCallback(() => {
@@ -294,7 +248,7 @@ export default function ChatScreen() {
 
   // 打开图片选择器（摄像头或相册）
   const openImagePicker = useCallback(async () => {
-    if (isGeneratingDiary) {
+    if (isGeneratingDiary || isUploadingImage) {
       return;
     }
     // 显示选择对话框
@@ -325,7 +279,12 @@ export default function ChatScreen() {
 
             if (!result.canceled && result.assets[0]) {
               setShowCard(false);
-              await uploadImageAndUnderstand(result.assets[0].uri, scrollToBottom);
+              setIsUploadingImage(true);
+              try {
+                await uploadImageAndUnderstand(result.assets[0].uri, scrollToBottom);
+              } finally {
+                setIsUploadingImage(false);
+              }
             }
           },
         },
@@ -348,14 +307,19 @@ export default function ChatScreen() {
 
             if (!result.canceled && result.assets[0]) {
               setShowCard(false);
-              await uploadImageAndUnderstand(result.assets[0].uri, scrollToBottom);
+              setIsUploadingImage(true);
+              try {
+                await uploadImageAndUnderstand(result.assets[0].uri, scrollToBottom);
+              } finally {
+                setIsUploadingImage(false);
+              }
             }
           },
         },
       ],
       { cancelable: true }
     );
-  }, [isGeneratingDiary, uploadImageAndUnderstand, scrollToBottom]);
+  }, [isGeneratingDiary, isUploadingImage, uploadImageAndUnderstand, scrollToBottom]);
 
   // 处理运营卡片选项选择
   const handleOperationItemSelect = useCallback((promptRule: string, text: string, emoji: string) => {
@@ -502,7 +466,7 @@ export default function ChatScreen() {
   }, [showCard]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -523,6 +487,7 @@ export default function ChatScreen() {
             style={[
               styles.cardWrapper,
               {
+                top: headerHeight - 60, // 上移 60px
                 opacity: cardSlideAnim, // 透明度实现渐显/渐隐效果
                 transform: [{ translateY: cardTranslateY }], // 垂直位移实现下拉/上拉效果
               },
@@ -540,7 +505,7 @@ export default function ChatScreen() {
         <ScrollView 
           ref={scrollViewRef}
           style={styles.scrollView}
-          contentContainerStyle={styles.scrollViewContent}
+          contentContainerStyle={[styles.scrollViewContent, { paddingTop: headerHeight }]}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={scrollToBottom}
           onScroll={handleScroll}
@@ -607,6 +572,16 @@ export default function ChatScreen() {
           onPlanCreated={handlePlanCreated}
         />
       )}
+
+      {/* 图片上传 Loading */}
+      {isUploadingImage && (
+        <View style={styles.uploadingOverlay}>
+          <View style={styles.uploadingContainer}>
+            <ActivityIndicator size="large" color={Colors.light.tint} />
+            <Text style={styles.uploadingText}>正在上传图片...</Text>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -624,14 +599,44 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollViewContent: {
-    paddingTop: 80, // 固定 paddingTop，确保消息不被 header 遮挡，不受运营卡片显示状态影响
+    // paddingTop is set dynamically based on header height
   },
   cardWrapper: {
     position: 'absolute',
-    top: 60, // header 高度约 40px（按钮位置）+ 20px（间距）= 60px，从title区域以下开始
+    // top is set dynamically based on header height
     left: 0,
     right: 0,
     zIndex: 998, // 低于header的zIndex（1000），确保不覆盖title区域
     overflow: 'hidden', // 裁剪超出部分，确保卡片收起时不会透出到title区域上方
+  },
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  uploadingContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  uploadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: Colors.light.text,
   },
 });

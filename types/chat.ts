@@ -8,6 +8,7 @@ export interface Message {
   text: string;
   imageUrl?: string;
   isStreaming?: boolean; // 标记消息是否还在流式传输中
+  isError?: boolean; // 标记消息是否为错误状态
   recordType?: 'chat' | 'image' | 'diary' | 'text' | 'emoji'; // 记录类型
   diaryData?: {
     id: string;
