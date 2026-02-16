@@ -510,6 +510,7 @@ export default function ChatScreen() {
           onContentSizeChange={scrollToBottom}
           onScroll={handleScroll}
           scrollEventThrottle={16}
+          keyboardShouldPersistTaps="handled"
         >
           {/* 消息列表 */}
           <MessageList

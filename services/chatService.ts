@@ -413,6 +413,8 @@ export const saveDiary = async (
   city?: string,
   weather?: string
 ): Promise<string> => {
+  console.log('[saveDiary] 调用参数:', { context: context.substring(0, 50) + '...', creator, pic, emoji, id, city, weather });
+  
   const response = await fetch(`${apiUrl}/api/diaries`, {
     method: 'POST',
     headers: {
@@ -435,6 +437,7 @@ export const saveDiary = async (
   }
 
   const result = await response.json();
+  console.log('[saveDiary] API 返回结果:', result);
 
   if (result.code === 200 && result.data?.id) {
     return result.data.id;
@@ -447,7 +450,8 @@ export const saveDiary = async (
 export const updateDiary = async (
   id: string,
   context: string,
-  creator: string
+  creator: string,
+  pic?: string
 ): Promise<DiaryDetail> => {
   const response = await fetch(`${apiUrl}/api/diaries`, {
     method: 'POST',
@@ -458,6 +462,7 @@ export const updateDiary = async (
       id: id,
       context: context,
       creator: creator,
+      pic: pic || '', // 保留图片字段
     }),
   });
 
@@ -557,6 +562,9 @@ export const getDiaryDetail = async (diaryId: string): Promise<DiaryDetail | nul
     }
 
     const result = await response.json();
+    console.log('[getDiaryDetail] API 返回结果:', result);
+    console.log('[getDiaryDetail] result.data:', result.data);
+    console.log('[getDiaryDetail] result.data.pic:', result.data?.pic);
 
     if (result.code === 200 && result.data) {
       return result.data;
@@ -780,6 +788,7 @@ export interface OperationCard {
   record_topic: string;
   record_item: RecordItem[]; // 数组类型
   button_name?: string;
+  button_color?: string; // 按钮文字颜色
   prompt_rule: string;
   topic_keyword: string;
   bg_image?: string;

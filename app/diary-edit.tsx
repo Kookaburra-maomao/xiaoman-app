@@ -1,33 +1,58 @@
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
-import { getDiaryDetail, updateDiary, DiaryDetail } from '@/services/chatService';
+import { DiaryDetail, getDiaryDetail, updateDiary } from '@/services/chatService';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// 解析图片列表（支持逗号分隔的多张图片）
+// 解析图片列表（支持JSON数组格式和逗号分隔格式）
 const parseImages = (pic?: string | null): string[] => {
-  if (!pic) return [];
-  return pic.split(',').map(img => img.trim()).filter(img => img);
+  console.log('[parseImages] 输入的 pic 值:', pic);
+  console.log('[parseImages] pic 类型:', typeof pic);
+  
+  if (!pic || pic.trim() === '') {
+    console.log('[parseImages] pic 为空，返回空数组');
+    return [];
+  }
+  
+  try {
+    // 尝试解析JSON格式 ["url1", "url2"]
+    const parsed = JSON.parse(pic);
+    console.log('[parseImages] JSON 解析成功:', parsed);
+    if (Array.isArray(parsed)) {
+      const filtered = parsed.filter(img => typeof img === 'string' && img.trim() !== '');
+      console.log('[parseImages] 过滤后的图片数组:', filtered);
+      return filtered;
+    }
+  } catch (error) {
+    console.log('[parseImages] JSON 解析失败，尝试逗号分隔:', error);
+    // 如果不是JSON格式，尝试逗号分隔格式
+    const result = pic.split(',').map(img => img.trim()).filter(img => img);
+    console.log('[parseImages] 逗号分隔解析结果:', result);
+    return result;
+  }
+  
+  console.log('[parseImages] 返回空数组');
+  return [];
 };
 
 export default function DiaryEditScreen() {
@@ -40,6 +65,10 @@ export default function DiaryEditScreen() {
   const [context, setContext] = useState('');
 
   const images = diary ? parseImages(diary.pic) : [];
+  
+  console.log('[DiaryEdit] diary 对象:', diary);
+  console.log('[DiaryEdit] diary.pic 值:', diary?.pic);
+  console.log('[DiaryEdit] 解析后的 images:', images);
 
   // 获取日记详情
   const fetchDiaryDetail = async () => {
@@ -74,7 +103,8 @@ export default function DiaryEditScreen() {
 
     try {
       setSaving(true);
-      await updateDiary(diaryId, context.trim(), user.id);
+      // 保留原始的pic字段
+      await updateDiary(diaryId, context.trim(), user.id, diary?.pic);
       Alert.alert('成功', '日记已更新', [
         {
           text: '确定',

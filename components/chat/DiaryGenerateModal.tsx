@@ -79,6 +79,7 @@ export default function DiaryGenerateModal({
   const targetTextRef = useRef<string>('');
   const typewriterTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [displayedContent, setDisplayedContent] = useState('');
+  const [typewriterComplete, setTypewriterComplete] = useState(false); // 打字机效果是否完成
   const [enableMarkdown, setEnableMarkdown] = useState(true); // 调试开关：是否启用 markdown
   const [sharing, setSharing] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -89,8 +90,8 @@ export default function DiaryGenerateModal({
   const [city, setCity] = useState<string>('');
   const [weather, setWeather] = useState<string>('');
   
-  // 判断流式展示是否完成
-  const isStreamingComplete = !isGenerating && displayedContent === content && content.length > 0;
+  // 判断流式展示是否完成（需要等待打字机效果完成）
+  const isStreamingComplete = !isGenerating && typewriterComplete && displayedContent === content && content.length > 0;
 
   // 获取位置和天气信息
   useEffect(() => {
@@ -115,10 +116,12 @@ export default function DiaryGenerateModal({
   useEffect(() => {
     if (visible) {
       targetTextRef.current = content || '';
+      setTypewriterComplete(false); // 重置打字机完成状态
     } else {
       targetTextRef.current = '';
       displayedTextRef.current = '';
       setDisplayedContent('');
+      setTypewriterComplete(false);
     }
   }, [content, visible]);
 
@@ -128,6 +131,7 @@ export default function DiaryGenerateModal({
       displayedTextRef.current = '';
       targetTextRef.current = '';
       setDisplayedContent('');
+      setTypewriterComplete(false);
       if (typewriterTimerRef.current) {
         clearInterval(typewriterTimerRef.current);
         typewriterTimerRef.current = null;
@@ -138,6 +142,7 @@ export default function DiaryGenerateModal({
     // 重置显示状态
     displayedTextRef.current = '';
     setDisplayedContent('');
+    setTypewriterComplete(false);
 
     // 启动打字机效果
     if (typewriterTimerRef.current) {
@@ -154,6 +159,11 @@ export default function DiaryGenerateModal({
         const nextChar = targetText[currentDisplay.length];
         displayedTextRef.current = currentDisplay + nextChar;
         setDisplayedContent(displayedTextRef.current);
+        
+        // 检查是否已经显示完所有字符
+        if (displayedTextRef.current.length === targetText.length && targetText.length > 0) {
+          setTypewriterComplete(true);
+        }
       }
       // 注意：不在这里停止定时器，让它在流式数据到达时继续运行
     }, 20); // 每20ms显示一个字符
@@ -305,7 +315,7 @@ export default function DiaryGenerateModal({
               disabled={isGenerating}
             >
               <Text style={styles.debugToggleText}>
-                {enableMarkdown ? 'MD' : 'TXT'}
+                {enableMarkdown ? '' : ''}
               </Text>
             </TouchableOpacity>
           </View>
@@ -362,7 +372,7 @@ export default function DiaryGenerateModal({
                 editDisabled={isGenerating || !diaryId}
                 exportDisabled={isGenerating}
                 exportLoading={sharing}
-                exportLabel="导出"
+                exportLabel="分享"
               />
             )}
           </ScrollView>
@@ -415,10 +425,13 @@ const styles = StyleSheet.create({
     height: scaleSize(40),
   },
   title: {
+    flex: 1,
+    width: scaleSize(100),
     fontSize: scaleSize(18),
     fontWeight: '600',
     color: Colors.light.text,
     fontFamily: 'PingFang SC',
+    textAlign: 'center',
   },
   headerRight: {
     width: scaleSize(40),
@@ -431,10 +444,8 @@ const styles = StyleSheet.create({
     borderRadius: scaleSize(8),
   },
   debugToggleActive: {
-    backgroundColor: '#4CAF50',
   },
   debugToggleInactive: {
-    backgroundColor: '#FF9800',
   },
   debugToggleText: {
     fontSize: scaleSize(12),

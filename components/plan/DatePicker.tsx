@@ -3,15 +3,16 @@
  */
 
 import { Colors } from '@/constants/theme';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useEffect, useState } from 'react';
 import { Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 
 interface DatePickerProps {
   visible: boolean;
   selectedDate: string;
   onConfirm: (date: string) => void;
   onCancel: () => void;
+  minDate?: Date; // 最小可选日期
 }
 
 function formatDateToYYYYMMDD(date: Date): string {
@@ -21,7 +22,7 @@ function formatDateToYYYYMMDD(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-export default function DatePicker({ visible, selectedDate, onConfirm, onCancel }: DatePickerProps) {
+export default function DatePicker({ visible, selectedDate, onConfirm, onCancel, minDate }: DatePickerProps) {
   const initialDate = selectedDate ? new Date(selectedDate) : new Date();
   const [value, setValue] = useState<Date>(initialDate);
 
@@ -42,6 +43,7 @@ export default function DatePicker({ visible, selectedDate, onConfirm, onCancel 
         value: selectedDate ? new Date(selectedDate) : new Date(),
         mode: 'date',
         display: 'default',
+        minimumDate: minDate,
         onChange: (event, date) => {
           if (event.type === 'set' && date) {
             onConfirm(formatDateToYYYYMMDD(date));
@@ -81,6 +83,7 @@ export default function DatePicker({ visible, selectedDate, onConfirm, onCancel 
           display="spinner"
           onChange={(_, date) => date && setValue(date)}
           style={styles.picker}
+          minimumDate={minDate}
         />
       </View>
     </Modal>

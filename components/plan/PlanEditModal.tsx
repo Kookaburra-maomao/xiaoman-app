@@ -356,6 +356,7 @@ export default function PlanEditModal({
             <DatePicker
               visible={showDatePicker}
               selectedDate={editFormData.gmt_limit}
+              minDate={new Date(new Date().setHours(0, 0, 0, 0))}
               onConfirm={(date) => {
                 setEditFormData({ ...editFormData, gmt_limit: date });
                 setShowDatePicker(false);
@@ -382,8 +383,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '90%',
-    paddingBottom: (Platform.OS === 'ios' ? 34 : 16) + 100,
+    maxHeight: '95%',
+    paddingBottom: (Platform.OS === 'ios' ? 34 : 16),
   },
   editModalHeader: {
     flexDirection: 'row',
@@ -416,7 +417,7 @@ const styles = StyleSheet.create({
   editModalBody: {
     paddingHorizontal: 20,
     paddingVertical: scaleSize(16),
-    paddingBottom: scaleSize(40),
+    paddingBottom: scaleSize(240),
   },
   editFormItem: {
     // marginBottom: 16,

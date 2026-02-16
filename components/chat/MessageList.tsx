@@ -19,7 +19,6 @@ interface MessageListProps {
 export default function MessageList({ messages, isGeneratingDiary, onGenerateDiary, onAddToPlan }: MessageListProps) {
   // 处理生成日记按钮点击
   const handleGenerateDiary = () => {
-    // 直接执行生成日记，不再先收起键盘
     onGenerateDiary();
   };
 

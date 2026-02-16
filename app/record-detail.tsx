@@ -1,12 +1,14 @@
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
-import { DiaryByDateItem, getDiariesByDate } from '@/services/chatService';
+import { DiaryByDateItem, getChatRecords, getDiariesByDate } from '@/services/chatService';
+import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // 获取第一张图片（pic 为 JSON 字符串数组，如 '["/api/files/xxx.png", ...]'）
@@ -40,6 +42,7 @@ export default function RecordDetailScreen() {
   const { date } = useLocalSearchParams<{ date: string }>();
   const [diaries, setDiaries] = useState<DiaryByDateItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chatRecordsCount, setChatRecordsCount] = useState(0); // 对话记录数量
 
   // 格式化日期显示
   const formatDate = (dateStr: string) => {
@@ -83,8 +86,26 @@ export default function RecordDetailScreen() {
     }
   };
 
+  // 获取对话记录数量
+  const fetchChatRecordsCount = async () => {
+    if (!user?.id || !date) return;
+
+    try {
+      // 构建当天的开始和结束时间
+      const startTime = `${date} 00:00:00`;
+      const endTime = `${date} 23:59:59`;
+      
+      const records = await getChatRecords(user.id, startTime, endTime);
+      setChatRecordsCount(records.length);
+    } catch (error) {
+      console.error('获取对话记录失败:', error);
+      setChatRecordsCount(0);
+    }
+  };
+
   useEffect(() => {
     fetchDiaries();
+    fetchChatRecordsCount();
   }, [user?.id, date]);
 
   return (
@@ -120,8 +141,9 @@ export default function RecordDetailScreen() {
                     <Text style={styles.timePeriodText}>{formatTimePeriod(diary.gmt_create)}</Text>
                   </View>
                   <View style={styles.timelineDot} />
-                  {index < diaries.length - 1 && <View style={styles.timelineLine} />}
-                  <View style={styles.timelineDot} />
+                  {/* 只有多个日记时才显示连接线和底部圆点 */}
+                  {diaries.length > 1 && index < diaries.length - 1 && <View style={styles.timelineLine} />}
+                  {diaries.length > 1 && <View style={styles.timelineDot} />}
                 </View>
 
                 {/* 内容区域 */}
@@ -146,7 +168,9 @@ export default function RecordDetailScreen() {
                     {/* 文字内容 - 只显示前100个字 */}
                     {diary.context && (
                       <>
-                        <Text style={styles.diaryText}>{truncateText(diary.context)}</Text>
+                        <Markdown style={defaultMarkdownStyles}>
+                          {truncateText(diary.context)}
+                        </Markdown>
                         {/* 如果文字超过100字，显示查看全文按钮 */}
                         {diary.context.length > 100 && (
                           <TouchableOpacity
@@ -172,6 +196,29 @@ export default function RecordDetailScreen() {
               </View>
             ))}
           </View>
+
+          {/* 对话记录入口 */}
+          {chatRecordsCount > 0 && (
+            <TouchableOpacity
+              style={styles.chatsRecordWrap}
+              onPress={() => {
+                router.push({
+                  pathname: '/chat-record-day',
+                  params: {
+                    date: date,
+                  },
+                });
+              }}
+              activeOpacity={0.7}
+            >
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-chat.png' }}
+                style={styles.chatRecordIcon}
+                resizeMode="contain"
+              />
+              <Text style={styles.chatRecordText}>{chatRecordsCount}条对话记录</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -189,8 +236,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+
   },
   backButton: {
     width: 40,
@@ -311,6 +357,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginLeft: 6,
+  },
+  chatsRecordWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 50,
+    marginBottom: 20,
+  },
+  chatRecordIcon: {
+    width: 16,
+    height: 16,
+    marginRight: 6,
+  },
+  chatRecordText: {
+    fontSize: 14,
+    color: '#666666',
   },
 });
 

@@ -653,7 +653,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       try {
         // 将图片列表转为路径数组，然后转为JSON字符串（使用保存的副本）
         const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
-        console.log('保存日记时使用的图片列表:', currentImageList);
+        console.log('[生成日记] 保存日记时使用的图片列表 currentImageList:', currentImageList);
         const picPaths = currentImageList.map((imageUrl) => {
           if (imageUrl.startsWith(apiUrl)) {
             // 去掉域名前缀，只保留路径
@@ -674,8 +674,13 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
           }
         }).filter(path => path); // 过滤掉空路径
 
+        console.log('[生成日记] 处理后的图片路径数组 picPaths:', picPaths);
+        
         // 将图片路径数组转为JSON字符串
         const picJson = picPaths.length > 0 ? JSON.stringify(picPaths) : '';
+        
+        console.log('[生成日记] 最终的 picJson:', picJson);
+        console.log('[生成日记] picJson 长度:', picJson.length);
 
         // 获取用户当前位置和天气信息
         const { city, weather } = await getLocationAndWeather();
@@ -752,10 +757,11 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         setAssistantHistory([]);
 
         // 流式展示完成后，显示保存成功提示
-        // 使用setTimeout确保在isGeneratingDiary设置为false之后显示
+        // 延迟显示，等待打字机效果完成（假设平均20ms/字符）
+        const estimatedTypewriterTime = fullContent.length * 20 + 500; // 额外加500ms缓冲
         setTimeout(() => {
           Alert.alert('成功', '日记已保存在记录中');
-        }, 100);
+        }, estimatedTypewriterTime);
       } catch (saveError: any) {
         console.error('保存日记失败:', saveError);
         Alert.alert('提示', '日记生成成功，但保存失败：' + (saveError.message || '请稍后重试'));

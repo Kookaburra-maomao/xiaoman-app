@@ -82,39 +82,91 @@ export default function PlanScreen() {
   // 处理图片上传
   const onUploadImage = async () => {
     try {
-      // 请求相册权限
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('提示', '需要相册权限');
-        return;
-      }
+      // 显示选择对话框
+      Alert.alert(
+        '选择图片',
+        '请选择图片来源',
+        [
+          {
+            text: '拍照',
+            onPress: async () => {
+              // 请求摄像头权限
+              const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+              if (cameraStatus !== 'granted') {
+                Alert.alert('提示', '需要摄像头权限');
+                return;
+              }
 
-      // 打开相册
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 1,
-      });
+              // 打开摄像头
+              const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                quality: 1,
+              });
 
-      if (result.canceled || !result.assets[0]) {
-        return;
-      }
+              if (result.canceled || !result.assets[0]) {
+                return;
+              }
 
-      setIsUploadingImage(true);
-      const uploadResult = await handleUploadImage(result.assets[0].uri);
-      
-      if (uploadResult) {
-        setUploadedImageUrl(uploadResult.imageUrl);
-        Alert.alert('成功', '图片上传成功');
-        
-        // 关闭弹窗并跳转到聊天页面
-        setShowSuccessModal(false);
-        router.push('/(tabs)/chat');
-      }
+              setIsUploadingImage(true);
+              const uploadResult = await handleUploadImage(result.assets[0].uri);
+              
+              if (uploadResult) {
+                setUploadedImageUrl(uploadResult.imageUrl);
+                Alert.alert('成功', '图片上传成功');
+                
+                // 关闭弹窗并跳转到聊天页面
+                setShowSuccessModal(false);
+                router.push('/(tabs)/chat');
+              }
+              setIsUploadingImage(false);
+            },
+          },
+          {
+            text: '从相册选择',
+            onPress: async () => {
+              // 请求相册权限
+              const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+              if (status !== 'granted') {
+                Alert.alert('提示', '需要相册权限');
+                return;
+              }
+
+              // 打开相册
+              const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                quality: 1,
+              });
+
+              if (result.canceled || !result.assets[0]) {
+                return;
+              }
+
+              setIsUploadingImage(true);
+              const uploadResult = await handleUploadImage(result.assets[0].uri);
+              
+              if (uploadResult) {
+                setUploadedImageUrl(uploadResult.imageUrl);
+                Alert.alert('成功', '图片上传成功');
+                
+                // 关闭弹窗并跳转到聊天页面
+                setShowSuccessModal(false);
+                router.push('/(tabs)/chat');
+              }
+              setIsUploadingImage(false);
+            },
+          },
+          {
+            text: '取消',
+            style: 'cancel',
+          },
+        ],
+        { cancelable: true }
+      );
     } catch (error: any) {
       console.error('上传图片失败:', error);
       Alert.alert('错误', error.message || '图片上传失败，请重试');
-    } finally {
       setIsUploadingImage(false);
     }
   };

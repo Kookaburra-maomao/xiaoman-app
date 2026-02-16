@@ -96,7 +96,10 @@ function RootLayoutContent() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ 
+      headerShown: false,
+      gestureEnabled: false, // 禁用左右滑动返回手势
+    }}>
       <Stack.Screen name="login" />
       <Stack.Screen name="(tabs)" />
     </Stack>

@@ -21,8 +21,7 @@ export interface DiaryActionButtonsProps {
   editDisabled?: boolean;
   exportDisabled?: boolean;
   exportLoading?: boolean;
-  /** 右侧按钮文案：导出 | 分享，默认「导出」 */
-  exportLabel?: '导出' | '分享';
+  exportLabel?: '分享';
 }
 
 export default function DiaryActionButtons({
@@ -31,7 +30,7 @@ export default function DiaryActionButtons({
   editDisabled = false,
   exportDisabled = false,
   exportLoading = false,
-  exportLabel = '导出',
+  exportLabel = '分享',
 }: DiaryActionButtonsProps) {
   return (
     <View style={styles.container}>

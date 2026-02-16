@@ -164,7 +164,14 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
               activeOpacity={0.7}
               onPress={() => handleButtonPress(item.content_url)}
             >
-              <Text style={styles.type2ButtonText}>{item.button_name}</Text>
+              <Text 
+                style={[
+                  styles.type2ButtonText,
+                  item.button_name && item.button_color && { color: item.button_color }
+                ]}
+              >
+                {item.button_name}
+              </Text>
             </TouchableOpacity>
           </View>
         )}

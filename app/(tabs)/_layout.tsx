@@ -1,5 +1,5 @@
-import { Tabs } from 'expo-router';
 import CustomTabBar from '@/components/custom-tab-bar';
+import { Tabs } from 'expo-router';
 
 export default function TabsLayout() {
   return (
@@ -8,6 +8,7 @@ export default function TabsLayout() {
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
+        swipeEnabled: false, // 禁用左右滑动切换标签页
       }}
     >
       <Tabs.Screen
