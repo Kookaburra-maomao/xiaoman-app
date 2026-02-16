@@ -56,12 +56,14 @@ export default function ChatScreen() {
     diaryImageUrl,
     currentDiaryId,
     diaryImageList,
+    userMemory,
     setShowDiaryModal,
     sendMessage,
     uploadImageAndUnderstand,
     generateDiary,
     loadPendingMessages,
     loadChatHistory,
+    initUserMemory,
     refreshChatHistory,
     scrollToBottom,
     setAssistantEmoji,
@@ -107,6 +109,9 @@ export default function ChatScreen() {
   // 监听页面聚焦，加载历史记录和待发送的消息
   useFocusEffect(
     useCallback(() => {
+      // 初始化用户记忆（只在第一次加载时执行）
+      initUserMemory();
+      
       // 检查是否需要刷新（从日记详情页返回）
       const checkRefreshNeeded = async () => {
         try {
@@ -134,7 +139,7 @@ export default function ChatScreen() {
       fetchOperationCards();
       // 检查是否应该展示运营卡片
       checkShouldShowCard();
-    }, [loadChatHistory, refreshChatHistory, loadPendingMessages, fetchOperationCards, checkShouldShowCard])
+    }, [initUserMemory, loadChatHistory, refreshChatHistory, loadPendingMessages, fetchOperationCards, checkShouldShowCard])
   );
 
   // 处理从 record 页面跳转过来的运营卡片参数

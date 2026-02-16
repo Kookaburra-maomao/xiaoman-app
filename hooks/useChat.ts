@@ -28,7 +28,9 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
   const [currentDiaryId, setCurrentDiaryId] = useState<string | null>(null);
   const [imageList, setImageList] = useState<string[]>([]); // 图片列表，最多保存3张
   const [diaryImageList, setDiaryImageList] = useState<string[]>([]); // 生成日记时的图片列表快照
+  const [userMemory, setUserMemory] = useState<string>(''); // 用户长期记忆
   const hasLoadedHistoryRef = useRef(false); // 标记是否已加载过历史记录
+  const hasLoadedMemoryRef = useRef(false); // 标记是否已加载过用户记忆
   const currentSystemMessageRef = useRef<string>('');
 
   // 打字机效果更新回调
@@ -228,12 +230,13 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       // 获取当前位置
       const location = await getCurrentLocation();
       
-      // 发送消息，包含位置信息
+      // 发送消息，包含位置信息和用户记忆
       const fullText = await chatService.sendChatMessage(
         userContent, 
         user.id, 
         history,
-        location || undefined
+        location || undefined,
+        userMemory // 传递用户记忆
       );
 
       // 清除超时定时器
@@ -295,7 +298,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     } finally {
       setIsSending(false);
     }
-  }, [isSending, user?.id, stopTypewriter, startTypewriter, updateTypewriterTarget, waitForTypewriter]);
+  }, [isSending, user?.id, userMemory, stopTypewriter, startTypewriter, updateTypewriterTarget, waitForTypewriter]);
 
   // 上传图片并调用图片理解
   const uploadImageAndUnderstand = useCallback(async (imageUri: string, scrollToBottomFn?: () => void) => {
@@ -444,6 +447,41 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       setIsSending(false);
     }
   }, [user?.id, stopTypewriter, startTypewriter, updateTypewriterTarget, waitForTypewriter]);
+
+  // 初始化用户记忆
+  const initUserMemory = useCallback(async () => {
+    if (!user?.id || hasLoadedMemoryRef.current) {
+      // 如果已加载过，不再加载
+      return;
+    }
+
+    try {
+      hasLoadedMemoryRef.current = true;
+      console.log('[initUserMemory] 开始初始化用户记忆');
+
+      // 尝试获取用户记忆
+      const memoryData = await chatService.getUserMemory(user.id);
+
+      if (memoryData && memoryData.memory) {
+        // 成功获取到记忆数据
+        console.log('[initUserMemory] 获取到用户记忆:', memoryData.memory.substring(0, 100) + '...');
+        setUserMemory(memoryData.memory);
+      } else {
+        // 没有记忆数据，创建一个空的
+        console.log('[initUserMemory] 用户记忆不存在，创建空记忆');
+        const newMemory = await chatService.createUserMemory(user.id, '');
+        if (newMemory) {
+          setUserMemory('');
+        } else {
+          console.error('[initUserMemory] 创建用户记忆失败');
+          setUserMemory('');
+        }
+      }
+    } catch (error) {
+      console.error('[initUserMemory] 初始化用户记忆失败:', error);
+      setUserMemory('');
+    }
+  }, [user?.id]);
 
   // 加载历史对话记录
   const loadChatHistory = useCallback(async () => {
@@ -637,11 +675,46 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         setDiaryImageUrl(currentImageUrl);
       }
 
-      // 调用生成日记接口（流式）
+      // 调用生成日记接口前，先抽取记忆
       const history = await getAssistantHistory();
+      
+      // 构建包含记忆的 history（用于抽取记忆）
+      let finalHistory = [...history];
+      if (userMemory && userMemory.length > 0) {
+        finalHistory.unshift({ role: 'assistant', content: userMemory });
+      }
+      
+      console.log('[生成日记] 开始抽取用户记忆');
+      // 调用抽取记忆接口
+      const extractedMemory = await chatService.extractUserMemory(finalHistory);
+      
+      // 如果抽取成功，将新记忆添加到 history 开头
+      let diaryHistory = [...history];
+      if (extractedMemory) {
+        console.log('[生成日记] 抽取记忆成功:', extractedMemory);
+        const memoryContent = JSON.stringify(extractedMemory);
+        diaryHistory.unshift({ role: 'assistant', content: memoryContent });
+        
+        // 异步更新用户记忆到数据库
+        chatService.updateUserMemory(user.id, memoryContent).then((success) => {
+          if (success) {
+            console.log('[生成日记] 更新用户记忆成功');
+            // 同时更新本地的 userMemory 状态
+            setUserMemory(memoryContent);
+          } else {
+            console.error('[生成日记] 更新用户记忆失败');
+          }
+        }).catch((error) => {
+          console.error('[生成日记] 更新用户记忆异常:', error);
+        });
+      } else {
+        console.log('[生成日记] 抽取记忆失败或无新记忆');
+      }
+      
+      // 调用生成日记接口（流式）
       const fullContent = await chatService.generateDiary(
         userContent,
-        history,
+        diaryHistory, // 使用包含新记忆的 history
         user.id,
         (text: string) => {
           // 流式更新内容
@@ -773,7 +846,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     } finally {
       setIsGeneratingDiary(false);
     }
-  }, [user?.id, assistantHistory, messages, imageList, assistantEmoji, scrollToBottom, currentDiaryId]);
+  }, [user?.id, assistantHistory, messages, imageList, assistantEmoji, userMemory, setUserMemory, scrollToBottom, currentDiaryId]);
 
   // 刷新聊天历史（用于删除日记后刷新列表）
   const refreshChatHistory = useCallback(async () => {
@@ -808,12 +881,14 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     currentDiaryId,
     imageList, // 图片列表
     diaryImageList, // 生成日记时的图片列表快照
+    userMemory, // 用户长期记忆
     setShowDiaryModal,
     sendMessage,
     uploadImageAndUnderstand,
     generateDiary,
     loadPendingMessages,
     loadChatHistory,
+    initUserMemory, // 初始化用户记忆
     refreshChatHistory,
     scrollToBottom,
   };

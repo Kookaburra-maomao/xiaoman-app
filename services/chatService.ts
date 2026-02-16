@@ -8,6 +8,15 @@ import { fetchActivePlans } from './planService';
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 
+// 用户记忆接口返回的数据结构
+export interface UserMemory {
+  id: string;
+  gmt_create: string;
+  gmt_modified: string;
+  user_id: string;
+  memory: string; // JSON 字符串格式的记忆数据
+}
+
 // 对话记录接口返回的数据结构
 export interface ChatRecord {
   id: string;
@@ -174,13 +183,20 @@ export const sendChatMessage = async (
   userContent: string,
   userId: string,
   assistantHistory?: AssistantHistoryItem[],
-  location?: { latitude: number; longitude: number }
+  location?: { latitude: number; longitude: number },
+  userMemory?: string
 ): Promise<string> => {
   const history = assistantHistory || [];
 
+  // 如果有用户记忆且长度大于0，在 history 数组开头添加记忆
+  let finalHistory = [...history];
+  if (userMemory && userMemory.length > 0) {
+    finalHistory.unshift({ role: 'assistant', content: userMemory });
+  }
+
   // 构建请求体
   const requestBody: any = {
-    userContent: [...history, { role: 'user', content: userContent }],
+    userContent: [...finalHistory, { role: 'user', content: userContent }],
     userId,
   };
 
@@ -977,5 +993,136 @@ export const getMyRecordStats = async (userId: string): Promise<MyRecordStats> =
       weekDays: 0,
       weekDiaryCount: 0,
     };
+  }
+};
+
+// 获取用户记忆
+export const getUserMemory = async (userId: string): Promise<UserMemory | null> => {
+  try {
+    const params = new URLSearchParams({
+      user_id: userId,
+    });
+
+    const response = await fetch(`${apiUrl}/api/memory?${params.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.log('获取用户记忆失败，可能不存在');
+      return null;
+    }
+
+    const result = await response.json();
+
+    if (result.code === 200 && result.data) {
+      return result.data;
+    } else {
+      console.log('用户记忆不存在');
+      return null;
+    }
+  } catch (error) {
+    console.error('获取用户记忆失败:', error);
+    return null;
+  }
+};
+
+// 创建用户记忆
+export const createUserMemory = async (userId: string, memory: string = ''): Promise<UserMemory | null> => {
+  try {
+    const response = await fetch(`${apiUrl}/api/memory`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        memory: memory,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || '创建用户记忆失败');
+    }
+
+    const result = await response.json();
+
+    if (result.code === 200 && result.data) {
+      return result.data;
+    } else {
+      throw new Error(result.message || '创建用户记忆失败');
+    }
+  } catch (error: any) {
+    console.error('创建用户记忆失败:', error);
+    return null;
+  }
+};
+
+// 抽取用户记忆
+export const extractUserMemory = async (userContent: AssistantHistoryItem[]): Promise<any | null> => {
+  try {
+    const response = await fetch(`${apiUrl}/api/memory/extract`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userContent: userContent,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('抽取用户记忆失败');
+      return null;
+    }
+
+    const result = await response.json();
+
+    if (result.code === 200 && result.data) {
+      return result.data;
+    } else {
+      console.error('抽取用户记忆失败:', result.message);
+      return null;
+    }
+  } catch (error) {
+    console.error('抽取用户记忆失败:', error);
+    return null;
+  }
+};
+
+// 更新用户记忆
+export const updateUserMemory = async (userId: string, memory: string): Promise<boolean> => {
+  try {
+    const response = await fetch(`${apiUrl}/api/memory`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        memory: memory,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      console.error('更新用户记忆失败:', errorData?.message);
+      return false;
+    }
+
+    const result = await response.json();
+
+    if (result.code === 200) {
+      return true;
+    } else {
+      console.error('更新用户记忆失败:', result.message);
+      return false;
+    }
+  } catch (error) {
+    console.error('更新用户记忆失败:', error);
+    return false;
   }
 };
