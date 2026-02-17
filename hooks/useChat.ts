@@ -678,49 +678,53 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       // 调用生成日记接口前，先抽取记忆
       const history = await getAssistantHistory();
       
-      // 构建包含记忆的 history（用于抽取记忆）
-      let finalHistory = [...history];
-      if (userMemory && userMemory.length > 0) {
-        finalHistory.unshift({ role: 'assistant', content: userMemory });
-      }
-      
-      console.log('[生成日记] 开始抽取用户记忆');
-      // 调用抽取记忆接口
-      const extractedMemory = await chatService.extractUserMemory(finalHistory);
-      
-      // 如果抽取成功，将新记忆添加到 history 开头
-      let diaryHistory = [...history];
-      if (extractedMemory) {
-        console.log('[生成日记] 抽取记忆成功:', extractedMemory);
-        const memoryContent = JSON.stringify(extractedMemory);
-        diaryHistory.unshift({ role: 'assistant', content: memoryContent });
-        
-        // 异步更新用户记忆到数据库
-        chatService.updateUserMemory(user.id, memoryContent).then((success) => {
-          if (success) {
-            console.log('[生成日记] 更新用户记忆成功');
-            // 同时更新本地的 userMemory 状态
-            setUserMemory(memoryContent);
-          } else {
-            console.error('[生成日记] 更新用户记忆失败');
-          }
-        }).catch((error) => {
-          console.error('[生成日记] 更新用户记忆异常:', error);
-        });
-      } else {
-        console.log('[生成日记] 抽取记忆失败或无新记忆');
-      }
+      // 直接使用当前的 history 生成日记（不等待抽取记忆）
+      console.log('[生成日记] 开始生成日记内容');
       
       // 调用生成日记接口（流式）
       const fullContent = await chatService.generateDiary(
         userContent,
-        diaryHistory, // 使用包含新记忆的 history
+        history, // 直接使用当前 history
         user.id,
         (text: string) => {
           // 流式更新内容
           setDiaryContent(text);
         }
       );
+
+      // 日记生成完成后，异步抽取和更新记忆（不阻塞后续流程）
+      console.log('[生成日记] 日记生成完成，开始异步抽取记忆');
+      
+      // 构建包含记忆的 history（用于抽取记忆）
+      let finalHistory = [...history];
+      if (userMemory && userMemory.length > 0) {
+        finalHistory.unshift({ role: 'assistant', content: userMemory });
+      }
+      
+      // 异步抽取记忆（不阻塞保存日记流程）
+      chatService.extractUserMemory(finalHistory).then((extractedMemory) => {
+        if (extractedMemory) {
+          console.log('[生成日记] 抽取记忆成功:', extractedMemory);
+          const memoryContent = JSON.stringify(extractedMemory);
+          
+          // 更新用户记忆到数据库
+          chatService.updateUserMemory(user.id, memoryContent).then((success) => {
+            if (success) {
+              console.log('[生成日记] 更新用户记忆成功');
+              // 同时更新本地的 userMemory 状态
+              setUserMemory(memoryContent);
+            } else {
+              console.error('[生成日记] 更新用户记忆失败');
+            }
+          }).catch((error) => {
+            console.error('[生成日记] 更新用户记忆异常:', error);
+          });
+        } else {
+          console.log('[生成日记] 抽取记忆失败或无新记忆');
+        }
+      }).catch((error) => {
+        console.error('[生成日记] 抽取记忆异常:', error);
+      });
 
       // 生成完成后，保存日记
       try {
