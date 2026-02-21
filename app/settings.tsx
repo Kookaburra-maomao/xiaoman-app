@@ -1,11 +1,9 @@
 import { Colors } from '@/constants/theme';
-import { VIP_CARD_URL, VIP_NO_URL, VIP_TAG_URL } from '@/constants/urls';
 import { useAuth } from '@/contexts/AuthContext';
 import * as imageService from '@/services/imageService';
 import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useState } from 'react';
@@ -13,13 +11,11 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  ImageBackground,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -287,7 +283,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </TouchableOpacity>
           <Text style={styles.username}>{user?.nick || user?.username || '用户'}</Text>
-          {(() => {
+          {/* {(() => {
             // 检查是否是有效会员
             const isVipValid = () => {
               if (!user?.is_vip || user.is_vip === 'false') return false;
@@ -319,10 +315,10 @@ export default function SettingsScreen() {
                 </View>
               );
             }
-          })()}
+          })()} */}
         </View>
         {/* 会员推广横幅 */}
-        <ImageBackground
+        {/* <ImageBackground
           source={{ uri: VIP_CARD_URL }}
           style={styles.membershipBanner}
           resizeMode="cover"
@@ -377,11 +373,11 @@ export default function SettingsScreen() {
               </LinearGradient>
             </TouchableOpacity>
           </View>
-        </ImageBackground>
+        </ImageBackground> */}
 
         {/* 设置选项组1 */}
         <View style={styles.settingsGroup}>
-          <View style={styles.settingItem}>
+          {/* <View style={styles.settingItem}>
             <View style={styles.settingItemLeft}>
               <Ionicons name="lock-closed-outline" size={20} color={Colors.light.text} />
               <Text style={styles.settingItemText}>日记加密</Text>
@@ -398,7 +394,7 @@ export default function SettingsScreen() {
                 />
               )}
             </View>
-          </View>
+          </View> */}
 
           <TouchableOpacity 
             style={styles.settingItem} 

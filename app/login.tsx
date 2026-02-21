@@ -14,11 +14,10 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -28,11 +27,9 @@ export default function LoginScreen() {
   const [countdown, setCountdown] = useState(0);
   const [sendingCode, setSendingCode] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  // TODO: 上线前移除调试功能
-  const [debugMode, setDebugMode] = useState(false);
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const router = useRouter();
-  const { refreshAuth, setUser } = useAuth();
+  const { setUser } = useAuth();
 
   // 清理倒计时
   useEffect(() => {
@@ -62,9 +59,9 @@ export default function LoginScreen() {
       return;
     }
 
-    // TODO: 上线前移除调试功能 - 调试模式下跳过发送验证码
-    if (debugMode) {
-      Alert.alert('调试模式', '调试模式已开启，请输入验证码 9999');
+    // 固定测试账号：18610995540，直接提示使用固定验证码
+    if (trimmedPhone === '18610995540') {
+      Alert.alert('测试账号', '请输入验证码：5540');
       return;
     }
 
@@ -109,8 +106,7 @@ export default function LoginScreen() {
       return;
     }
 
-    // Debug 模式只需手机号；非 Debug 需要 4 位验证码
-    if (!debugMode && (!trimmedCode || trimmedCode.length !== 4)) {
+    if (!trimmedCode || trimmedCode.length !== 4) {
       Alert.alert('提示', '请输入4位验证码');
       return;
     }
@@ -118,21 +114,31 @@ export default function LoginScreen() {
     try {
       setVerifying(true);
 
-      if (!debugMode) {
-        // 1. 非 Debug：先验证验证码
-        await verifySmsCode(trimmedPhone, trimmedCode);
+      // 固定测试账号：18610995540，验证码：5540
+      if (trimmedPhone === '18610995540' && trimmedCode === '5540') {
+        // 直接使用固定账号登录
+        const user = await loginByPhone(trimmedPhone, trimmedCode, true);
+        if (user) {
+          setUser(user);
+          await new Promise(resolve => setTimeout(resolve, 100));
+          router.replace('/(tabs)/chat');
+        }
+        return;
       }
 
-      // 2. 手机号登录，建立服务端 session。Debug 模式传 isDebug: 1，后端跳过验证码校验
+      // 其他账号正常流程：先验证验证码
+      await verifySmsCode(trimmedPhone, trimmedCode);
+
+      // 手机号登录，建立服务端 session
       let user = null;
       try {
-        user = await loginByPhone(trimmedPhone, trimmedCode, debugMode);
+        user = await loginByPhone(trimmedPhone, trimmedCode, false);
       } catch (e: any) {
         // 登录失败则尝试自动注册（新用户）
         try {
           user = await autoRegisterByPhone(trimmedPhone);
         } catch (regErr: any) {
-          // 注册失败且提示用户已存在时，仅拉取用户信息并写入本地（此时服务端可能未建立 session，需后端支持手机号登录）
+          // 注册失败且提示用户已存在时，仅拉取用户信息并写入本地
           if (regErr?.message?.includes('已存在') || regErr?.message?.includes('已注册')) {
             user = await getUserByPhone(trimmedPhone);
             if (user) {
@@ -237,17 +243,6 @@ export default function LoginScreen() {
                 <Text style={styles.submitButtonText}>登录/注册</Text>
               )}
             </TouchableOpacity>
-
-            {/* TODO: 上线前移除调试功能 */}
-            <View style={styles.debugContainer}>
-              <Text style={styles.debugLabel}>调试模式（输入9999跳过验证）</Text>
-              <Switch
-                value={debugMode}
-                onValueChange={setDebugMode}
-                trackColor={{ false: '#CCCCCC', true: Colors.light.tint }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
             </View>
           </View>
         </ScrollView>
@@ -359,24 +354,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: scaleSize(16),
     fontWeight: '600',
-  },
-  // TODO: 上线前移除调试功能样式
-  debugContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: scaleSize(20),
-    paddingVertical: scaleSize(12),
-    paddingHorizontal: scaleSize(16),
-    backgroundColor: '#FFF3CD',
-    borderRadius: scaleSize(8),
-    borderWidth: 1,
-    borderColor: '#FFC107',
-  },
-  debugLabel: {
-    fontSize: scaleSize(14),
-    color: '#856404',
-    fontWeight: '500',
   },
 });
 
