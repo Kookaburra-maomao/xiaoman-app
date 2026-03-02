@@ -446,12 +446,21 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingHorizontal: scaleSize(16),
+    paddingHorizontal: scaleSize(12),
     paddingTop: scaleSize(12),
-    paddingBottom: scaleSize(12),
+    paddingBottom: scaleSize(2), // 与 tab bar 之间 2px 间距
     // backgroundColor: Colors.light.background,
     gap: scaleSize(8),
     position: 'relative',
+    // 阴影样式：box-shadow: 0px 4px 12px -2px #00000005
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: scaleSize(4),
+    },
+    shadowOpacity: 0.02, // #00000005 约等于 5/255 ≈ 0.02
+    shadowRadius: scaleSize(12),
+    elevation: 2, // Android 阴影
   },
   recordingHintContainer: {
     position: 'absolute',
@@ -472,10 +481,10 @@ const styles = StyleSheet.create({
     color: '#FF326C',
   },
   inputWrapper: {
-    width: scaleSize(291),
+    flex: 1,
     minHeight: scaleSize(52),
     // height: scaleSize(52),
-    borderRadius: scaleSize(20),
+    borderRadius: scaleSize(40),
     backgroundColor: '#FAFAFA',
     paddingTop: scaleSize(8),
     paddingRight: scaleSize(8),
@@ -575,6 +584,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   voiceText: {
+    width: scaleSize(100),
     fontSize: scaleSize(16),
     color: Colors.light.text,
     fontWeight: '400',
@@ -594,9 +604,9 @@ const styles = StyleSheet.create({
     height: scaleSize(28),
   },
   imageButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 40,
+    width: scaleSize(52),
+    height: scaleSize(52),
+    borderRadius: scaleSize(52),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FAFAFA',

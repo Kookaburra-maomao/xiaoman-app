@@ -10,6 +10,7 @@ import { useChat } from '@/hooks/useChat';
 import { useOperationCard } from '@/hooks/useOperationCard';
 import { useRecording } from '@/hooks/useRecording';
 import * as chatService from '@/services/chatService';
+import { scaleSize } from '@/utils/screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -33,7 +34,7 @@ export default function ChatScreen() {
   
   // 获取安全区域边距，用于计算header高度
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 16 + 24 + 14 + 20; // top inset + paddingTop + title height + date height + paddingBottom
+  const headerHeight = insets.top + scaleSize(16) + scaleSize(24) + scaleSize(14) + scaleSize(20); // top inset + paddingTop + title height + date height + paddingBottom
 
   // 使用运营卡片 Hook
   const {
@@ -471,12 +472,12 @@ export default function ChatScreen() {
   }, [showCard]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : scaleSize(20)}
       >
         {/* 固定在顶部的标题部分 */}
         <ChatHeader
@@ -492,7 +493,7 @@ export default function ChatScreen() {
             style={[
               styles.cardWrapper,
               {
-                top: headerHeight - 60, // 上移 60px
+                top: headerHeight - scaleSize(60), // 上移 60px
                 opacity: cardSlideAnim, // 透明度实现渐显/渐隐效果
                 transform: [{ translateY: cardTranslateY }], // 垂直位移实现下拉/上拉效果
               },
@@ -594,7 +595,6 @@ export default function ChatScreen() {
 
 const styles = StyleSheet.create({
   container: {
-
     flex: 1,
     backgroundColor: Colors.light.background,
   },
@@ -628,21 +628,21 @@ const styles = StyleSheet.create({
   },
   uploadingContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 24,
+    borderRadius: scaleSize(12),
+    padding: scaleSize(24),
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: scaleSize(2),
     },
     shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowRadius: scaleSize(4),
     elevation: 5,
   },
   uploadingText: {
-    marginTop: 12,
-    fontSize: 16,
+    marginTop: scaleSize(12),
+    fontSize: scaleSize(16),
     color: Colors.light.text,
   },
 });

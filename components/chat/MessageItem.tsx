@@ -105,7 +105,6 @@ const styles = StyleSheet.create({
   },
   messageItemUser: {
     justifyContent: 'flex-end',
-
     paddingRight: scaleSize(20),
   },
   messageItemSystem: {
@@ -119,9 +118,9 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   messageBubble: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 16,
+    paddingHorizontal: scaleSize(16),
+    paddingVertical: scaleSize(10),
+    borderRadius: scaleSize(16),
   },
   messageBubbleUser: {
     maxWidth: '75%',
@@ -135,8 +134,9 @@ const styles = StyleSheet.create({
   },
   messageBubbleSystem: {
     backgroundColor: Colors.light.background,
-    borderBottomLeftRadius: 4,
-    paddingHorizontal: 0,
+    borderBottomLeftRadius: scaleSize(4),
+    paddingRight: scaleSize(12),
+    paddingLeft: 0,
   },
   messageBubbleDiary: {
     width: '100%',
@@ -146,8 +146,8 @@ const styles = StyleSheet.create({
     borderRadius: 0,
   },
   messageText: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: scaleSize(16),
+    lineHeight: scaleSize(24),
   },
   messageTextUser: {
     fontFamily: 'PingFang SC',
@@ -162,13 +162,13 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
   },
   messageImage: {
-    width: 200,
-    height: 200,
-    borderRadius: 12,
+    width: scaleSize(200),
+    height: scaleSize(200),
+    borderRadius: scaleSize(12),
   },
   messageBubbleError: {
     backgroundColor: '#FFE5E5',
-    borderWidth: 1,
+    borderWidth: scaleSize(1),
     borderColor: '#FF4444',
   },
   messageTextError: {

@@ -833,12 +833,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         await clearAssistantHistory();
         setAssistantHistory([]);
 
-        // 流式展示完成后，显示保存成功提示
-        // 延迟显示，等待打字机效果完成（假设平均20ms/字符）
-        const estimatedTypewriterTime = fullContent.length * 20 + 500; // 额外加500ms缓冲
-        setTimeout(() => {
-          Alert.alert('成功', '日记已保存在记录中');
-        }, estimatedTypewriterTime);
+        // 流式展示完成后，Toast 提示会在 DiaryGenerateModal 中显示
       } catch (saveError: any) {
         console.error('保存日记失败:', saveError);
         Alert.alert('提示', '日记生成成功，但保存失败：' + (saveError.message || '请稍后重试'));

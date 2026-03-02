@@ -8,7 +8,6 @@ export default function TabsLayout() {
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        swipeEnabled: false, // 禁用左右滑动切换标签页
       }}
     >
       <Tabs.Screen

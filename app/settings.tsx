@@ -1,5 +1,6 @@
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { getDeletedDiaries } from '@/services/chatService';
 import * as imageService from '@/services/imageService';
 import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +16,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,10 +26,19 @@ const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 export default function SettingsScreen() {
   const { user, logout, updateUserInfo, refreshAuth, loading } = useAuth();
   const router = useRouter();
-  const [recentlyDeletedCount] = useState(21); // 最近删除数量，实际应该从API获取
+  const [recentlyDeletedCount, setRecentlyDeletedCount] = useState(0); // 最近删除数量
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [diaryEncryptionEnabled, setDiaryEncryptionEnabled] = useState(false);
   const [updatingDiarySecret, setUpdatingDiarySecret] = useState(false);
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<'system' | 'dark' | 'light'>('system');
+
+  // 主题选项配置
+  const THEME_OPTIONS = [
+    { value: 'system', label: '系统' },
+    { value: 'dark', label: '暗夜' },
+    { value: 'light', label: '明亮' },
+  ] as const;
 
   // 页面聚焦时刷新用户信息，日记加密开关以 user.diary_secret 为准
   useFocusEffect(
@@ -38,8 +49,50 @@ export default function SettingsScreen() {
       if (user?.diary_secret !== undefined) {
         setDiaryEncryptionEnabled(user.diary_secret === 'true');
       }
+      
+      // 加载最近删除的日记数量
+      if (user?.id) {
+        loadDeletedDiariesCount();
+      }
+      
+      // 设置当前主题
+      if (user?.theme) {
+        setCurrentTheme(user.theme as 'system' | 'dark' | 'light');
+      } else {
+        setCurrentTheme('system');
+      }
     }, [user, loading, refreshAuth])
   );
+
+  // 加载最近删除的日记数量
+  const loadDeletedDiariesCount = async () => {
+    if (!user?.id) return;
+    try {
+      const data = await getDeletedDiaries(user.id);
+      setRecentlyDeletedCount(data.length);
+    } catch (error) {
+      console.error('获取最近删除数量失败:', error);
+      setRecentlyDeletedCount(0);
+    }
+  };
+
+  // 处理主题选择
+  const handleThemeChange = async (theme: 'system' | 'dark' | 'light') => {
+    if (!user?.id) return;
+    try {
+      await updateUserInfo({ theme });
+      setCurrentTheme(theme);
+      setShowThemeMenu(false);
+    } catch (error: any) {
+      Alert.alert('错误', error?.message || '更新主题失败，请重试');
+    }
+  };
+
+  // 获取主题显示文本
+  const getThemeLabel = () => {
+    const option = THEME_OPTIONS.find(opt => opt.value === currentTheme);
+    return option?.label || '系统';
+  };
 
   const onDiaryEncryptionChange = useCallback(
     async (value: boolean) => {
@@ -240,7 +293,11 @@ export default function SettingsScreen() {
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color={Colors.light.text} />
+          <Image
+            source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-top-return.png' }}
+            style={styles.backButtonIcon}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>设置</Text>
         <View style={styles.headerRight} />
@@ -279,7 +336,11 @@ export default function SettingsScreen() {
               activeOpacity={0.7}
               disabled={uploadingAvatar}
             >
-              <Ionicons name="camera" size={16} color="#FFFFFF" />
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-camera.png' }}
+                style={styles.avatarEditIcon}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           </TouchableOpacity>
           <Text style={styles.username}>{user?.nick || user?.username || '用户'}</Text>
@@ -396,41 +457,65 @@ export default function SettingsScreen() {
             </View>
           </View> */}
 
-          <TouchableOpacity 
-            style={styles.settingItem} 
-            activeOpacity={0.7}
-            onPress={() => router.push('/diary-recycle-bin' as any)}
-          >
-            <View style={styles.settingItemLeft}>
-              <Ionicons name="trash-bin-outline" size={20} color={Colors.light.text} />
-              <Text style={styles.settingItemText}>日记回收站</Text>
-            </View>
-            <View style={styles.settingItemRight}>
-              <Ionicons name="chevron-forward" size={18} color={Colors.light.icon} />
-            </View>
-          </TouchableOpacity>
-
           <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
             <View style={styles.settingItemLeft}>
-              <Ionicons name="sunny-outline" size={20} color={Colors.light.text} />
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-theme.png' }}
+                style={styles.settingIcon}
+                resizeMode="contain"
+              />
               <Text style={styles.settingItemText}>外观</Text>
             </View>
             <View style={styles.settingItemRight}>
-              <Text style={styles.settingItemValue}>系统</Text>
-              <Image 
-                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-sort.png' }} 
-                style={{ width: scaleSize(16), height: scaleSize(16) }} 
-              />
+              <TouchableOpacity
+                style={styles.themeSelectContainer}
+                onPress={() => setShowThemeMenu(!showThemeMenu)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.settingItemValue}>{getThemeLabel()}</Text>
+                <Image 
+                  source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-sort.png' }} 
+                  style={{ width: scaleSize(16), height: scaleSize(16) }} 
+                />
+              </TouchableOpacity>
             </View>
           </TouchableOpacity>
 
+          {/* 主题选择气泡菜单（移到外层，避免穿透） */}
+          {showThemeMenu && (
+            <>
+              <TouchableWithoutFeedback onPress={() => setShowThemeMenu(false)}>
+                <View style={styles.themeMenuOverlay} />
+              </TouchableWithoutFeedback>
+              <View style={styles.themeMenuBubble}>
+                {THEME_OPTIONS.map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={styles.themeMenuItem}
+                    onPress={() => handleThemeChange(option.value)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.themeMenuText}>{option.label}</Text>
+                    {currentTheme === option.value && (
+                      <Ionicons name="checkmark" size={18} color="#222" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
+
           <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
             <View style={styles.settingItemLeft}>
-              <Ionicons name="trash-outline" size={20} color={Colors.light.text} />
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-delete.png' }}
+                style={styles.settingIcon}
+                resizeMode="contain"
+              />
               <Text style={styles.settingItemText}>最近删除</Text>
             </View>
             <View style={styles.settingItemRight}>
-              <Text style={styles.settingItemValue}>{recentlyDeletedCount}</Text>
+              <Text style={styles.deletedCountText}>{recentlyDeletedCount}</Text>
               <Ionicons name="chevron-forward" size={18} color={Colors.light.icon} />
             </View>
           </TouchableOpacity>
@@ -440,7 +525,11 @@ export default function SettingsScreen() {
         <View style={styles.settingsGroup}>
           <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
             <View style={styles.settingItemLeft}>
-              <Ionicons name="information-circle-outline" size={20} color={Colors.light.text} />
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-info.png' }}
+                style={styles.settingIcon}
+                resizeMode="contain"
+              />
               <Text style={styles.settingItemText}>检查更新</Text>
             </View>
             <View style={styles.settingItemRight}>
@@ -451,8 +540,57 @@ export default function SettingsScreen() {
 
           <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
             <View style={styles.settingItemLeft}>
-              <Ionicons name="book-outline" size={20} color="#FF6B9D" />
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-logo.png' }}
+                style={styles.settingIcon}
+                resizeMode="contain"
+              />
               <Text style={styles.settingItemText}>关于小满</Text>
+            </View>
+            <View style={styles.settingItemRight}>
+              <Ionicons name="chevron-forward" size={18} color={Colors.light.icon} />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* 设置选项组3 */}
+        <View style={styles.settingsGroup}>
+          <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+            <View style={styles.settingItemLeft}>
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-setting.png' }}
+                style={styles.settingIcon}
+                resizeMode="contain"
+              />
+              <Text style={styles.settingItemText}>分享</Text>
+            </View>
+            <View style={styles.settingItemRight}>
+              <Ionicons name="chevron-forward" size={18} color={Colors.light.icon} />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+            <View style={styles.settingItemLeft}>
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-like.png' }}
+                style={styles.settingIcon}
+                resizeMode="contain"
+              />
+              <Text style={styles.settingItemText}>好评支持小满</Text>
+            </View>
+            <View style={styles.settingItemRight}>
+              <Ionicons name="chevron-forward" size={18} color={Colors.light.icon} />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+            <View style={styles.settingItemLeft}>
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-edit.png' }}
+                style={styles.settingIcon}
+                resizeMode="contain"
+              />
+              <Text style={styles.settingItemText}>使用反馈</Text>
             </View>
             <View style={styles.settingItemRight}>
               <Ionicons name="chevron-forward" size={18} color={Colors.light.icon} />
@@ -468,7 +606,11 @@ export default function SettingsScreen() {
             activeOpacity={0.7}
           >
             <View style={styles.settingItemLeft}>
-              <Ionicons name="log-out-outline" size={20} color={Colors.light.text} />
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-logout.png' }}
+                style={styles.settingIcon}
+                resizeMode="contain"
+              />
               <Text style={styles.settingItemText}>退出登录</Text>
             </View>
           </TouchableOpacity>
@@ -501,6 +643,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  backButtonIcon: {
+    width: 40,
+    height: 40,
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -525,11 +671,8 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#F5F5F5',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#E5E5E5',
     overflow: 'hidden',
   },
   avatarImage: {
@@ -548,16 +691,21 @@ const styles = StyleSheet.create({
   },
   avatarEditButton: {
     position: 'absolute',
-    bottom: 0,
+    bottom: scaleSize(-5),
     right: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#CCCCCC',
+    width: scaleSize(24),
+    height: scaleSize(24),
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: Colors.light.background,
+    borderWidth: 0,
+  },
+  avatarEditIcon: {
+    width: scaleSize(24),
+    height: scaleSize(24),
+  },
+  settingIcon: {
+    width: scaleSize(20),
+    height: scaleSize(20),
   },
   username: {
     fontSize: 20,
@@ -629,7 +777,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     backgroundColor: '#F5F5F5',
     borderRadius: 12,
-    overflow: 'hidden',
+    // overflow: 'hidden',
   },
   settingItem: {
     flexDirection: 'row',
@@ -637,8 +785,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
   },
   settingItemLeft: {
     flexDirection: 'row',
@@ -653,11 +799,58 @@ const styles = StyleSheet.create({
   settingItemRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
   },
   settingItemValue: {
     fontSize: 14,
     color: Colors.light.icon,
+  },
+  deletedCountText: {
+    fontSize: 14,
+    color: '#666666',
+  },
+  themeSelectContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    position: 'relative',
+  },
+  themeMenuBubble: {
+    position: 'absolute',
+    top: scaleSize(0),
+    right: scaleSize(45),
+    backgroundColor: '#FFFFFF',
+    borderRadius: scaleSize(20),
+    paddingVertical: 8,
+    minWidth: 120,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 1001,
+  },
+  themeMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  themeMenuText: {
+    fontSize: 16,
+    color: '#222',
+  },
+  themeMenuOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
   },
   loadingContainer: {
     flex: 1,

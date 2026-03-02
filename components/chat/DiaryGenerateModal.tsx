@@ -14,9 +14,10 @@ import { scaleSize } from '@/utils/screen';
 import * as MediaLibrary from 'expo-media-library';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import ViewShot from 'react-native-view-shot';
+import Toast from '../common/Toast';
 
 interface DiaryGenerateModalProps {
   visible: boolean;
@@ -89,9 +90,19 @@ export default function DiaryGenerateModal({
   const scrollViewRef = useRef<ScrollView>(null);
   const [city, setCity] = useState<string>('');
   const [weather, setWeather] = useState<string>('');
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   
   // 判断流式展示是否完成（需要等待打字机效果完成）
   const isStreamingComplete = !isGenerating && typewriterComplete && displayedContent === content && content.length > 0;
+
+  // 当流式展示完成时显示 Toast
+  useEffect(() => {
+    if (isStreamingComplete && visible) {
+      setToastMessage('日记生成完成');
+      setToastVisible(true);
+    }
+  }, [isStreamingComplete, visible]);
 
   // 获取位置和天气信息
   useEffect(() => {
@@ -293,7 +304,12 @@ export default function DiaryGenerateModal({
   };
 
   return (
-    <View style={styles.overlay}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="fullScreen"
+      onRequestClose={onClose}
+    >
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.modalContainer}>
           {/* 头部 */}
@@ -324,6 +340,7 @@ export default function DiaryGenerateModal({
           <ScrollView 
             ref={scrollViewRef}
             style={styles.scrollContainer} 
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={true}
           >
             {/* 日记内容区域 - 用于截图 */}
@@ -363,9 +380,11 @@ export default function DiaryGenerateModal({
                 </View>
               </View>
             </ViewShot>
+          </ScrollView>
 
-            {/* 操作区域 - 公共按钮组件（仅在流式展示完成后显示） */}
-            {isStreamingComplete && (
+          {/* 操作区域 - 悬浮吸底按钮组件（仅在流式展示完成后显示） */}
+          {isStreamingComplete && (
+            <View style={styles.actionButtonsContainer}>
               <DiaryActionButtons
                 onEdit={handleEdit}
                 onExport={handleExport}
@@ -374,8 +393,8 @@ export default function DiaryGenerateModal({
                 exportLoading={sharing}
                 exportLabel="分享"
               />
-            )}
-          </ScrollView>
+            </View>
+          )}
 
           {/* 分享弹窗 */}
           <ShareModal
@@ -384,24 +403,23 @@ export default function DiaryGenerateModal({
             onClose={() => setShowShareModal(false)}
             onSaveImage={handleSaveImage}
           />
+
+          {/* Toast 提示 */}
+          <Toast
+            visible={toastVisible}
+            message={toastMessage}
+            onHide={() => setToastVisible(false)}
+          />
         </View>
       </SafeAreaView>
-    </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: Colors.light.background,
-    zIndex: 9999,
-  },
   safeArea: {
     flex: 1,
+    backgroundColor: Colors.light.background,
   },
   modalContainer: {
     flex: 1,
@@ -455,6 +473,20 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: scaleSize(100), // 为底部按钮留出空间
+  },
+  actionButtonsContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.light.background,
+    paddingBottom: scaleSize(20),
+    paddingTop: scaleSize(12),
+    borderTopWidth: scaleSize(1),
+    borderTopColor: '#F0F0F0',
   },
   contentView: {
     backgroundColor: 'transparent',

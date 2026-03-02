@@ -4,6 +4,7 @@ import DiaryImageCarousel from '@/components/diary/DiaryImageCarousel';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { deleteDiary, DiaryDetail, getDiaryDetail } from '@/services/chatService';
+import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -20,6 +21,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
@@ -230,7 +232,7 @@ export default function DiaryDetailScreen() {
             {/* 日记正文 */}
             {diary.context && (
               <View style={styles.textContainer}>
-                <Text style={styles.diaryText}>{diary.context}</Text>
+                <Markdown style={defaultMarkdownStyles}>{diary.context}</Markdown>
               </View>
             )}
           </View>

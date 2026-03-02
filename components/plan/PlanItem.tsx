@@ -4,10 +4,10 @@
 
 import { CYCLE_MAP } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
-import { FALLBACK_IMAGE_BASE_URL, PIN_IMAGE_URL } from '@/constants/urls';
+import { FALLBACK_IMAGE_BASE_URL, getFullImageUrl, PIN_IMAGE_URL } from '@/constants/urls';
 import { Plan } from '@/types/plan';
 import { calculateFinishTimes } from '@/utils/plan-utils';
-import { Ionicons } from '@expo/vector-icons';
+import { scaleSize } from '@/utils/screen';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -164,11 +164,6 @@ export default function PlanItem({ plan, onCheckIn, loading = false }: PlanItemP
           <TouchableOpacity
             style={[
               styles.checkInButton,
-              isFinish
-                ? styles.checkInButtonFinished
-                : isCyclePlan
-                ? styles.checkInButtonUnfinished
-                : styles.checkInButtonUnfinishedNoCycle,
             ]}
             onPress={(e) => {
               e.stopPropagation();
@@ -180,10 +175,25 @@ export default function PlanItem({ plan, onCheckIn, loading = false }: PlanItemP
             activeOpacity={0.7}
           >
             {isFinish && (
-              <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-finish.png' }}
+                style={styles.finishIcon}
+                resizeMode="contain"
+              />
             )}
             {!isFinish && isCyclePlan && (
-              <Ionicons name="add" size={20} color="#FFFFFF" />
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-add.png' }}
+                style={styles.addIcon}
+                resizeMode="contain"
+              />
+            )}
+            {!isFinish && !isCyclePlan && (
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-check.png' }}
+                style={styles.checkIcon}
+                resizeMode="contain"
+              />
             )}
           </TouchableOpacity>
         </View>
@@ -195,9 +205,9 @@ export default function PlanItem({ plan, onCheckIn, loading = false }: PlanItemP
 const styles = StyleSheet.create({
   planItem: {
     backgroundColor: '#F1F1F1',
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    marginBottom: 6,
+    paddingHorizontal: scaleSize(10),
+    paddingVertical: scaleSize(10),
+    marginBottom: scaleSize(6),
   },
   planRow: {
     flexDirection: 'row',
@@ -206,17 +216,17 @@ const styles = StyleSheet.create({
   },
   planLeft: {
     flex: 1,
-    marginRight: 12,
+    marginRight: scaleSize(12),
   },
   planLeftContent: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    alignItems: 'flex-start',
+    gap: scaleSize(12),
   },
   planImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
+    width: scaleSize(60),
+    height: scaleSize(60),
+    borderRadius: scaleSize(8),
     backgroundColor: '#F5F5F5',
   },
   planTextContainer: {
@@ -224,11 +234,12 @@ const styles = StyleSheet.create({
   },
   planNameRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
+    alignItems: 'flex-start',
+    marginBottom: scaleSize(2),
   },
   planName: {
-    fontSize: 16,
+    fontSize: scaleSize(14),
+    lineHeight: scaleSize(22),
     fontWeight: '600',
     color: Colors.light.text,
   },
@@ -236,45 +247,49 @@ const styles = StyleSheet.create({
     color: '#999999', // 已完成计划名称用灰色
   },
   pinIcon: {
-    width: 16,
-    height: 16,
-    marginLeft: 4,
+    width: scaleSize(16),
+    height: scaleSize(16),
+    marginLeft: scaleSize(4),
   },
   cycleText: {
-    fontSize: 14,
+    fontSize: scaleSize(12),
+    lineHeight: scaleSize(18),
+
     color: Colors.light.icon,
-    marginBottom: 2,
+    marginBottom: scaleSize(2),
   },
   deadlineText: {
-    fontSize: 14,
+    fontSize: scaleSize(12),
+    lineHeight: scaleSize(18),
     color: Colors.light.icon,
   },
   planRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: scaleSize(12),
+    alignSelf: 'center',
   },
   progressText: {
-    fontSize: 14,
+    fontSize: scaleSize(14),
     color: Colors.light.icon,
   },
   checkInButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: scaleSize(20),
+    height: scaleSize(20),
     justifyContent: 'center',
     alignItems: 'center',
   },
-  checkInButtonFinished: {
-    backgroundColor: '#52C41A', // 绿色底
+
+  addIcon: {
+    width: scaleSize(20),
+    height: scaleSize(20),
   },
-  checkInButtonUnfinished: {
-    backgroundColor: '#000000', // 黑色底
+  checkIcon: {
+    width: scaleSize(20),
+    height: scaleSize(20),
   },
-  checkInButtonUnfinishedNoCycle: {
-    backgroundColor: 'transparent',
-    borderWidth: 2.5,
-    borderColor: '#666666',
-    // 保持和循环计划按钮相同的尺寸（32x32）
+  finishIcon: {
+    width: scaleSize(20),
+    height: scaleSize(20),
   },
 });

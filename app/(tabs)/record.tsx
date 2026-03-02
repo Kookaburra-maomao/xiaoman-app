@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOperationCard } from '@/hooks/useOperationCard';
 import { DiaryCountItem, getDiaryCount } from '@/services/chatService';
 import { scaleSize } from '@/utils/screen';
-import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
@@ -79,7 +78,7 @@ export default function RecordScreen() {
   
   // 获取安全区域边距，用于计算header高度
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 16 + 24 + 14 + 20; // top inset + paddingTop + title height + date height + paddingBottom
+  const headerHeight = insets.top + scaleSize(16) + scaleSize(24) + scaleSize(14) + scaleSize(20); // top inset + paddingTop + title height + date height + paddingBottom
 
   // 获取当前年月
   const year = currentDate.getFullYear();
@@ -456,7 +455,7 @@ export default function RecordScreen() {
           style={[
             styles.cardWrapper,
             {
-              top: headerHeight + insets.top - 60, // 上移 60px
+              top: headerHeight + insets.top - scaleSize(60), // 上移 60px
               opacity: cardSlideAnim,
               transform: [{ translateY: cardTranslateY }],
             },
@@ -471,27 +470,35 @@ export default function RecordScreen() {
         </Animated.View>
       )}
       
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollViewContent, { paddingTop: 20 }]}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollViewContent, { paddingTop: scaleSize(20) }]}>
 
         {/* 日历 */}
         <View style={styles.calendarContainer}>
           {/* 年月和切换按钮 */}
           <View style={styles.monthHeader}>
             <TouchableOpacity onPress={goToPrevMonth} style={styles.arrowButton}>
-              <Ionicons name="chevron-back" size={24} color={Colors.light.text} />
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-calander-prev.png' }}
+                style={{ width: scaleSize(28), height: scaleSize(28) }}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
             <Text style={styles.monthYearText}>
-              {year}年{month + 1}月
+              {year} - {month + 1}
             </Text>
             <TouchableOpacity 
               onPress={goToNextMonth} 
               style={styles.arrowButton}
               disabled={isCurrentMonth}
             >
-              <Ionicons 
-                name="chevron-forward" 
-                size={24} 
-                color={isCurrentMonth ? Colors.light.icon : Colors.light.text} 
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-calander-next.png' }}
+                style={{ 
+                  width: scaleSize(28), 
+                  height: scaleSize(28),
+                  opacity: isCurrentMonth ? 0.3 : 1,
+                }}
+                resizeMode="contain"
               />
             </TouchableOpacity>
           </View>
@@ -603,71 +610,44 @@ const styles = StyleSheet.create({
     zIndex: 998, // 低于header的zIndex（1000），确保不覆盖title区域
     overflow: 'hidden', // 裁剪超出部分，确保卡片收起时不会透出到title区域上方
   },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 20,
-    paddingHorizontal: 16,
-    height: 44,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: Colors.light.text,
-  },
+
   calendarContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    marginHorizontal: 16,
-    marginBottom: 20,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    
-    
+    marginHorizontal: scaleSize(16),
+    marginBottom: scaleSize(20),
+    // padding: scaleSize(16),
   },
   monthHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: scaleSize(10),
+    backgroundColor: '#00000008',
+    borderRadius: scaleSize(40),
   },
   arrowButton: {
-    padding: 8,
+    padding: scaleSize(8),
   },
   monthYearText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: scaleSize(16),
+    fontWeight: '700',
     color: Colors.light.text,
   },
   weekdaysRow: {
     flexDirection: 'row',
-    marginBottom: 8,
-    backgroundColor: '#ffffff',
+    marginBottom: scaleSize(8),
     justifyContent: 'center',
   },
   weekdayCell: {
-    width: scaleSize(42),
-    marginHorizontal: 2,
+    width: scaleSize(44),
+    marginHorizontal: scaleSize(2),
+    marginTop: scaleSize(8),
     alignItems: 'center',
   },
   weekdayText: {
-    fontSize: 14,
+    fontSize: scaleSize(12),
+    lineHeight: scaleSize(18),
     color: Colors.light.icon,
-    fontWeight: '500',
+    fontWeight: '400',
   },
   daysGrid: {
     flexDirection: 'row',
@@ -675,14 +655,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dayCell: {
-    width: scaleSize(42),
-    marginHorizontal: 2,
-    height: scaleSize(20),
-    aspectRatio: 1,
+    width: scaleSize(44),
+    marginHorizontal: scaleSize(2),
+    height: scaleSize(46),
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
-    borderRadius: 8,
+    marginBottom: scaleSize(8),
+    borderRadius: scaleSize(8),
     overflow: 'hidden',
   },
   dayCellLastRow: {
@@ -719,17 +698,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dayTextOnImage: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
   dayEmoji: {
-    
-    borderWidth: 1,
-    fontSize: 24,
+    borderWidth: scaleSize(1),
+    fontSize: scaleSize(24),
   },
   dayText: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
+    lineHeight: scaleSize(24),
     color: Colors.light.text,
   },
   dayTextOtherMonth: {
@@ -737,16 +716,16 @@ const styles = StyleSheet.create({
   },
   dayTextToday: {
     fontWeight: 'bold',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: scaleSize(4),
+    paddingVertical: scaleSize(2),
+    borderRadius: scaleSize(4),
   },
   dayTextWithRecord: {
     color: '#FFFFFF',
     fontWeight: 'bold',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: scaleSize(4),
+    paddingVertical: scaleSize(2),
+    borderRadius: scaleSize(4),
   },
   dayTextFuture: {
     color: Colors.light.icon, // 未来日期文字颜色（灰色）
@@ -756,65 +735,57 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: scaleSize(32),
   },
   lockTitle: {
-    fontSize: 20,
+    fontSize: scaleSize(20),
     fontWeight: '600',
     color: Colors.light.text,
-    marginTop: 24,
-    marginBottom: 8,
+    marginTop: scaleSize(24),
+    marginBottom: scaleSize(8),
   },
   lockHint: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: Colors.light.icon,
-    marginBottom: 16,
+    marginBottom: scaleSize(16),
   },
   lockError: {
-    fontSize: 14,
+    fontSize: scaleSize(14),
     color: '#E74C3C',
-    marginBottom: 24,
+    marginBottom: scaleSize(24),
   },
   lockButton: {
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: scaleSize(32),
+    paddingVertical: scaleSize(12),
+    borderRadius: scaleSize(8),
     backgroundColor: Colors.light.tint,
   },
   lockButtonText: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     fontWeight: '600',
     color: '#FFFFFF',
   },
   myRecordContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 20,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: scaleSize(12),
+    marginHorizontal: scaleSize(16),
+    marginBottom: scaleSize(20),
+    padding: scaleSize(12),
   },
   myRecordTitle: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     fontWeight: '600',
     color: Colors.light.text,
-    marginBottom: 8,
+    marginBottom: scaleSize(8),
   },
   myRecordContent: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: Colors.light.icon,
+    fontSize: scaleSize(14),
+    lineHeight: scaleSize(20),
+    color: Colors.light.text,
   },
   myRecordHighlight: {
-    fontSize: 14,
+    fontSize: scaleSize(14),
     fontWeight: '600',
-    color: Colors.light.tint,
+    // color: Colors.light.tint,
   },
 });

@@ -12,9 +12,11 @@ import { Dimensions, FlatList, Image, Linking, StyleSheet, Text, TouchableOpacit
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = scaleSize(335); // 卡片宽度固定为 335px
 const CARD_HEIGHT = scaleSize(240); // 卡片高度固定为 240px
-const CARD_MARGIN_RIGHT = scaleSize(16); // 卡片右边距
-const VISIBLE_PADDING = scaleSize(20); // 左右可见区域的内边距，用于露出相邻卡片
-const SNAP_INTERVAL = CARD_WIDTH + CARD_MARGIN_RIGHT; // 分页间隔 = 卡片宽度 + 卡片右边距
+const CARD_SPACING = scaleSize(10); // 卡片间距
+const PEEK_AMOUNT = scaleSize(10); // 露出下一个/上一个卡片的宽度
+const SNAP_INTERVAL = CARD_WIDTH + CARD_SPACING; // 分页间隔 = 卡片宽度 + 卡片间距
+// 计算左右内边距：(屏幕宽度 - 卡片宽度 - 一侧露出的宽度) / 2
+const SIDE_PADDING = (scaleSize(375) - CARD_WIDTH - (PEEK_AMOUNT * 2)) / 2;
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 
 interface OperationCardProps {
@@ -78,6 +80,7 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
 
   // 渲染单个卡片
   const renderCard = ({ item, index }: { item: OperationCard; index: number }) => {
+    const isFirst = index === 0;
     const isLast = index === (cards?.length || 0) - 1;
     const recordItems = item.record_item || [];
     const hasItems = recordItems.length > 0;
@@ -102,8 +105,12 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
         { 
           width: CARD_WIDTH,
           backgroundColor: hasBgImage ? 'transparent' : Colors.light.background,
+          // 第一张卡片：左边距 = SIDE_PADDING + PEEK_AMOUNT（因为左边没有卡片露出）
+          marginLeft: isFirst ? SIDE_PADDING + PEEK_AMOUNT : 0,
+          // 最后一张卡片：右边距 = SIDE_PADDING + PEEK_AMOUNT（因为右边没有卡片露出）
+          // 其他卡片：右边距 = CARD_SPACING
+          marginRight: isLast ? SIDE_PADDING + PEEK_AMOUNT : CARD_SPACING,
         },
-        isLast && styles.cardContainerLast,
       ]} key={item.id}>
         {/* 背景图片 */}
         {hasBgImage && bgImageUrl && (
@@ -217,35 +224,27 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     backgroundColor: Colors.light.background,
-    marginTop: 8,
-    marginBottom: 8,
+    marginTop: scaleSize(8),
+    marginBottom: scaleSize(8),
   },
   flatList: {
     width: '100%',
   },
   listContent: {
-    paddingHorizontal: VISIBLE_PADDING,
+    // No padding here - handled per card for proper centering
   },
   // ==================== 基础容器样式 ====================
   cardContainer: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    borderRadius: scaleSize(8),
+    borderRadius: scaleSize(24),
     overflow: 'hidden',
     position: 'relative',
-    marginRight: CARD_MARGIN_RIGHT,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: scaleSize(2) },
     shadowOpacity: 0.15,
     shadowRadius: scaleSize(8),
-  },
-  // 第一个和最后一个卡片需要特殊处理，确保左右都能露出相邻卡片
-  cardContainerFirst: {
-    marginLeft: 0,
-  },
-  cardContainerLast: {
-    marginRight: VISIBLE_PADDING,
   },
   cardBackground: {
     position: 'absolute',
@@ -320,7 +319,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     flexDirection: 'column',
-    paddingTop: scaleSize(32),
+    // paddingTop: scaleSize(32),
     paddingBottom: scaleSize(32),
     paddingLeft: scaleSize(40),
     paddingRight: scaleSize(40),
@@ -332,6 +331,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: scaleSize(32),
+    // backgroundColor: 'red',
   },
   type2Button: {
     width: scaleSize(140),

@@ -139,12 +139,26 @@ export const getMarkdownStyles = (options?: {
 export const defaultMarkdownStyles = getMarkdownStyles();
 
 // 生成日记弹窗样式（用于 DiaryGenerateModal）
-export const diaryModalMarkdownStyles = getMarkdownStyles({
-  paragraphMarginBottom: 0,
-  paragraphPaddingBottom: scaleSize(11),
-  listItemPaddingBottom: scaleSize(11),
-  listItemBorderBottom: false,
-  hrBackgroundColor: '#44413A',
-  hrHeight: 0.5,
-  hrMarginVertical: scaleSize(11),
-});
+export const diaryModalMarkdownStyles = {
+  ...getMarkdownStyles({
+    paragraphMarginBottom: 0,
+    paragraphPaddingBottom: scaleSize(6),
+    listItemPaddingBottom: scaleSize(6),
+    listItemBorderBottom: false,
+    hrBackgroundColor: '#44413A',
+    hrHeight: 0.5,
+    hrMarginVertical: scaleSize(6),
+  }),
+  // 确保默认文字样式
+  body: {
+    fontSize: scaleSize(14),
+    lineHeight: scaleSize(22),
+    color: Colors.light.text,
+    fontFamily: 'PingFang SC',
+  },
+  text: {
+    fontSize: scaleSize(14),
+    lineHeight: scaleSize(28),
+    color: Colors.light.text,
+  },
+};

@@ -198,7 +198,11 @@ export default function PlanEditModal({
               style={styles.editModalCloseButton}
               activeOpacity={0.7}
             >
-              <Ionicons name="close" size={24} color="#222" />
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-top-close.png' }}
+                style={styles.closeButtonIcon}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
             <Text style={styles.editModalTitle}>{plan ? '编辑计划' : '新建计划'}</Text>
             <TouchableOpacity
@@ -400,6 +404,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  closeButtonIcon: {
+    width: 40,
+    height: 40,
   },
   editModalTitle: {
     fontSize: 18,

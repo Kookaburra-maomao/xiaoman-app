@@ -75,9 +75,7 @@ export const uploadAudio = async (audioUri: string): Promise<{ url: string }> =>
   const response = await fetch(`${apiUrl}/api/upload/audio`, {
     method: 'POST',
     body: formData,
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+    // 不要设置 Content-Type，让浏览器自动处理 multipart/form-data 的 boundary
   });
 
   if (!response.ok) {
@@ -107,18 +105,22 @@ export const callASR = async (fileUrl: string): Promise<string> => {
       file_url: fileUrl,
     }),
   });
+  console.log("body:", JSON.stringify({
+      file_url: fileUrl,
+    }))
+  const result = await response.json();
 
+  // 检查响应状态
   if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    throw new Error(errorData?.message || '语音识别失败');
+    // HTTP 错误（4xx, 5xx）- 服务端返回 error 字段
+    throw new Error(result.error || '语音识别失败');
   }
 
-  const result = await response.json();
-  
+  // 检查业务状态码
   if (result.code === 200 && result.data?.text) {
     return result.data.text;
   } else {
+    // 业务逻辑错误 - 服务端返回 message 字段
     throw new Error(result.message || '语音识别失败');
   }
 };
-

@@ -192,7 +192,7 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="请输入手机号"
-                placeholderTextColor={Colors.light.icon}
+                placeholderTextColor="#CCCCCC"
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
@@ -206,7 +206,7 @@ export default function LoginScreen() {
                 <TextInput
                   style={styles.verifyCodeInput}
                   placeholder="请输入验证码"
-                  placeholderTextColor={Colors.light.icon}
+                  placeholderTextColor="#CCCCCC"
                   value={verifyCode}
                   onChangeText={setVerifyCode}
                   keyboardType="number-pad"
@@ -240,7 +240,7 @@ export default function LoginScreen() {
               {verifying ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.submitButtonText}>登录/注册</Text>
+                <Text style={styles.submitButtonText}>登录</Text>
               )}
             </TouchableOpacity>
             </View>
@@ -254,7 +254,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
+    backgroundColor: Colors.light.highlight,
   },
   keyboardView: {
     flex: 1,
@@ -293,9 +293,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   input: {
-    height: scaleSize(50),
-    backgroundColor: '#FFFFFF',
-    borderRadius: scaleSize(8),
+    height: scaleSize(55),
+    backgroundColor: '#FAFAFA',
+    borderRadius: scaleSize(14),
     paddingHorizontal: scaleSize(16),
     fontSize: scaleSize(16),
     color: Colors.light.text,
@@ -305,8 +305,8 @@ const styles = StyleSheet.create({
   verifyCodeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: scaleSize(8),
+    backgroundColor: '#FAFAFA',
+    borderRadius: scaleSize(14),
     borderWidth: 1,
     borderColor: '#000',
     padding: scaleSize(2),
@@ -315,20 +315,23 @@ const styles = StyleSheet.create({
   verifyCodeInput: {
     flex: 1,
     height: scaleSize(46),
-    backgroundColor: '#FFFFFF',
-    borderRadius: scaleSize(6),
+    backgroundColor: '#FAFAFA',
+    borderRadius: scaleSize(12),
     paddingHorizontal: scaleSize(16),
     fontSize: scaleSize(16),
     color: Colors.light.text,
   },
   sendCodeButton: {
-    height: scaleSize(46),
+    height: scaleSize(40),
     backgroundColor: '#000000',
-    borderRadius: scaleSize(6),
+    borderRadius: scaleSize(12),
     paddingHorizontal: scaleSize(16),
     justifyContent: 'center',
     alignItems: 'center',
     minWidth: scaleSize(100),
+    marginTop: scaleSize(5),
+    marginBottom: scaleSize(5),
+    marginRight: scaleSize(5),
   },
   sendCodeButtonDisabled: {
     backgroundColor: '#CCCCCC',
@@ -342,7 +345,7 @@ const styles = StyleSheet.create({
   submitButton: {
     height: scaleSize(50),
     backgroundColor: '#000000',
-    borderRadius: scaleSize(8),
+    borderRadius: scaleSize(14),
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: scaleSize(10),

@@ -3,7 +3,7 @@ import { Colors } from '@/constants/theme';
 import { FALLBACK_IMAGE_BASE_URL, PIN_IMAGE_URL, PIN_NORMAL_IMAGE_URL } from '@/constants/urls';
 import { useAuth } from '@/contexts/AuthContext';
 import { get, put } from '@/utils/request';
-import { Ionicons } from '@expo/vector-icons';
+import { scaleSize } from '@/utils/screen';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -136,7 +136,11 @@ export default function PlanManageScreen() {
       {/* 头部 */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#222" />
+          <Image
+            source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-top-return.png' }}
+            style={styles.backButtonIcon}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>管理计划</Text>
         <View style={styles.headerRight} />
@@ -149,10 +153,15 @@ export default function PlanManageScreen() {
       ) : (
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
           {/* 进行中区域 */}
+          <Text style={styles.sectionTitle}>进行中</Text>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>进行中</Text>
             {plans.active.length === 0 ? (
               <View style={styles.emptyContainer}>
+                <Image
+                  source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-error-empty.png' }}
+                  style={styles.emptyImage}
+                  resizeMode="contain"
+                />
                 <Text style={styles.emptyText}>暂无进行中的计划</Text>
               </View>
             ) : (
@@ -214,10 +223,15 @@ export default function PlanManageScreen() {
           </View>
 
           {/* 已结束区域 */}
+          <Text style={styles.sectionTitle}>已结束</Text>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>已结束</Text>
             {plans.finish.length === 0 ? (
               <View style={styles.emptyContainer}>
+                <Image
+                  source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-error-empty.png' }}
+                  style={styles.emptyImage}
+                  resizeMode="contain"
+                />
                 <Text style={styles.emptyText}>暂无已结束的计划</Text>
               </View>
             ) : (
@@ -269,22 +283,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: scaleSize(16),
+    paddingVertical: scaleSize(12),
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: scaleSize(40),
+    height: scaleSize(40),
     alignItems: 'center',
     justifyContent: 'center',
   },
+  backButtonIcon: {
+    width: scaleSize(40),
+    height: scaleSize(40),
+  },
   headerTitle: {
-    fontSize: 18,
+    fontSize: scaleSize(18),
     fontWeight: '600',
     color: '#222',
   },
   headerRight: {
-    width: 40,
+    width: scaleSize(40),
   },
   loadingContainer: {
     flex: 1,
@@ -295,63 +313,72 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollViewContent: {
-    padding: 16,
+    paddingHorizontal: scaleSize(16),
   },
   section: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    paddingVertical: 12,
-    marginBottom: 16,
+    borderRadius: scaleSize(12),
+    paddingVertical: scaleSize(12),
+    marginBottom: scaleSize(16),
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: scaleSize(20),
     fontWeight: '600',
-    color: '#222',
-    paddingHorizontal: 16,
-    marginBottom: 12,
+    color: '#222222',
+    lineHeight: scaleSize(28),
+    marginBottom: scaleSize(12),
   },
   emptyContainer: {
-    paddingVertical: 20,
+    paddingVertical: scaleSize(24),
     alignItems: 'center',
   },
+  emptyImage: {
+    width: scaleSize(60),
+    height: scaleSize(60),
+    marginBottom: scaleSize(12),
+  },
   emptyText: {
-    fontSize: 14,
-    color: '#999',
+    fontSize: scaleSize(14),
+    color: '#999999',
+    lineHeight: scaleSize(22),
   },
   divider: {
     height: 0.5,
     backgroundColor: '#EEEEEE',
-    marginHorizontal: 16,
+    marginHorizontal: scaleSize(16),
   },
   planItem: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    alignItems: 'flex-start',
+    paddingHorizontal: scaleSize(16),
+    paddingVertical: scaleSize(12),
   },
   planImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
+    width: scaleSize(60),
+    height: scaleSize(60),
+    borderRadius: scaleSize(8),
     backgroundColor: '#F5F5F5',
-    marginRight: 12,
+    marginRight: scaleSize(12),
   },
   planInfo: {
     flex: 1,
   },
   planName: {
-    fontSize: 16,
+    fontSize: scaleSize(14),
+    lineHeight: scaleSize(22),
     fontWeight: '600',
     color: '#222',
-    marginBottom: 4,
+    marginBottom: scaleSize(2),
   },
   planCycle: {
-    fontSize: 14,
+    fontSize: scaleSize(12),
+    lineHeight: scaleSize(18),
     color: '#666',
-    marginBottom: 2,
+    marginBottom: scaleSize(2),
   },
   planDeadline: {
-    fontSize: 14,
+    fontSize: scaleSize(12),
+    lineHeight: scaleSize(18),
     color: '#666',
   },
   topActionContainer: {
@@ -359,25 +386,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   topActionDivider: {
-    width: 1,
-    height: 40,
+    width: scaleSize(1),
+    height: scaleSize(40),
     backgroundColor: '#EEEEEE',
-    marginRight: 12,
+    marginRight: scaleSize(12),
   },
   topAction: {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 50,
-    paddingVertical: 4,
+    width: scaleSize(50),
+    paddingVertical: scaleSize(4),
   },
   pinIcon: {
-    width: 16,
-    height: 16,
-    marginBottom: 4,
+    width: scaleSize(18),
+    height: scaleSize(18),
+    marginBottom: scaleSize(6),
   },
   topActionText: {
-    fontSize: 12,
+    fontSize: scaleSize(12),
     color: '#666',
   },
 });

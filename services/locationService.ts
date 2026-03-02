@@ -26,17 +26,31 @@ export const getCurrentLocation = async (): Promise<{
       return null;
     }
 
-    // 获取当前位置
-    const location = await Location.getCurrentPositionAsync({
+    // 获取当前位置，设置1秒超时
+    const locationPromise = Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced,
     });
+
+    const timeoutPromise = new Promise<null>((resolve) => {
+      setTimeout(() => {
+        console.log('获取位置超时（1秒），使用默认值');
+        resolve(null);
+      }, 1000);
+    });
+
+    const location = await Promise.race([locationPromise, timeoutPromise]);
+
+    if (!location) {
+      return null;
+    }
 
     return {
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
     };
   } catch (error) {
-    console.error('获取位置失败:', error);
+    // 静默处理错误，不打印到控制台
+    console.log('位置服务不可用，使用默认值');
     return null;
   }
 };
@@ -69,10 +83,26 @@ export const getLocationAndWeather = async (): Promise<{
       };
     }
 
-    // 2. 获取当前位置
-    const location = await Location.getCurrentPositionAsync({
+    // 2. 获取当前位置，设置3秒超时
+    const locationPromise = Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced,
     });
+
+    const timeoutPromise = new Promise<null>((resolve) => {
+      setTimeout(() => {
+        console.log('获取位置超时（3秒），使用默认值');
+        resolve(null);
+      }, 3000);
+    });
+
+    const location = await Promise.race([locationPromise, timeoutPromise]);
+
+    if (!location) {
+      return {
+        city: '',
+        weather: '',
+      };
+    }
 
     const { latitude, longitude } = location.coords;
 
@@ -110,7 +140,8 @@ export const getLocationAndWeather = async (): Promise<{
       weather: '',
     };
   } catch (error) {
-    console.error('获取位置和天气失败:', error);
+    // 静默处理错误，不打印到控制台
+    console.log('位置和天气服务不可用，使用默认值');
     return {
       city: '',
       weather: '',

@@ -89,9 +89,9 @@ export default function CustomTabBar({ state, descriptors, navigation }: CustomT
               </View>
               {isFocused ? (
                 <LinearGradient
-                  colors={['#FE49A6', '#FB861C', '#F677CD', '#00EAFF', '#001CFF']}
+                  colors={['#eb4b71', '#f7cc9a']}
                   start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
+                  end={{ x: 1, y: 0 }}
                   style={styles.gradientBackground}
                 >
                   <Text style={styles.englishTextActive}>{tabConfig.english}</Text>
@@ -120,12 +120,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
+    paddingVertical: scaleSize(4),
   },
   tabContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: scaleSize(2),
   },
   textContainer: {
     position: 'relative',
@@ -133,55 +133,56 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: 'absolute',
-    top: -6,
-    right: -12,
+    top: scaleSize(-6),
+    right: scaleSize(-12),
     backgroundColor: '#FF0000',
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
-    paddingHorizontal: 4,
+    borderRadius: scaleSize(8),
+    minWidth: scaleSize(16),
+    height: scaleSize(16),
+    paddingHorizontal: scaleSize(4),
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: scaleSize(1),
     borderColor: '#FFFFFF',
   },
   badgeText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: scaleSize(10),
     fontWeight: 'bold',
-    lineHeight: 12,
+    lineHeight: scaleSize(12),
   },
   gradientBackground: {
-    height: 10,
-    paddingHorizontal: 8,
-    borderRadius: 5,
+    height: scaleSize(12),
+    paddingHorizontal: scaleSize(8),
+    paddingVertical: scaleSize(1),
+    borderRadius: scaleSize(6),
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 30,
-    marginTop: 2,
+    minWidth: scaleSize(30),
+    marginTop: scaleSize(2),
   },
   chineseTextActive: {
-    fontSize: 15,
-    lineHeight: 18,
+    fontSize: scaleSize(15),
+    lineHeight: scaleSize(18),
     color: '#222',
     fontWeight: '600',
   },
   englishTextActive: {
-    fontSize: 8,
-    lineHeight: 10,
+    fontSize: scaleSize(8),
+    lineHeight: scaleSize(10),
     color: '#FFFFFF',
   },
   chineseTextInactive: {
-    fontSize: 15,
-    lineHeight: 18,
+    fontSize: scaleSize(15),
+    lineHeight: scaleSize(18),
     color: '#666',
     fontWeight: '500',
   },
   englishTextInactive: {
-    fontSize: 8,
-    lineHeight: 10,
+    fontSize: scaleSize(8),
+    lineHeight: scaleSize(10),
     color: '#666',
-    marginTop: 1,
+    marginTop: scaleSize(1),
   },
 });
 

@@ -3,7 +3,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { DiaryByDateItem, getChatRecords, getDiariesByDate } from '@/services/chatService';
 import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
-import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -50,7 +49,7 @@ export default function RecordDetailScreen() {
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
     const day = date.getDate();
-    return `${year}年${month}月${day}日`;
+    return `${month}月${day}日`;
   };
 
   // 格式化时间显示
@@ -115,7 +114,11 @@ export default function RecordDetailScreen() {
       {/* 头部 */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={Colors.light.text} />
+          <Image
+            source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-top-return.png' }}
+            style={styles.backButtonIcon}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{date ? formatDate(date) : '日记详情'}</Text>
         <View style={styles.backButton} />
@@ -141,9 +144,13 @@ export default function RecordDetailScreen() {
                     <Text style={styles.timePeriodText}>{formatTimePeriod(diary.gmt_create)}</Text>
                   </View>
                   <View style={styles.timelineDot} />
-                  {/* 只有多个日记时才显示连接线和底部圆点 */}
-                  {diaries.length > 1 && index < diaries.length - 1 && <View style={styles.timelineLine} />}
-                  {diaries.length > 1 && <View style={styles.timelineDot} />}
+                  {/* 只有不是最后一个日记时才显示连接线和底部圆点 */}
+                  {index < diaries.length - 1 && (
+                    <>
+                      <View style={styles.timelineLine} />
+                      <View style={styles.timelineDot} />
+                    </>
+                  )}
                 </View>
 
                 {/* 内容区域 */}
@@ -165,30 +172,37 @@ export default function RecordDetailScreen() {
                       ) : null;
                     })()}
 
-                    {/* 文字内容 - 只显示前100个字 */}
+                    {/* 文字内容 - 只显示3行 */}
                     {diary.context && (
                       <>
-                        <Markdown style={defaultMarkdownStyles}>
-                          {truncateText(diary.context)}
-                        </Markdown>
-                        {/* 如果文字超过100字，显示查看全文按钮 */}
-                        {diary.context.length > 100 && (
-                          <TouchableOpacity
-                            style={styles.viewFullButton}
-                            onPress={() => {
-                              router.push({
-                                pathname: '/diary-detail',
-                                params: {
-                                  diaryId: diary.id,
-                                },
-                              });
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Ionicons name="document-text-outline" size={16} color="#FFFFFF" />
-                            <Text style={styles.viewFullButtonText}>查看全文</Text>
-                          </TouchableOpacity>
-                        )}
+                        <View style={styles.diaryTextWrapper}>
+                          <View style={styles.diaryTextContainer}>
+                            <Markdown style={defaultMarkdownStyles}>
+                              {diary.context}
+                            </Markdown>
+                          </View>
+                          
+                        </View>
+                        {/* 显示查看全文按钮 */}
+                        <TouchableOpacity
+                          style={styles.viewFullButton}
+                          onPress={() => {
+                            router.push({
+                              pathname: '/diary-detail',
+                              params: {
+                                diaryId: diary.id,
+                              },
+                            });
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Image
+                            source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-diary-detail.png' }}
+                            style={styles.viewFullButtonIcon}
+                            resizeMode="contain"
+                          />
+                          <Text style={styles.viewFullButtonText}>查看全文</Text>
+                        </TouchableOpacity>
                       </>
                     )}
                   </View>
@@ -234,20 +248,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: scaleSize(16),
+    paddingVertical: scaleSize(12),
 
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: scaleSize(40),
+    height: scaleSize(40),
     justifyContent: 'center',
     alignItems: 'flex-start',
   },
+  backButtonIcon: {
+    width: scaleSize(40),
+    height: scaleSize(40),
+  },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: scaleSize(16),
+    // fontWeight: 'bold',
     color: Colors.light.text,
+    fontWeight: '600',
   },
   loadingContainer: {
     flex: 1,
@@ -260,52 +279,54 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: Colors.light.icon,
   },
   scrollView: {
     flex: 1,
   },
   timelineContainer: {
-    padding: 16,
+    padding: scaleSize(16),
   },
   timelineItem: {
     flexDirection: 'row',
-    marginBottom: 24,
+    marginBottom: scaleSize(24),
   },
   timelineLeft: {
-    width: 60,
+    width: scaleSize(60),
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: scaleSize(12),
   },
   timeContainer: {
     flexDirection: 'column',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: scaleSize(6),
   },
   timeText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: scaleSize(16),
+    lineHeight: scaleSize(24),
+    fontWeight: '800',
     color: Colors.light.text,
   },
   timePeriodText: {
     fontSize: scaleSize(12),
+    lineHeight: scaleSize(18),
     color: Colors.light.text,
-    marginTop: 2,
+    marginTop: scaleSize(3),
   },
   timelineDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: scaleSize(8),
+    height: scaleSize(8),
+    borderRadius: scaleSize(4),
     backgroundColor: '#D0D0D0',
-    marginLeft: 4,
+    marginLeft: scaleSize(4),
   },
   timelineLine: {
-    width: 1,
+    width: scaleSize(1),
     flex: 1,
     backgroundColor: '#E5E5E5',
-    marginLeft: 4,
-    marginTop: 4,
+    marginLeft: scaleSize(4),
+    marginTop: scaleSize(4),
     borderStyle: 'dashed',
   },
   timelineContent: {
@@ -313,65 +334,77 @@ const styles = StyleSheet.create({
   },
   diaryCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: scaleSize(8),
+    padding: scaleSize(16),
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: scaleSize(2),
     },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scaleSize(4),
     elevation: 3,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
   },
   emojiText: {
-    fontSize: 32,
-    marginBottom: 12,
+    fontSize: scaleSize(32),
+    marginBottom: scaleSize(12),
   },
   diaryImage: {
     width: '100%',
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 12,
+    height: scaleSize(200),
+    borderRadius: scaleSize(8),
+    marginBottom: scaleSize(12),
   },
-  diaryText: {
-    fontSize: 16,
-    color: Colors.light.text,
-    lineHeight: 24,
-    marginBottom: 12,
+  diaryTextWrapper: {
+    position: 'relative',
+    marginBottom: scaleSize(12),
+  },
+  diaryTextContainer: {
+    maxHeight: scaleSize(70), // 3 lines * 24px line height
+    overflow: 'hidden',
+  },
+  diaryTextFade: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: scaleSize(24), // 1 line height for fade effect
   },
   viewFullButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.light.text,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: scaleSize(10),
+    paddingHorizontal: scaleSize(16),
+    borderRadius: scaleSize(8),
     alignSelf: 'stretch',
+  },
+  viewFullButtonIcon: {
+    width: scaleSize(16),
+    height: scaleSize(16),
+    marginRight: scaleSize(6),
   },
   viewFullButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: scaleSize(14),
     fontWeight: '600',
-    marginLeft: 6,
+    marginLeft: scaleSize(6),
   },
   chatsRecordWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 50,
-    marginBottom: 20,
+    marginTop: scaleSize(50),
+    marginBottom: scaleSize(20),
   },
   chatRecordIcon: {
-    width: 16,
-    height: 16,
-    marginRight: 6,
+    width: scaleSize(16),
+    height: scaleSize(16),
+    marginRight: scaleSize(6),
   },
   chatRecordText: {
-    fontSize: 14,
+    fontSize: scaleSize(14),
     color: '#666666',
   },
 });

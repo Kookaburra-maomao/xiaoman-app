@@ -10,8 +10,8 @@ export const LOGO_URL = `${API_BASE_URL}/api/files/xiaoman.png`;
 export const SLOGAN_URL = `${API_BASE_URL}/api/files/xiaoman-slogan.png`;
 
 // 聊天头部
-export const HEADER_UP_ICON_URL = `${API_BASE_URL}/api/files/header-up.png`;
-export const HEADER_DOWN_ICON_URL = `${API_BASE_URL}/api/files/header-down.png`;
+export const HEADER_UP_ICON_URL = `${API_BASE_URL}/api/files/xiaoman-op-up.png`;
+export const HEADER_DOWN_ICON_URL = `${API_BASE_URL}/api/files/xiaoman-op-down.png`;
 
 // 聊天输入
 export const RADIO_ICON_URL = `${API_BASE_URL}/api/files/xiaoman-chat-radio.png`;

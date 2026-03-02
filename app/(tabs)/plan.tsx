@@ -7,12 +7,13 @@ import { API_BASE_URL } from '@/constants/urls';
 import { usePlan } from '@/hooks/usePlan';
 import { Plan, SuccessModalData } from '@/types/plan';
 import { onPlanRefresh } from '@/utils/planRefreshEvent';
+import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function PlanScreen() {
@@ -255,7 +256,11 @@ export default function PlanScreen() {
               onPress={handleGoToManage}
               activeOpacity={0.7}
             >
-              <Ionicons name="options-outline" size={20} color={Colors.light.text} />
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-manage.png' }}
+                style={styles.manageIconImage}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           </View>
 
@@ -318,27 +323,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
+    paddingHorizontal: scaleSize(20),
+    paddingVertical: scaleSize(16),
+    borderBottomWidth: scaleSize(1),
     borderBottomColor: '#E5E5E5',
   },
   headerLeft: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: scaleSize(20),
     fontWeight: 'bold',
     color: Colors.light.text,
-    marginBottom: 4,
+    marginBottom: scaleSize(4),
   },
   headerDate: {
-    fontSize: 14,
+    fontSize: scaleSize(14),
     color: Colors.light.icon,
   },
   headerRight: {
-    width: 40,
-    height: 40,
+    width: scaleSize(40),
+    height: scaleSize(40),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -351,51 +356,48 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollViewContent: {
-    paddingHorizontal: 12,
-    paddingTop: 16,
-    paddingBottom: 20,
+    paddingHorizontal: scaleSize(12),
+    paddingTop: scaleSize(16),
+    paddingBottom: scaleSize(20),
   },
   summarySection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: scaleSize(16),
   },
   summaryText: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: Colors.light.text,
   },
   summaryNumber: {
     fontWeight: 'bold',
   },
   manageIcon: {
-    marginLeft: 8,
-    width: 24,
-    height: 24,
+    marginLeft: scaleSize(8),
+    width: scaleSize(24),
+    height: scaleSize(24),
     alignItems: 'center',
     justifyContent: 'center',
   },
+  manageIconImage: {
+    width: scaleSize(20),
+    height: scaleSize(20),
+  },
   addPlanItem: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: scaleSize(12),
+    padding: scaleSize(16),
+    marginTop: scaleSize(12),
+   
   },
   addPlanContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: scaleSize(8),
   },
   addPlanText: {
-    fontSize: 16,
+    fontSize: scaleSize(16),
     color: Colors.light.text,
     fontWeight: '500',
   },

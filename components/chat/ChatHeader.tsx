@@ -6,7 +6,6 @@ import { WEEKDAYS } from '@/constants/chat';
 import { Colors } from '@/constants/theme';
 import { HEADER_DOWN_ICON_URL, HEADER_UP_ICON_URL } from '@/constants/urls';
 import { scaleSize } from '@/utils/screen';
-import { Ionicons } from '@expo/vector-icons';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -67,7 +66,11 @@ export default function ChatHeader({ title = '小满日记', showCard, onToggleC
         onPress={onShowMenu}
         activeOpacity={0.7}
       >
-        <Ionicons name="menu" size={24} color={Colors.light.text} />
+        <Image
+          source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-common-setting.png' }}
+          style={{ width: scaleSize(24), height: scaleSize(24) }}
+          resizeMode="contain"
+        />
       </TouchableOpacity>
     </View>
   );
@@ -83,13 +86,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingHorizontal: scaleSize(20),
+    paddingBottom: scaleSize(20),
     backgroundColor: Colors.light.background,
   },
   headerLeft: {
     flex: 1,
-    gap: 4,
+    gap: scaleSize(4),
   },
   headerCenter: {
     flex: 1,
@@ -99,21 +102,21 @@ const styles = StyleSheet.create({
   headerRight: {
     flex: 1,
     alignItems: 'flex-end',
-    paddingRight: 4,
+    paddingRight: scaleSize(4),
   },
   headerTitle: {
     fontFamily: 'PingFang SC',
     fontWeight: '400',
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: scaleSize(16),
+    lineHeight: scaleSize(24),
     letterSpacing: 0,
     color: Colors.light.text,
   },
   headerDate: {
     fontFamily: 'PingFang SC',
     fontWeight: '400',
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: scaleSize(11),
+    lineHeight: scaleSize(14),
     letterSpacing: 0,
     color: Colors.light.text,
   },
