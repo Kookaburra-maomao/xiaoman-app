@@ -1,7 +1,7 @@
 import ChatHeader from '@/components/chat/ChatHeader';
 import OperationCardCarousel from '@/components/chat/OperationCard';
 import { Colors } from '@/constants/theme';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useOperationCard } from '@/hooks/useOperationCard';
 import { DiaryCountItem, getDiaryCount } from '@/services/chatService';
 import { scaleSize } from '@/utils/screen';

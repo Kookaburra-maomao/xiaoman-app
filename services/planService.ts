@@ -2,12 +2,14 @@
  * 计划相关API服务
  */
 
-import { get, post, put, del } from '@/utils/request';
-import { Plan, PlansResponse, CreatePlanForm } from '@/types/plan';
+import { CreatePlanForm, Plan, PlansResponse } from '@/types/plan';
+import { del, get, post, put } from '@/utils/request';
 
 // 获取活跃计划列表
 export const fetchActivePlans = async (userId: string): Promise<Plan[]> => {
+  console.log('[planService] fetchActivePlans 调用，userId:', userId);
   const result = await get('/api/plans/active', { user_id: userId });
+  console.log('[planService] fetchActivePlans 响应:', { code: result.code, dataLength: result.data?.length });
   if (result.code === 200) {
     return result.data || [];
   }

@@ -1,5 +1,5 @@
 import { Colors } from '@/constants/theme';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { getDeletedDiaries } from '@/services/chatService';
 import * as imageService from '@/services/imageService';
 import { scaleSize } from '@/utils/screen';

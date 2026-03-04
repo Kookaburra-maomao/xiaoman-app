@@ -1,5 +1,5 @@
 import { Colors } from '@/constants/theme';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { DiaryByDateItem, getChatRecords, getDiariesByDate } from '@/services/chatService';
 import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';

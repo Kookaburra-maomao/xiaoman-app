@@ -2,7 +2,7 @@ import DiaryActionButtons from '@/components/diary/DiaryActionButtons';
 import DiaryImageCarousel from '@/components/diary/DiaryImageCarousel';
 // import LinedText from '@/components/diary/LinedText';
 import { Colors } from '@/constants/theme';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { deleteDiary, DiaryDetail, getDiaryDetail } from '@/services/chatService';
 import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';

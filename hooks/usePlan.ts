@@ -3,7 +3,7 @@
  */
 
 import { CYCLE_MAP } from '@/constants/plan';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import * as chatService from '@/services/chatService';
 import * as imageService from '@/services/imageService';
 import * as planService from '@/services/planService';
@@ -21,10 +21,16 @@ export const usePlan = () => {
 
   // 获取计划列表
   const fetchPlans = useCallback(async (): Promise<Plan[]> => {
-    if (!user?.id) return [];
+    console.log('[usePlan] fetchPlans 调用，user.id:', user?.id);
+    
+    if (!user?.id) {
+      console.log('[usePlan] fetchPlans 失败：user.id 不存在');
+      return [];
+    }
 
     try {
       setLoading(true);
+      console.log('[usePlan] 准备调用 planService.fetchActivePlans，userId:', user.id);
       const plansData = await planService.fetchActivePlans(user.id);
       
       // 创建两个数组：未完成的计划和已完成的计划

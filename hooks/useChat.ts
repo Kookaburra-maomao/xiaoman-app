@@ -2,7 +2,7 @@
  * 对话相关业务逻辑Hook
  */
 
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useTypewriter } from '@/hooks/useTypewriter';
 import * as chatService from '@/services/chatService';
 import * as imageService from '@/services/imageService';
@@ -16,6 +16,12 @@ const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 
 export const useChat = (scrollViewRef?: RefObject<any>) => {
   const { user } = useAuth();
+  
+  // 监听 user 变化
+  useEffect(() => {
+    console.log('[useChat] User 状态:', user ? { id: user.id, username: user.username } : null);
+  }, [user]);
+  
   const [messages, setMessages] = useState<Message[]>([]);
   const [assistantHistory, setAssistantHistory] = useState<AssistantHistoryItem[]>([]);
   const [assistantEmoji, setAssistantEmoji] = useState<string>(''); // 当前心情emoji
@@ -160,7 +166,14 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
 
   // 发送文本消息
   const sendMessage = useCallback(async (userContent: string, scrollToBottomFn?: () => void, skipSaveUserRecord?: boolean) => {
+    console.log('[useChat] sendMessage 调用，user.id:', user?.id);
+    
     if (!userContent.trim() || isSending || !user?.id) {
+      console.log('[useChat] sendMessage 条件不满足:', { 
+        hasContent: !!userContent.trim(), 
+        isSending, 
+        hasUserId: !!user?.id 
+      });
       return;
     }
 
@@ -229,6 +242,8 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       
       // 获取当前位置
       const location = await getCurrentLocation();
+      
+      console.log('[useChat] 准备调用 sendChatMessage，userId:', user.id);
       
       // 发送消息，包含位置信息和用户记忆
       const fullText = await chatService.sendChatMessage(
@@ -450,32 +465,37 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
 
   // 初始化用户记忆
   const initUserMemory = useCallback(async () => {
-    if (!user?.id || hasLoadedMemoryRef.current) {
-      // 如果已加载过，不再加载
+    console.log('[initUserMemory] 被调用');
+    console.log('[initUserMemory] user?.id:', user?.id);
+    console.log('[initUserMemory] hasLoadedMemoryRef.current:', hasLoadedMemoryRef.current);
+    console.log('[initUserMemory] 调用栈:', new Error().stack?.split('\n').slice(1, 5).join('\n'));
+    
+    if (!user?.id) {
+      console.log('[initUserMemory] 跳过：没有 user.id');
+      return;
+    }
+    
+    if (hasLoadedMemoryRef.current) {
+      console.log('[initUserMemory] 跳过：已加载过');
       return;
     }
 
     try {
       hasLoadedMemoryRef.current = true;
-      console.log('[initUserMemory] 开始初始化用户记忆');
+      console.log('[initUserMemory] 开始初始化用户记忆，userId:', user.id);
 
       // 尝试获取用户记忆
       const memoryData = await chatService.getUserMemory(user.id);
+      console.log('[initUserMemory] getUserMemory 返回:', memoryData);
 
       if (memoryData && memoryData.memory) {
         // 成功获取到记忆数据
         console.log('[initUserMemory] 获取到用户记忆:', memoryData.memory.substring(0, 100) + '...');
         setUserMemory(memoryData.memory);
       } else {
-        // 没有记忆数据，创建一个空的
-        console.log('[initUserMemory] 用户记忆不存在，创建空记忆');
-        const newMemory = await chatService.createUserMemory(user.id, '');
-        if (newMemory) {
-          setUserMemory('');
-        } else {
-          console.error('[initUserMemory] 创建用户记忆失败');
-          setUserMemory('');
-        }
+        // 没有记忆数据或 memory 字段为空，直接设置为空字符串
+        console.log('[initUserMemory] 用户记忆为空，设置为空字符串');
+        setUserMemory('');
       }
     } catch (error) {
       console.error('[initUserMemory] 初始化用户记忆失败:', error);

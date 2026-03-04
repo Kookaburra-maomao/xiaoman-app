@@ -5,7 +5,7 @@ import MessageList from '@/components/chat/MessageList';
 import OperationCardCarousel from '@/components/chat/OperationCard';
 import PlanAddModal from '@/components/chat/PlanAddModal';
 import { Colors } from '@/constants/theme';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
 import { useOperationCard } from '@/hooks/useOperationCard';
 import { useRecording } from '@/hooks/useRecording';
@@ -47,6 +47,14 @@ export default function ChatScreen() {
     checkShouldShowCard,
   } = useOperationCard({ autoCheck: true });
 
+  // 使用 ref 保持函数引用，避免依赖问题
+  const initUserMemoryRef = useRef<(() => Promise<void>) | undefined>(undefined);
+  const loadChatHistoryRef = useRef<(() => Promise<void>) | undefined>(undefined);
+  const refreshChatHistoryRef = useRef<(() => Promise<void>) | undefined>(undefined);
+  const loadPendingMessagesRef = useRef<(() => Promise<void>) | undefined>(undefined);
+  const fetchOperationCardsRef = useRef<(() => Promise<any>) | undefined>(undefined);
+  const checkShouldShowCardRef = useRef<(() => void) | undefined>(undefined);
+
   const {
     messages,
     setMessages,
@@ -80,6 +88,16 @@ export default function ChatScreen() {
     uploadAndRecognize,
   } = useRecording();
 
+  // 更新函数引用到 ref
+  useEffect(() => {
+    initUserMemoryRef.current = initUserMemory;
+    loadChatHistoryRef.current = loadChatHistory;
+    refreshChatHistoryRef.current = refreshChatHistory;
+    loadPendingMessagesRef.current = loadPendingMessages;
+    fetchOperationCardsRef.current = fetchOperationCards;
+    checkShouldShowCardRef.current = checkShouldShowCard;
+  }, [initUserMemory, loadChatHistory, refreshChatHistory, loadPendingMessages, fetchOperationCards, checkShouldShowCard]);
+
   // 监听键盘显示/隐藏事件
   useEffect(() => {
     const keyboardWillShowListener = Keyboard.addListener(
@@ -110,8 +128,18 @@ export default function ChatScreen() {
   // 监听页面聚焦，加载历史记录和待发送的消息
   useFocusEffect(
     useCallback(() => {
+      console.log('=== [Chat] useFocusEffect 触发 ===');
+      console.log('[Chat] user?.id:', user?.id);
+      console.log('[Chat] initUserMemoryRef.current:', !!initUserMemoryRef.current);
+      
       // 初始化用户记忆（只在第一次加载时执行）
-      initUserMemory();
+      // 确保 user.id 存在时才调用
+      if (user?.id && initUserMemoryRef.current) {
+        console.log('[Chat] 调用 initUserMemory');
+        initUserMemoryRef.current();
+      } else {
+        console.log('[Chat] 跳过 initUserMemory，原因:', !user?.id ? '没有 user.id' : '没有 initUserMemoryRef');
+      }
       
       // 检查是否需要刷新（从日记详情页返回）
       const checkRefreshNeeded = async () => {
@@ -121,26 +149,40 @@ export default function ChatScreen() {
             // 清除标记
             await AsyncStorage.removeItem('@chat_needs_refresh');
             // 刷新聊天历史
-            await refreshChatHistory();
+            if (refreshChatHistoryRef.current) {
+              await refreshChatHistoryRef.current();
+            }
           } else {
             // 正常加载历史记录
-            loadChatHistory();
+            if (loadChatHistoryRef.current) {
+              loadChatHistoryRef.current();
+            }
           }
         } catch (error) {
           console.error('检查刷新状态失败:', error);
           // 出错时正常加载
-          loadChatHistory();
+          if (loadChatHistoryRef.current) {
+            loadChatHistoryRef.current();
+          }
         }
       };
       
       checkRefreshNeeded();
       // 然后加载待发送的消息
-      loadPendingMessages();
+      if (loadPendingMessagesRef.current) {
+        loadPendingMessagesRef.current();
+      }
       // 加载运营卡片
-      fetchOperationCards();
+      if (fetchOperationCardsRef.current) {
+        fetchOperationCardsRef.current();
+      }
       // 检查是否应该展示运营卡片
-      checkShouldShowCard();
-    }, [initUserMemory, loadChatHistory, refreshChatHistory, loadPendingMessages, fetchOperationCards, checkShouldShowCard])
+      if (checkShouldShowCardRef.current) {
+        checkShouldShowCardRef.current();
+      }
+      
+      console.log('=== [Chat] useFocusEffect 完成 ===');
+    }, [user?.id]) // 只依赖 user?.id，不依赖函数
   );
 
   // 处理从 record 页面跳转过来的运营卡片参数
@@ -269,27 +311,36 @@ export default function ChatScreen() {
         {
           text: '拍照',
           onPress: async () => {
-            // 请求摄像头权限
-            const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
-            if (cameraStatus !== 'granted') {
-              Alert.alert('提示', '需要摄像头权限');
-              return;
-            }
+            try {
+              // 请求摄像头权限
+              const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+              if (cameraStatus !== 'granted') {
+                Alert.alert('提示', '需要摄像头权限');
+                return;
+              }
 
-            // 打开摄像头
-            const result = await ImagePicker.launchCameraAsync({
-              mediaTypes: ['images'],
-              allowsEditing: false,
-              quality: 1,
-            });
+              // 打开摄像头
+              const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ['images'],
+                allowsEditing: false,
+                quality: 1,
+              });
 
-            if (!result.canceled && result.assets[0]) {
-              setShowCard(false);
-              setIsUploadingImage(true);
-              try {
-                await uploadImageAndUnderstand(result.assets[0].uri, scrollToBottom);
-              } finally {
-                setIsUploadingImage(false);
+              if (!result.canceled && result.assets[0]) {
+                setShowCard(false);
+                setIsUploadingImage(true);
+                try {
+                  await uploadImageAndUnderstand(result.assets[0].uri, scrollToBottom);
+                } finally {
+                  setIsUploadingImage(false);
+                }
+              }
+            } catch (error: any) {
+              console.error('拍照失败:', error);
+              if (error.message?.includes('Camera not available')) {
+                Alert.alert('提示', '模拟器不支持相机功能，请使用真机测试或选择从相册上传');
+              } else {
+                Alert.alert('错误', error.message || '拍照失败，请重试');
               }
             }
           },

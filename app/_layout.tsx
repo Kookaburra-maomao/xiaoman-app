@@ -1,12 +1,12 @@
 import { Colors } from '@/constants/theme';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { JwtAuthProvider, useJwtAuth } from '@/contexts/JwtAuthContext';
 import { Audio } from 'expo-av';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 function RootLayoutContent() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading } = useJwtAuth();
   const segments = useSegments();
   const router = useRouter();
   const prevAuthenticatedRef = useRef<boolean | null>(null);
@@ -108,9 +108,9 @@ function RootLayoutContent() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
+    <JwtAuthProvider>
       <RootLayoutContent />
-    </AuthProvider>
+    </JwtAuthProvider>
   );
 }
 

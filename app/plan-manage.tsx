@@ -1,7 +1,7 @@
 import { CYCLE_MAP } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
 import { FALLBACK_IMAGE_BASE_URL, PIN_IMAGE_URL, PIN_NORMAL_IMAGE_URL } from '@/constants/urls';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { get, put } from '@/utils/request';
 import { scaleSize } from '@/utils/screen';
 import { useRouter } from 'expo-router';

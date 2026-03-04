@@ -5,7 +5,7 @@
 
 import { Colors } from '@/constants/theme';
 import { ICON_RETURN_URL } from '@/constants/urls';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { ChatRecord, getChatRecords } from '@/services/chatService';
 import { scaleSize } from '@/utils/screen';
 import { useLocalSearchParams, useRouter } from 'expo-router';

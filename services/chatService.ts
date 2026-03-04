@@ -186,6 +186,8 @@ export const sendChatMessage = async (
   location?: { latitude: number; longitude: number },
   userMemory?: string
 ): Promise<string> => {
+  console.log('[chatService] sendChatMessage 调用，userId:', userId);
+  
   const history = assistantHistory || [];
 
   // 如果有用户记忆且长度大于0，在 history 数组开头添加记忆
@@ -199,6 +201,12 @@ export const sendChatMessage = async (
     userContent: [...finalHistory, { role: 'user', content: userContent }],
     userId,
   };
+
+  console.log('[chatService] 请求体:', { 
+    userId: requestBody.userId, 
+    userContentLength: requestBody.userContent.length,
+    hasLocation: !!location 
+  });
 
   // 如果有位置信息，添加到请求体
   if (location) {
@@ -217,6 +225,7 @@ export const sendChatMessage = async (
   });
 
   if (!response.ok) {
+    console.error('[chatService] 请求失败，状态码:', response.status);
     throw new Error('请求失败');
   }
 
@@ -998,10 +1007,14 @@ export const getMyRecordStats = async (userId: string): Promise<MyRecordStats> =
 
 // 获取用户记忆
 export const getUserMemory = async (userId: string): Promise<UserMemory | null> => {
+  console.log('[chatService] getUserMemory 被调用，userId:', userId);
+  
   try {
     const params = new URLSearchParams({
       user_id: userId,
     });
+
+    console.log('[chatService] getUserMemory 请求 URL:', `${apiUrl}/api/memory?${params.toString()}`);
 
     const response = await fetch(`${apiUrl}/api/memory?${params.toString()}`, {
       method: 'GET',
@@ -1011,20 +1024,21 @@ export const getUserMemory = async (userId: string): Promise<UserMemory | null> 
     });
 
     if (!response.ok) {
-      console.log('获取用户记忆失败，可能不存在');
+      console.log('[chatService] getUserMemory 响应失败，status:', response.status);
       return null;
     }
 
     const result = await response.json();
 
     if (result.code === 200 && result.data) {
+      console.log('[chatService] getUserMemory 成功');
       return result.data;
     } else {
-      console.log('用户记忆不存在');
+      console.log('[chatService] getUserMemory 用户记忆不存在');
       return null;
     }
   } catch (error) {
-    console.error('获取用户记忆失败:', error);
+    console.error('[chatService] getUserMemory 失败:', error);
     return null;
   }
 };
@@ -1062,15 +1076,69 @@ export const createUserMemory = async (userId: string, memory: string = ''): Pro
 };
 
 // 抽取用户记忆
-export const extractUserMemory = async (userContent: AssistantHistoryItem[]): Promise<any | null> => {
+export const extractUserMemory = async (
+  userContent: AssistantHistoryItem[]
+): Promise<any | null> => {
   try {
+    // 1. 先获取位置信息
+    const { getCurrentLocation } = await import('@/services/locationService');
+    const location = await getCurrentLocation();
+    
+    // 2. 如果有位置信息，调用天气接口获取城市和天气
+    let contextInfo = '';
+    if (location) {
+      try {
+        const weatherResponse = await fetch(`${apiUrl}/api/weather/location`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            latitude: location.latitude,
+            longitude: location.longitude,
+          }),
+        });
+
+        if (weatherResponse.ok) {
+          const weatherResult = await weatherResponse.json();
+          if (weatherResult.code === 200 && weatherResult.data) {
+            const city = weatherResult.data.city || '';
+            const weather = weatherResult.data.weather || '';
+            
+            // 获取当前时间
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const currentTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            
+            contextInfo = `当前时间:${currentTime},当前城市：${city}, 当前天气：${weather}`;
+          }
+        }
+      } catch (error) {
+        console.log('获取天气信息失败:', error);
+      }
+    }
+    
+    // 3. 构建请求体，如果有上下文信息则添加到 userContent
+    const finalUserContent = [...userContent];
+    if (contextInfo) {
+      finalUserContent.push({
+        role: 'assistant',
+        content: contextInfo,
+      });
+    }
+
     const response = await fetch(`${apiUrl}/api/memory/extract`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        userContent: userContent,
+        userContent: finalUserContent,
       }),
     });
 

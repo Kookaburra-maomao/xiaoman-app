@@ -4,34 +4,34 @@
 
 import { Colors } from '@/constants/theme';
 import {
-    ICON_OPTION_DARK_URL,
-    ICON_RETURN_DARK_URL,
-    ICON_VIP_URL,
-    VIP_BANNER_URL,
-    VIP_HEADER_BG_URL,
-    VIP_NEW_FLAG_URL,
-    VIP_NORMAL_URL,
-    VIP_RIGHT_ICON_URL,
-    VIP_SELECTED_URL,
-    VIP_TEXT_GRADIENT_URL,
+  ICON_OPTION_DARK_URL,
+  ICON_RETURN_DARK_URL,
+  ICON_VIP_URL,
+  VIP_BANNER_URL,
+  VIP_HEADER_BG_URL,
+  VIP_NEW_FLAG_URL,
+  VIP_NORMAL_URL,
+  VIP_RIGHT_ICON_URL,
+  VIP_SELECTED_URL,
+  VIP_TEXT_GRADIENT_URL,
 } from '@/constants/urls';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { post } from '@/utils/request';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    Image,
-    ImageBackground,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 

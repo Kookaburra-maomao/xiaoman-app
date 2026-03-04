@@ -1,7 +1,7 @@
 import { Colors } from '@/constants/theme';
 import { LOGO_URL, SLOGAN_URL } from '@/constants/urls';
-import { useAuth } from '@/contexts/AuthContext';
-import { autoRegisterByPhone, getUserByPhone, loginByPhone, saveUser, sendSmsCode, verifySmsCode } from '@/utils/auth';
+import { useAuth } from '@/hooks/useAuth';
+import { sendSmsCode } from '@/utils/auth';
 import { scaleSize } from '@/utils/screen';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -29,7 +29,7 @@ export default function LoginScreen() {
   const [verifying, setVerifying] = useState(false);
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const router = useRouter();
-  const { setUser } = useAuth();
+  const { login } = useAuth();
 
   // 清理倒计时
   useEffect(() => {
@@ -91,7 +91,7 @@ export default function LoginScreen() {
     }
   };
 
-  // 验证验证码并登录/注册
+  // 验证验证码并登录（使用 JWT）
   const handleVerify = async () => {
     const trimmedPhone = phone.trim();
     const trimmedCode = verifyCode.trim();
@@ -114,47 +114,14 @@ export default function LoginScreen() {
     try {
       setVerifying(true);
 
-      // 固定测试账号：18610995540，验证码：5540
-      if (trimmedPhone === '18610995540' && trimmedCode === '5540') {
-        // 直接使用固定账号登录
-        const user = await loginByPhone(trimmedPhone, trimmedCode, true);
-        if (user) {
-          setUser(user);
-          await new Promise(resolve => setTimeout(resolve, 100));
-          router.replace('/(tabs)/chat');
-        }
-        return;
-      }
-
-      // 其他账号正常流程：先验证验证码
-      await verifySmsCode(trimmedPhone, trimmedCode);
-
-      // 手机号登录，建立服务端 session
-      let user = null;
-      try {
-        user = await loginByPhone(trimmedPhone, trimmedCode, false);
-      } catch (e: any) {
-        // 登录失败则尝试自动注册（新用户）
-        try {
-          user = await autoRegisterByPhone(trimmedPhone);
-        } catch (regErr: any) {
-          // 注册失败且提示用户已存在时，仅拉取用户信息并写入本地
-          if (regErr?.message?.includes('已存在') || regErr?.message?.includes('已注册')) {
-            user = await getUserByPhone(trimmedPhone);
-            if (user) {
-              await saveUser(user);
-            }
-          }
-          if (!user) throw regErr;
-        }
-      }
-      if (user) {
-        setUser(user);
-        await new Promise(resolve => setTimeout(resolve, 100));
-        router.replace('/(tabs)/chat');
-      }
+      // 直接使用 JWT 登录（服务器会自动验证验证码并注册新用户）
+      // login 接口内部已经包含了验证码验证和用户注册逻辑
+      await login(trimmedPhone, trimmedCode);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      router.replace('/(tabs)/chat');
     } catch (error: any) {
-      Alert.alert('错误', error.message || '验证失败，请重试');
+      console.error('[Login] 登录失败:', error);
+      Alert.alert('错误', error.message || '登录失败，请重试');
     } finally {
       setVerifying(false);
     }

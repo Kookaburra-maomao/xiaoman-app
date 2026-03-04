@@ -18,6 +18,8 @@ const request = async (url, { method = 'GET', params, body } = {}) => {
     const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL;
     const requestUrl = urlcat(apiUrl, url, params);
 
+    console.log('[request] 发起请求:', { method, url, params, hasBody: !!body });
+
     // 更新最后请求时间
     lastRequestTime = Date.now();
     
@@ -37,8 +39,12 @@ const request = async (url, { method = 'GET', params, body } = {}) => {
         ...(body && { body: JSON.stringify(body) }),
     };
     const response = await fetch(requestUrl, config);
+    
+    console.log('[request] 响应状态:', { url, status: response.status, ok: response.ok });
+    
     if (!response.ok) {
         const {message, errors} = await response.json().catch(() => null);
+        console.error('[request] 请求失败:', { url, status: response.status, message, errors });
         const error = new Error(message);
         error.status = response.status;
         error.errors = errors;

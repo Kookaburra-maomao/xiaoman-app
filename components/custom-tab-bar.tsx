@@ -12,7 +12,7 @@ interface TabConfig {
 const TAB_CONFIGS: Record<string, TabConfig> = {
   record: { chinese: '记录', english: 'Past' },
   chat: { chinese: '对话', english: 'Now' },
-  plan: { chinese: '计划', english: 'Plan' },
+  plan: { chinese: '计划', english: 'Future' },
 };
 
 interface CustomTabBarProps {

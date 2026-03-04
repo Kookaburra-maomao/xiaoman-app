@@ -83,8 +83,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
+        console.log('[AuthContext] 初始化认证状态');
+        
         // 先尝试从本地获取用户信息（快速显示，提升用户体验）
         const localUser = await getUser();
+        console.log('[AuthContext] 本地用户信息:', localUser ? { id: localUser.id, username: localUser.username } : null);
+        
         if (localUser) {
           setUser(localUser);
           // 设置 loading 为 false，允许应用继续渲染
@@ -94,6 +98,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // 然后从服务器验证（这会触发网络请求，自动更新最后请求时间）
         // 注意：即使服务器验证失败，如果本地有用户信息，也会保留登录状态
         const serverUser = await checkAuth();
+        console.log('[AuthContext] 服务器用户信息:', serverUser ? { id: serverUser.id, username: serverUser.username } : null);
+        
         if (serverUser) {
           setUser(serverUser);
         } else if (!localUser) {
@@ -102,7 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         // 如果服务器验证失败但本地有用户信息，保持本地用户信息（已登录状态）
       } catch (error) {
-        console.error('初始化认证失败:', error);
+        console.error('[AuthContext] 初始化认证失败:', error);
         // 发生错误时，尝试使用本地存储的用户信息
         const localUser = await getUser();
         if (localUser) {
@@ -187,6 +193,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     updateVipExpireTime: handleUpdateVipExpireTime,
     setUser,
   };
+
+  // 监听 user 状态变化
+  useEffect(() => {
+    console.log('[AuthContext] User 状态变化:', user ? { id: user.id, username: user.username, isAuthenticated: true } : { isAuthenticated: false });
+  }, [user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
