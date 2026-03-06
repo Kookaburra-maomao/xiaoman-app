@@ -14,9 +14,10 @@ interface MessageListProps {
   isGeneratingDiary: boolean;
   onGenerateDiary: () => void;
   onAddToPlan: (message: Message) => void;
+  userId?: string; // 用户ID，用于打点
 }
 
-export default function MessageList({ messages, isGeneratingDiary, onGenerateDiary, onAddToPlan }: MessageListProps) {
+export default function MessageList({ messages, isGeneratingDiary, onGenerateDiary, onAddToPlan, userId }: MessageListProps) {
   // 处理生成日记按钮点击
   const handleGenerateDiary = () => {
     onGenerateDiary();
@@ -68,10 +69,10 @@ export default function MessageList({ messages, isGeneratingDiary, onGenerateDia
         
         return (
           <View key={message.id}>
-            <MessageItem message={message} />
+            <MessageItem message={message} userId={userId} />
             {/* 显示计划列表 */}
             {shouldShowPlanList && (
-              <PlanList message={message} onAddToPlan={() => onAddToPlan(message)} />
+              <PlanList message={message} onAddToPlan={() => onAddToPlan(message)} userId={userId} />
             )}
             
             {/* 在完整的左侧系统消息下方显示"生成日记"按钮 */}

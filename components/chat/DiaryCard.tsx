@@ -16,6 +16,7 @@ interface DiaryCardProps {
   pic?: string;
   gmt_create?: string; // 创建时间
   diaryId?: string; // 日记ID，用于跳转到详情页
+  userId?: string; // 用户ID，用于打点
 }
 
 // 格式化日期时间：12.25 星期日 16:33
@@ -74,16 +75,28 @@ const truncateText = (text: string, hasImage: boolean): string => {
   return text.substring(0, maxLength) + '...';
 };
 
-export default function DiaryCard({ context, pic, gmt_create, diaryId }: DiaryCardProps) {
+export default function DiaryCard({ context, pic, gmt_create, diaryId, userId }: DiaryCardProps) {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(false);
   const imageUrl = getFirstImageUrl(pic);
   const dateTimeStr = formatDateTime(gmt_create);
   const truncatedContext = truncateText(context, !!imageUrl);
 
+  // 组件渲染时上报曝光
+  useEffect(() => {
+    if (userId) {
+      logByPosition('DIARY_CARD_EXPO' as any, userId);
+    }
+  }, [userId]);
+
   // 处理点击事件
   const handlePress = async () => {
     if (!diaryId || isChecking) return;
+
+    // 打点：日记卡片点击
+    if (userId) {
+      logByPosition('DIARY_CARD_CLICK' as any, userId);
+    }
 
     try {
       setIsChecking(true);

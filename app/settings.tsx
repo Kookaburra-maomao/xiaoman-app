@@ -1,5 +1,6 @@
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
+import { useLog } from '@/hooks/useLog';
 import { getDeletedDiaries } from '@/services/chatService';
 import * as imageService from '@/services/imageService';
 import { scaleSize } from '@/utils/screen';
@@ -26,6 +27,7 @@ const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 export default function SettingsScreen() {
   const { user, logout, updateUserInfo, refreshAuth, loading } = useAuth();
   const router = useRouter();
+  const { log } = useLog();
   const [recentlyDeletedCount, setRecentlyDeletedCount] = useState(0); // 最近删除数量
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [diaryEncryptionEnabled, setDiaryEncryptionEnabled] = useState(false);
@@ -43,6 +45,9 @@ export default function SettingsScreen() {
   // 页面聚焦时刷新用户信息，日记加密开关以 user.diary_secret 为准
   useFocusEffect(
     useCallback(() => {
+      // 页面曝光打点
+      log('SETTING_PAGE_EXPO');
+      
       if (!user && !loading) {
         refreshAuth();
       }
@@ -54,13 +59,7 @@ export default function SettingsScreen() {
       if (user?.id) {
         loadDeletedDiariesCount();
       }
-      
-      // 设置当前主题
-      if (user?.theme) {
-        setCurrentTheme(user.theme as 'system' | 'dark' | 'light');
-      } else {
-        setCurrentTheme('system');
-      }
+    
     }, [user, loading, refreshAuth])
   );
 
@@ -77,16 +76,16 @@ export default function SettingsScreen() {
   };
 
   // 处理主题选择
-  const handleThemeChange = async (theme: 'system' | 'dark' | 'light') => {
-    if (!user?.id) return;
-    try {
-      await updateUserInfo({ theme });
-      setCurrentTheme(theme);
-      setShowThemeMenu(false);
-    } catch (error: any) {
-      Alert.alert('错误', error?.message || '更新主题失败，请重试');
-    }
-  };
+  // const handleThemeChange = async (theme: 'system' | 'dark' | 'light') => {
+  //   if (!user?.id) return;
+  //   try {
+  //     await updateUserInfo({ theme });
+  //     setCurrentTheme(theme);
+  //     setShowThemeMenu(false);
+  //   } catch (error: any) {
+  //     Alert.alert('错误', error?.message || '更新主题失败，请重试');
+  //   }
+  // };
 
   // 获取主题显示文本
   const getThemeLabel = () => {
@@ -94,21 +93,21 @@ export default function SettingsScreen() {
     return option?.label || '系统';
   };
 
-  const onDiaryEncryptionChange = useCallback(
-    async (value: boolean) => {
-      if (!user?.id) return;
-      try {
-        setUpdatingDiarySecret(true);
-        await updateUserInfo({ diary_secret: value ? 'true' : 'false' });
-        setDiaryEncryptionEnabled(value);
-      } catch (e: any) {
-        Alert.alert('错误', e?.message || '更新失败，请重试');
-      } finally {
-        setUpdatingDiarySecret(false);
-      }
-    },
-    [user?.id, updateUserInfo]
-  );
+  // const onDiaryEncryptionChange = useCallback(
+  //   async (value: boolean) => {
+  //     if (!user?.id) return;
+  //     try {
+  //       setUpdatingDiarySecret(true);
+  //       await updateUserInfo({ diary_secret: value ? 'true' : 'false' });
+  //       setDiaryEncryptionEnabled(value);
+  //     } catch (e: any) {
+  //       Alert.alert('错误', e?.message || '更新失败，请重试');
+  //     } finally {
+  //       setUpdatingDiarySecret(false);
+  //     }
+  //   },
+  //   [user?.id, updateUserInfo]
+  // );
 
   // 处理头像选择
   const handleAvatarPress = () => {
@@ -203,7 +202,11 @@ export default function SettingsScreen() {
       const avatarPath = uploadResult.url.replace(apiUrl, '');
 
       // 更新用户信息
-      await updateUserInfo({ avatar: avatarPath });
+      await updateUserInfo({
+        avatar: avatarPath,
+        id: '',
+        username: ''
+      });
 
       Alert.alert('成功', '头像更新成功');
     } catch (error: any) {
@@ -280,6 +283,23 @@ export default function SettingsScreen() {
         </View>
       </SafeAreaView>
     );
+  }
+
+  function handleThemeChange(value: string): void {
+    // 打点：点击日夜间模式
+    // log('SETTING_PAGE_MODE');
+    
+    // TODO: 实现主题切换逻辑
+    // if (!user?.id) return;
+    // try {
+    //   await updateUserInfo({ theme: value });
+    //   setCurrentTheme(value as 'system' | 'dark' | 'light');
+    //   setShowThemeMenu(false);
+    // } catch (error: any) {
+    //   Alert.alert('错误', error?.message || '更新主题失败，请重试');
+    // }
+    
+    setShowThemeMenu(false);
   }
 
   return (
@@ -505,7 +525,14 @@ export default function SettingsScreen() {
             </>
           )}
 
-          <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.settingItem} 
+            activeOpacity={0.7}
+            onPress={() => {
+              log('SETTING_RECENT_DELETE');
+              router.push('/diary-recycle-bin');
+            }}
+          >
             <View style={styles.settingItemLeft}>
               <Image
                 source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-delete.png' }}
@@ -523,7 +550,14 @@ export default function SettingsScreen() {
 
         {/* 设置选项组2 */}
         <View style={styles.settingsGroup}>
-          <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.settingItem} 
+            activeOpacity={0.7}
+            onPress={() => {
+              log('SETTING_CHECK_UPDATE');
+              // TODO: 检查更新逻辑
+            }}
+          >
             <View style={styles.settingItemLeft}>
               <Image
                 source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-info.png' }}
@@ -538,7 +572,14 @@ export default function SettingsScreen() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.settingItem} 
+            activeOpacity={0.7}
+            onPress={() => {
+              log('SETTING_ABOUT_ME');
+              // TODO: 跳转到关于页面或显示关于信息
+            }}
+          >
             <View style={styles.settingItemLeft}>
               <Image
                 source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-logo.png' }}

@@ -13,15 +13,15 @@ import { scaleSize } from '@/utils/screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import {
-  Alert,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PlanEditModal, { EditPlanFormData } from '../plan/PlanEditModal';
@@ -73,6 +73,11 @@ export default function PlanAddModal({
   // 初始化编辑计划数据
   useEffect(() => {
     if (planData && planData.plans && visible) {
+      // 打点：添加推荐计划预览页展现
+      if (userId) {
+        logByPosition('SUG_PLAN_PREVIEW_EXPO' as any, userId);
+      }
+      
       const initialPlans = planData.plans.map((plan) => ({
         plan_name: plan.plan_name,
         plan_description: plan.plan_description,
@@ -206,6 +211,11 @@ export default function PlanAddModal({
 
   // 处理修改计划
   const handleModifyPlan = (index: number) => {
+    // 打点：点击修改计划
+    if (userId) {
+      logByPosition('SUG_PLAN_EDIT' as any, userId);
+    }
+    
     setEditingPlanIndex(index);
     setShowEditModal(true);
   };
@@ -249,6 +259,11 @@ export default function PlanAddModal({
 
   // 添加计划
   const handleAddPlan = async (index: number) => {
+    // 打点：点击添加计划
+    if (userId) {
+      logByPosition('SUG_PLAN_ADD_CONFIRM' as any, userId);
+    }
+    
     const plan = editingPlans[index];
     if (!plan.plan_name.trim()) {
       Alert.alert('提示', '请输入计划名称');

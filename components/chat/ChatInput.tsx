@@ -25,6 +25,7 @@ interface ChatInputProps {
   audioLevel?: number; // 音量级别 0-1
   isSending: boolean;
   isGeneratingDiary: boolean;
+  userId?: string; // 用户ID，用于打点
   onInputChange: (text: string) => void;
   onToggleInputMode: () => void;
   onVoiceButtonPress: () => void;
@@ -44,6 +45,7 @@ export default function ChatInput({
   audioLevel = 0,
   isSending,
   isGeneratingDiary,
+  userId,
   onInputChange,
   onToggleInputMode,
   onVoiceButtonPress,
@@ -62,6 +64,43 @@ export default function ChatInput({
   const textInputRef = useRef<TextInput>(null);
   const shouldCancelRef = useRef<boolean>(false);
   const [lottieRadioSource, setLottieRadioSource] = useState<AnimationObject | null>(null);
+
+  // 打点辅助函数
+  const logAction = (positionKey: string) => {
+    if (userId) {
+      logByPosition(positionKey as any, userId);
+    }
+  };
+
+  // 包装发送函数，添加打点
+  const handleSend = () => {
+    logAction('INPUT_SEND_BUTTON');
+    onSend();
+  };
+
+  // 包装图片选择函数，添加打点
+  const handleImagePicker = () => {
+    logAction('INPUT_IMAGE_BUTTON');
+    onImagePicker();
+  };
+
+  // 包装输入模式切换，添加打点
+  const handleToggleInputMode = () => {
+    if (!isVoiceMode) {
+      // 切换到语音模式
+      logAction('INPUT_VOICE_BUTTON');
+    }
+    onToggleInputMode();
+  };
+
+  // 包装输入框焦点事件，添加打点
+  const handleInputFocus = () => {
+    logAction('INPUT_CLICK');
+    setIsInputFocused(true);
+    if (onInputFocus) {
+      onInputFocus();
+    }
+  };
 
   // 加载按住说话 Lottie 动画 JSON
   useEffect(() => {
@@ -306,7 +345,7 @@ export default function ChatInput({
             style={[
               styles.modeToggleButton,
             ]}
-            onPress={onToggleInputMode}
+            onPress={handleToggleInputMode}
             activeOpacity={0.7}
             disabled={isGeneratingDiary || isRecording}
           >
@@ -362,11 +401,7 @@ export default function ChatInput({
               placeholderTextColor={Colors.light.icon}
               value={inputText}
               onChangeText={onInputChange}
-              onFocus={() => {
-                setIsInputFocused(true);
-                // 通知父组件隐藏运营卡片
-                onInputFocus?.();
-              }}
+              onFocus={handleInputFocus}
               onBlur={() => {
                 // 延迟检查，确保键盘状态已更新
                 setTimeout(() => {
@@ -387,7 +422,7 @@ export default function ChatInput({
                 style={[
                   styles.sendButton,
                 ]}
-                onPress={onSend}
+                onPress={handleSend}
                 disabled={isSending || isGeneratingDiary || !inputText.trim()}
                 activeOpacity={0.7}
               >
@@ -412,7 +447,7 @@ export default function ChatInput({
       {!showExpandedStyle && !(isRecording || isMovingUp) && (
         <TouchableOpacity
           style={styles.imageButton}
-          onPress={onImagePicker}
+          onPress={handleImagePicker}
           activeOpacity={0.7}
           disabled={isGeneratingDiary || isRecording}
         >

@@ -3,6 +3,7 @@
  */
 
 import { Colors } from '@/constants/theme';
+import { logByPosition } from '@/services/logService';
 import { SuccessModalData } from '@/types/plan';
 import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -12,6 +13,7 @@ interface PlanSuccessModalProps {
   data: SuccessModalData | null;
   uploadedImageUrl: string;
   isUploadingImage: boolean;
+  userId?: string; // 用户ID，用于打点
   onClose: () => void;
   onUploadImage: () => void;
 }
@@ -21,9 +23,19 @@ export default function PlanSuccessModal({
   data,
   uploadedImageUrl,
   isUploadingImage,
+  userId,
   onClose,
   onUploadImage,
 }: PlanSuccessModalProps) {
+  // 包装上传图片函数，添加打点
+  const handleUploadImage = () => {
+    // 打点：点击上传图片
+    if (userId) {
+      logByPosition('PLAN_DONE_CHECK_IMAGE' as any, userId);
+    }
+    onUploadImage();
+  };
+
   return (
     <Modal
       visible={visible}
@@ -57,7 +69,7 @@ export default function PlanSuccessModal({
               <View style={styles.modalImageContainer}>
                 {uploadedImageUrl ? (
                   <TouchableOpacity
-                    onPress={onUploadImage}
+                    onPress={handleUploadImage}
                     activeOpacity={0.7}
                     disabled={isUploadingImage}
                   >
@@ -75,7 +87,7 @@ export default function PlanSuccessModal({
                 ) : (
                   <TouchableOpacity
                     style={styles.modalImageUploadButton}
-                    onPress={onUploadImage}
+                    onPress={handleUploadImage}
                     disabled={isUploadingImage}
                     activeOpacity={0.7}
                   >

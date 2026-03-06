@@ -7,6 +7,7 @@ import PlanAddModal from '@/components/chat/PlanAddModal';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
+import { useLog } from '@/hooks/useLog';
 import { useOperationCard } from '@/hooks/useOperationCard';
 import { useRecording } from '@/hooks/useRecording';
 import * as chatService from '@/services/chatService';
@@ -21,6 +22,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function ChatScreen() {
   const { user, logout } = useAuth();
+  const { log } = useLog();
   const router = useRouter();
   const params = useLocalSearchParams(); // 获取路由参数
   const scrollViewRef = useRef<ScrollView>(null);
@@ -131,6 +133,9 @@ export default function ChatScreen() {
       console.log('=== [Chat] useFocusEffect 触发 ===');
       console.log('[Chat] user?.id:', user?.id);
       console.log('[Chat] initUserMemoryRef.current:', !!initUserMemoryRef.current);
+      
+      // 页面曝光打点
+      log('CHAT_TAB_EXPO');
       
       // 初始化用户记忆（只在第一次加载时执行）
       // 确保 user.id 存在时才调用
@@ -280,13 +285,17 @@ export default function ChatScreen() {
       return;
     }
     if (shouldCancel) {
+      // 打点：松手取消录音
+      log('INPUT_VOICE_RECORD_CANCEL');
       // 取消录音：只停止录音，不上传和发送
       await cancelRecording();
     } else {
+      // 打点：结束录音并发送
+      log('INPUT_VOICE_RECORD_END');
       // 发送录音：停止录音并上传识别
       await handleStopRecording();
     }
-  }, [isGeneratingDiary, isRecording, cancelRecording, handleStopRecording]);
+  }, [isGeneratingDiary, isRecording, cancelRecording, handleStopRecording, log]);
 
   // 处理手势移动（上滑检测）
   const handleVoiceButtonMove = useCallback(() => {
@@ -311,6 +320,9 @@ export default function ChatScreen() {
         {
           text: '拍照',
           onPress: async () => {
+            // 打点：点击打开相机
+            log('INPUT_IMAGE_CAMERA');
+            
             try {
               // 请求摄像头权限
               const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
@@ -348,6 +360,9 @@ export default function ChatScreen() {
         {
           text: '从相册选择',
           onPress: async () => {
+            // 打点：点击打开相册
+            log('INPUT_IMAGE_ALBUM');
+            
             // 请求相册权限
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (status !== 'granted') {
@@ -575,6 +590,7 @@ export default function ChatScreen() {
             isGeneratingDiary={isGeneratingDiary}
             onGenerateDiary={handleGenerateDiary}
             onAddToPlan={handleAddToPlan}
+            userId={user?.id}
           />
         </ScrollView>
 
@@ -587,6 +603,7 @@ export default function ChatScreen() {
           audioLevel={audioLevel}
           isSending={isSending}
           isGeneratingDiary={isGeneratingDiary}
+          userId={user?.id}
           onInputChange={setInputText}
           onToggleInputMode={toggleInputMode}
           onVoiceButtonPress={handleVoiceButtonPress}

@@ -245,6 +245,11 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       
       console.log('[useChat] 准备调用 sendChatMessage，userId:', user.id);
       
+      // 打点：发送消息给模型
+      if (user?.id) {
+        logByPosition('SEND_MESSAGE', user.id);
+      }
+      
       // 发送消息，包含位置信息和用户记忆
       const fullText = await chatService.sendChatMessage(
         userContent, 
@@ -657,6 +662,9 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       return;
     }
 
+    // 打点：点击生成日记按钮
+    logByPosition('GENERATE_DIARY_BUTTON', user.id);
+
     try {
       // 保存当前图片列表的副本，避免在生成过程中被清空
       const currentImageList = [...imageList];
@@ -711,6 +719,9 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
           setDiaryContent(text);
         }
       );
+
+      // 打点：日记生成完成
+      logByPosition('DIARY_GENERATE_COMPLETE', user.id);
 
       // 日记生成完成后，异步抽取和更新记忆（不阻塞后续流程）
       console.log('[生成日记] 日记生成完成，开始异步抽取记忆');

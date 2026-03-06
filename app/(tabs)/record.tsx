@@ -2,6 +2,7 @@ import ChatHeader from '@/components/chat/ChatHeader';
 import OperationCardCarousel from '@/components/chat/OperationCard';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
+import { useLog } from '@/hooks/useLog';
 import { useOperationCard } from '@/hooks/useOperationCard';
 import { DiaryCountItem, getDiaryCount } from '@/services/chatService';
 import { scaleSize } from '@/utils/screen';
@@ -50,6 +51,7 @@ function parseImageUrl(imageUrl?: string | null): { hasImage: boolean; firstImag
 export default function RecordScreen() {
   const { user, refreshAuth } = useAuth();
   const router = useRouter();
+  const { log } = useLog();
   const [searchText, setSearchText] = useState('');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [diaryCounts, setDiaryCounts] = useState<DiaryCountItem[]>([]);
@@ -79,6 +81,13 @@ export default function RecordScreen() {
   // 获取安全区域边距，用于计算header高度
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + scaleSize(16) + scaleSize(24) + scaleSize(14) + scaleSize(20); // top inset + paddingTop + title height + date height + paddingBottom
+
+  // 页面曝光打点
+  useFocusEffect(
+    useCallback(() => {
+      log('RECORD_TAB_EXPO');
+    }, [])
+  );
 
   // 获取当前年月
   const year = currentDate.getFullYear();
@@ -358,6 +367,9 @@ export default function RecordScreen() {
   // 点击日期进入详情页
   const handleDayPress = (day: number | null) => {
     if (day === null) return;
+    
+    // 打点：点击某天进入记录复访落地页
+    log('RECORD_SINGLE_DAY');
     
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     router.push({

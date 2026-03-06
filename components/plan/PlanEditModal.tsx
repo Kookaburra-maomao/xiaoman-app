@@ -49,6 +49,7 @@ interface PlanEditModalProps {
   } | null;
   planImageUrl?: string; // 可选，创建模式时可能没有
   saving: boolean;
+  userId?: string; // 用户ID，用于打点
   onClose: () => void;
   onSave: (formData: EditPlanFormData) => Promise<void>;
 }
@@ -67,6 +68,7 @@ export default function PlanEditModal({
   plan,
   planImageUrl,
   saving,
+  userId,
   onClose,
   onSave,
 }: PlanEditModalProps) {
@@ -153,6 +155,11 @@ export default function PlanEditModal({
 
   // 处理保存
   const handleSave = async () => {
+    // 打点：新建计划点击完成（仅在创建模式下）
+    if (!plan && userId) {
+      logByPosition('PLAN_CREATE_DONE' as any, userId);
+    }
+    
     if (!editFormData.name.trim()) {
       Alert.alert('提示', '计划名称不能为空');
       return;

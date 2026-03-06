@@ -4,6 +4,8 @@ import PlanSuccessModal from '@/components/plan/PlanSuccessModal';
 import { WEEKDAYS } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
 import { API_BASE_URL } from '@/constants/urls';
+import { useAuth } from '@/hooks/useAuth';
+import { useLog } from '@/hooks/useLog';
 import { usePlan } from '@/hooks/usePlan';
 import { Plan, SuccessModalData } from '@/types/plan';
 import { onPlanRefresh } from '@/utils/planRefreshEvent';
@@ -18,6 +20,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function PlanScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const { log } = useLog();
   const {
     plans,
     loading,
@@ -33,6 +37,13 @@ export default function PlanScreen() {
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // 页面曝光打点
+  useFocusEffect(
+    useCallback(() => {
+      log('PLAN_TAB_EXPO');
+    }, [])
+  );
 
   // 处理打卡
   const onCheckIn = async (plan: Plan) => {
@@ -211,11 +222,15 @@ export default function PlanScreen() {
 
   // 处理进入管理计划页面
   const handleGoToManage = () => {
+    log('PLAN_MANAGE');
     router.push('/plan-manage');
   };
 
   // 处理新增计划
   const handleAddPlan = () => {
+    // 打点：点击新增计划
+    log('PLAN_CREATE');
+    
     setShowCreateModal(true);
   };
 
@@ -271,6 +286,7 @@ export default function PlanScreen() {
               plan={plan}
               onCheckIn={onCheckIn}
               loading={loading}
+              userId={user?.id}
             />
           ))}
 
@@ -294,6 +310,7 @@ export default function PlanScreen() {
         data={successModalData}
         uploadedImageUrl={uploadedImageUrl}
         isUploadingImage={isUploadingImage}
+        userId={user?.id}
         onClose={() => setShowSuccessModal(false)}
         onUploadImage={onUploadImage}
       />
@@ -304,6 +321,7 @@ export default function PlanScreen() {
         plan={null}
         planImageUrl={uploadedImageUrl || undefined}
         saving={saving}
+        userId={user?.id}
         onClose={() => {
           setShowCreateModal(false);
           setUploadedImageUrl('');

@@ -12,9 +12,10 @@ import ImagePreviewModal from './ImagePreviewModal';
 
 interface MessageItemProps {
   message: Message;
+  userId?: string; // 用户ID，用于打点
 }
 
-export default function MessageItem({ message }: MessageItemProps) {
+export default function MessageItem({ message, userId }: MessageItemProps) {
   const [previewVisible, setPreviewVisible] = useState(false);
   // 判断消息类型
   const isDiary = message.recordType === 'diary' && message.diaryData;
@@ -48,6 +49,7 @@ export default function MessageItem({ message }: MessageItemProps) {
           pic={message.diaryData.pic} 
           gmt_create={message.diaryData.gmt_create}
           diaryId={message.diaryData.id}
+          userId={userId}
         />
       );
     }

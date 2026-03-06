@@ -1,11 +1,12 @@
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
+import { useLog } from '@/hooks/useLog';
 import { DiaryByDateItem, getChatRecords, getDiariesByDate } from '@/services/chatService';
 import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -38,6 +39,7 @@ const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 export default function RecordDetailScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const { log } = useLog();
   const { date } = useLocalSearchParams<{ date: string }>();
   const [diaries, setDiaries] = useState<DiaryByDateItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,6 +109,12 @@ export default function RecordDetailScreen() {
     fetchChatRecordsCount();
   }, [user?.id, date]);
 
+  // 页面曝光打点
+  useFocusEffect(
+    useCallback(() => {
+      log('RECORD_REVIEW_EXPO');
+    }, [])
+  );
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar hidden />
@@ -187,6 +195,9 @@ export default function RecordDetailScreen() {
                         <TouchableOpacity
                           style={styles.viewFullButton}
                           onPress={() => {
+                            // 打点：记录复访落地页点击复访某条日记
+                            log('RECORD_REVIEW_DIARY');
+                            
                             router.push({
                               pathname: '/diary-detail',
                               params: {
@@ -216,6 +227,9 @@ export default function RecordDetailScreen() {
             <TouchableOpacity
               style={styles.chatsRecordWrap}
               onPress={() => {
+                // 打点：记录复访落地页点击查看对话记录
+                log('RECORD_REVIEW_CHAT');
+                
                 router.push({
                   pathname: '/chat-record-day',
                   params: {

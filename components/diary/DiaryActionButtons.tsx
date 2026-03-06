@@ -4,6 +4,7 @@
 
 import { Colors } from '@/constants/theme';
 import { EDIT_ICON_URL, EXPORT_ICON_URL } from '@/constants/urls';
+import { logByPosition } from '@/services/logService';
 import { scaleSize } from '@/utils/screen';
 import React from 'react';
 import {
@@ -22,6 +23,7 @@ export interface DiaryActionButtonsProps {
   exportDisabled?: boolean;
   exportLoading?: boolean;
   exportLabel?: '分享';
+  userId?: string; // 用户ID，用于打点
 }
 
 export default function DiaryActionButtons({
@@ -31,13 +33,30 @@ export default function DiaryActionButtons({
   exportDisabled = false,
   exportLoading = false,
   exportLabel = '分享',
+  userId,
 }: DiaryActionButtonsProps) {
+  // 包装编辑函数，添加打点
+  const handleEdit = () => {
+    if (userId) {
+      logByPosition('DIARY_EDIT' as any, userId);
+    }
+    onEdit();
+  };
+
+  // 包装导出/分享函数，添加打点
+  const handleExport = () => {
+    if (userId) {
+      logByPosition('DIARY_PREVIEW_SHARE' as any, userId);
+    }
+    onExport();
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
         style={styles.editButton}
         disabled={editDisabled}
-        onPress={onEdit}
+        onPress={handleEdit}
         activeOpacity={0.7}
       >
         <Image
@@ -50,7 +69,7 @@ export default function DiaryActionButtons({
       <TouchableOpacity
         style={styles.exportButton}
         disabled={exportDisabled || exportLoading}
-        onPress={onExport}
+        onPress={handleExport}
         activeOpacity={0.7}
       >
         {exportLoading ? (

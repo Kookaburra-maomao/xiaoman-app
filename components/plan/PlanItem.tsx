@@ -5,6 +5,7 @@
 import { CYCLE_MAP } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
 import { FALLBACK_IMAGE_BASE_URL, getFullImageUrl, PIN_IMAGE_URL } from '@/constants/urls';
+import { logByPosition } from '@/services/logService';
 import { Plan } from '@/types/plan';
 import { calculateFinishTimes } from '@/utils/plan-utils';
 import { scaleSize } from '@/utils/screen';
@@ -16,9 +17,10 @@ interface PlanItemProps {
   plan: Plan & { isFinish?: boolean };
   onCheckIn: (plan: Plan) => void;
   loading?: boolean;
+  userId?: string; // 用户ID，用于打点
 }
 
-export default function PlanItem({ plan, onCheckIn, loading = false }: PlanItemProps) {
+export default function PlanItem({ plan, onCheckIn, loading = false, userId }: PlanItemProps) {
   const router = useRouter();
   const finishTimes = calculateFinishTimes(plan);
   const cycleText = CYCLE_MAP[plan.cycle] || plan.cycle;
@@ -168,6 +170,10 @@ export default function PlanItem({ plan, onCheckIn, loading = false }: PlanItemP
             onPress={(e) => {
               e.stopPropagation();
               if (!isFinish) {
+                // 打点：点击计划完成打卡
+                if (userId) {
+                  logByPosition('PLAN_DONE_CHECK' as any, userId);
+                }
                 onCheckIn(plan);
               }
             }}

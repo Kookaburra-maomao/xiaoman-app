@@ -3,22 +3,37 @@
  */
 
 import { ICON_DOT_URL, RIGHT_ICON_URL } from '@/constants/urls';
+import { logByPosition } from '@/services/logService';
 import { Message } from '@/types/chat';
 import { scaleSize } from '@/utils/screen';
+import { useEffect } from 'react';
 import { Image, Keyboard, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface PlanListProps {
   message: Message;
   onAddToPlan: () => void;
+  userId?: string; // 用户ID，用于打点
 }
 
-export default function PlanList({ message, onAddToPlan }: PlanListProps) {
+export default function PlanList({ message, onAddToPlan, userId }: PlanListProps) {
   if (!message.plans || !message.plans.plans || message.plans.plans.length === 0) {
     return null;
   }
 
+  // 组件渲染时上报曝光
+  useEffect(() => {
+    if (userId) {
+      logByPosition('SUG_PLAN_EXPO' as any, userId);
+    }
+  }, [userId]);
+
   // 处理添加计划按钮点击
   const handleAddToPlan = () => {
+    // 打点：点击去添加计划
+    if (userId) {
+      logByPosition('SUG_PLAN_ADD' as any, userId);
+    }
+    
     // 先收起键盘
     Keyboard.dismiss();
     // 立即执行添加计划

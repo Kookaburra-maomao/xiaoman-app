@@ -1,7 +1,8 @@
 import { CYCLE_MAP } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
-import { FALLBACK_IMAGE_BASE_URL, PIN_IMAGE_URL, PIN_NORMAL_IMAGE_URL } from '@/constants/urls';
+import { FALLBACK_IMAGE_BASE_URL, getFullImageUrl, PIN_IMAGE_URL, PIN_NORMAL_IMAGE_URL } from '@/constants/urls';
 import { useAuth } from '@/hooks/useAuth';
+import { useLog } from '@/hooks/useLog';
 import { get, put } from '@/utils/request';
 import { scaleSize } from '@/utils/screen';
 import { useRouter } from 'expo-router';
@@ -48,6 +49,7 @@ const formatDate = (dateString: string): string => {
 export default function PlanManageScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const { log } = useLog();
   const [plans, setPlans] = useState<PlansResponse>({ active: [], finish: [] });
   const [loading, setLoading] = useState(false);
 
@@ -77,6 +79,9 @@ export default function PlanManageScreen() {
 
   // 切换置顶状态
   const handleToggleTop = async (plan: Plan) => {
+    // 打点：点击置顶/取消置顶
+    log('PLAN_SET_TOP');
+    
     try {
       const newTopStatus = plan.is_top === 'true' ? 'false' : 'true';
       const result = await put(`/api/plans/${plan.id}`, {
@@ -97,6 +102,9 @@ export default function PlanManageScreen() {
 
   // 进入计划详情
   const handlePlanDetail = (plan: Plan) => {
+    // 打点：点击查看计划详情
+    log('PLAN_DETAIL');
+    
     router.push({
       pathname: '/plan-detail',
       params: {

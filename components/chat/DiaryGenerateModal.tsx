@@ -7,6 +7,8 @@ import DiaryImageCarousel from '@/components/diary/DiaryImageCarousel';
 import ShareModal from '@/components/diary/ShareModal';
 import { Colors } from '@/constants/theme';
 import { RETURN_ICON_URL } from '@/constants/urls';
+import { useAuth } from '@/hooks/useAuth';
+import { useLog } from '@/hooks/useLog';
 import * as imageService from '@/services/imageService';
 import { getLocationAndWeather } from '@/services/locationService';
 import { diaryModalMarkdownStyles } from '@/utils/markdownStyles';
@@ -76,6 +78,8 @@ export default function DiaryGenerateModal({
   diaryId,
 }: DiaryGenerateModalProps) {
   const router = useRouter();
+  const { log } = useLog();
+  const { user } = useAuth();
   const displayedTextRef = useRef<string>('');
   const targetTextRef = useRef<string>('');
   const typewriterTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -95,6 +99,13 @@ export default function DiaryGenerateModal({
   
   // 判断流式展示是否完成（需要等待打字机效果完成）
   const isStreamingComplete = !isGenerating && typewriterComplete && displayedContent === content && content.length > 0;
+
+  // 页面曝光打点
+  useEffect(() => {
+    if (visible) {
+      log('DIARY_PREVIEW_EXPO');
+    }
+  }, [visible]);
 
   // 当流式展示完成时显示 Toast
   useEffect(() => {
@@ -257,6 +268,9 @@ export default function DiaryGenerateModal({
       // 保存到相册
       await MediaLibrary.createAssetAsync(localScreenshotUri);
       
+      // 打点：保存日记图片成功
+      log('DIARY_SAVE_IMAGE_SUCCESS');
+      
       Alert.alert('成功', '图片已保存到相册');
     } catch (error: any) {
       console.error('保存图片失败:', error);
@@ -392,6 +406,7 @@ export default function DiaryGenerateModal({
                 exportDisabled={isGenerating}
                 exportLoading={sharing}
                 exportLabel="分享"
+                userId={user?.id}
               />
             </View>
           )}
