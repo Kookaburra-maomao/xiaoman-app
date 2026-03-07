@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,6 +22,7 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 
@@ -34,6 +36,7 @@ export default function SettingsScreen() {
   const [updatingDiarySecret, setUpdatingDiarySecret] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<'system' | 'dark' | 'light'>('system');
+  const [showAboutModal, setShowAboutModal] = useState(false); // 关于小满弹窗
 
   // 主题选项配置
   const THEME_OPTIONS = [
@@ -477,7 +480,7 @@ export default function SettingsScreen() {
             </View>
           </View> */}
 
-          <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+          {/* <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
             <View style={styles.settingItemLeft}>
               <Image
                 source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-theme.png' }}
@@ -499,7 +502,7 @@ export default function SettingsScreen() {
                 />
               </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* 主题选择气泡菜单（移到外层，避免穿透） */}
           {showThemeMenu && (
@@ -555,7 +558,7 @@ export default function SettingsScreen() {
             activeOpacity={0.7}
             onPress={() => {
               log('SETTING_CHECK_UPDATE');
-              // TODO: 检查更新逻辑
+              Alert.alert('提示', '当前已经是最新版');
             }}
           >
             <View style={styles.settingItemLeft}>
@@ -567,7 +570,7 @@ export default function SettingsScreen() {
               <Text style={styles.settingItemText}>检查更新</Text>
             </View>
             <View style={styles.settingItemRight}>
-              <Text style={styles.settingItemValue}>V1.01</Text>
+              <Text style={styles.settingItemValue}>V1.0.0</Text>
               <Ionicons name="chevron-forward" size={18} color={Colors.light.icon} />
             </View>
           </TouchableOpacity>
@@ -577,7 +580,7 @@ export default function SettingsScreen() {
             activeOpacity={0.7}
             onPress={() => {
               log('SETTING_ABOUT_ME');
-              // TODO: 跳转到关于页面或显示关于信息
+              setShowAboutModal(true);
             }}
           >
             <View style={styles.settingItemLeft}>
@@ -596,7 +599,7 @@ export default function SettingsScreen() {
 
         {/* 设置选项组3 */}
         <View style={styles.settingsGroup}>
-          <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+          {/* <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
             <View style={styles.settingItemLeft}>
               <Image
                 source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-setting.png' }}
@@ -622,9 +625,13 @@ export default function SettingsScreen() {
             <View style={styles.settingItemRight}>
               <Ionicons name="chevron-forward" size={18} color={Colors.light.icon} />
             </View>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
-          <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.settingItem} 
+            activeOpacity={0.7}
+            onPress={() => router.push('/feedback')}
+          >
             <View style={styles.settingItemLeft}>
               <Image
                 source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-edit.png' }}
@@ -657,6 +664,35 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* 关于小满全屏弹窗 */}
+      <Modal
+        visible={showAboutModal}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setShowAboutModal(false)}
+      >
+        <View style={styles.aboutModalContainer}>
+          {/* WebView 显示关于页面 */}
+          <WebView
+            source={{ uri: 'http://xiaomanriji.com' }}
+            style={styles.aboutWebView}
+          />
+          
+          {/* 左上角关闭按钮 */}
+          <TouchableOpacity
+            style={styles.aboutCloseButton}
+            onPress={() => setShowAboutModal(false)}
+            activeOpacity={0.7}
+          >
+            <Image
+              source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-top-close.png' }}
+              style={styles.aboutCloseIcon}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -920,5 +956,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  // 关于小满弹窗样式
+  aboutModalContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  aboutWebView: {
+    flex: 1,
+  },
+  aboutCloseButton: {
+    position: 'absolute',
+    top: scaleSize(50),
+    left: scaleSize(20),
+    width: scaleSize(40),
+    height: scaleSize(40),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: scaleSize(20),
+  },
+  aboutCloseIcon: {
+    width: scaleSize(24),
+    height: scaleSize(24),
   },
 });
