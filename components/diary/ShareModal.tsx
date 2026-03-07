@@ -85,7 +85,7 @@ export default function ShareModal({
                 activeOpacity={0.7}
               >
                 <View style={styles.optionIconContainer}>
-                  <Ionicons name="logo-qq" size={32} color="#12B7F5" />
+                  <Ionicons name="share-social" size={32} color="#12B7F5" />
                 </View>
                 <Text style={styles.optionText}>QQ好友</Text>
               </TouchableOpacity>

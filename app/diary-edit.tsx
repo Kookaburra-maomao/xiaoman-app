@@ -77,8 +77,10 @@ export default function DiaryEditScreen() {
     try {
       setLoading(true);
       const data = await getDiaryDetail(diaryId);
-      setDiary(data);
-      setContext(data.context);
+      if (data) {
+        setDiary(data);
+        setContext(data.context);
+      }
     } catch (error) {
       console.error('获取日记详情失败:', error);
       Alert.alert('错误', '获取日记详情失败，请重试');

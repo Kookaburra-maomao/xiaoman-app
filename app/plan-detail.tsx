@@ -3,6 +3,7 @@ import { CYCLE_MAP } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
 import {
     FALLBACK_IMAGE_BASE_URL,
+    getFullImageUrl,
     ICON_CALC_URL,
     ICON_OK_URL,
     ICON_REPEAT_URL,

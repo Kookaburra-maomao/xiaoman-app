@@ -88,7 +88,7 @@ const vipBenefits: VipBenefit[] = [
 
 export default function VipCenterScreen() {
   const router = useRouter();
-  const { user, updateVipExpireTime } = useAuth();
+  const { user } = useAuth(); // updateVipExpireTime 暂时注释，会员功能已删除
   const [selectedPlan, setSelectedPlan] = useState<string>('monthly');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [paying, setPaying] = useState(false);
@@ -137,12 +137,14 @@ export default function VipCenterScreen() {
         const vipExpireTimeStr = expireTime.toISOString();
 
         // 更新用户信息中的 vip_expire_time
-        try {
-          await updateVipExpireTime(vipExpireTimeStr);
-        } catch (error) {
-          console.error('更新会员信息失败:', error);
-          // 即使更新失败，支付已成功，继续导航
-        }
+        // TODO: 会员功能已删除，暂时注释
+        // try {
+        //   await updateVipExpireTime(vipExpireTimeStr);
+        // } catch (error) {
+        //   console.error('更新会员信息失败:', error);
+        //   // 即使更新失败，支付已成功，继续导航
+        // }
+        
         // 导航到设置页面
         router.push('/settings');
         Alert.alert('成功', '会员开通成功');

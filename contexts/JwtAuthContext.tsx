@@ -40,7 +40,7 @@ export const JwtAuthProvider = ({ children }: { children: ReactNode }) => {
   const appState = useRef<AppStateStatus>(AppState.currentState);
   const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isRefreshingRef = useRef(false);
-  const refreshAuthRef = useRef<(() => Promise<void>) | undefined>();
+  const refreshAuthRef = useRef<(() => Promise<void>) | undefined>(undefined);
 
   /**
    * 刷新用户信息（触发自动续期）
