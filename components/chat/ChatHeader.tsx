@@ -15,9 +15,10 @@ interface ChatHeaderProps {
   onToggleCard: () => void;
   onShowMenu: () => void;
   isStreaming?: boolean;
+  hideCardButton?: boolean; // 是否隐藏运营卡片按钮
 }
 
-export default function ChatHeader({ title = '小满日记', showCard, onToggleCard, onShowMenu, isStreaming = false }: ChatHeaderProps) {
+export default function ChatHeader({ title = '小满日记', showCard, onToggleCard, onShowMenu, isStreaming = false, hideCardButton = false }: ChatHeaderProps) {
   // 获取安全区域边距
   const insets = useSafeAreaInsets();
   
@@ -47,18 +48,20 @@ export default function ChatHeader({ title = '小满日记', showCard, onToggleC
         </Text>
       </View>
       
-      {/* 中间：方向切换按钮 */}
-      <TouchableOpacity
-        style={styles.headerCenter}
-        onPress={handleToggleCard}
-        activeOpacity={0.7}
-      >
-        <Image
-          source={{ uri: showCard ? HEADER_UP_ICON_URL : HEADER_DOWN_ICON_URL }}
-          style={[styles.headerIcon, isStreaming && styles.headerIconDisabled]}
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
+      {/* 中间：方向切换按钮（可选） */}
+      {!hideCardButton && (
+        <TouchableOpacity
+          style={styles.headerCenter}
+          onPress={handleToggleCard}
+          activeOpacity={0.7}
+        >
+          <Image
+            source={{ uri: showCard ? HEADER_UP_ICON_URL : HEADER_DOWN_ICON_URL }}
+            style={[styles.headerIcon, isStreaming && styles.headerIconDisabled]}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      )}
       
       {/* 右边：三个横线菜单 */}
       <TouchableOpacity
@@ -86,7 +89,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: scaleSize(20),
+    paddingHorizontal: scaleSize(16),
     paddingBottom: scaleSize(20),
     backgroundColor: Colors.light.background,
   },

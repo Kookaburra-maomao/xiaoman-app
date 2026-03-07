@@ -25,6 +25,7 @@ export const RADIO_DOT_IMAGE_URL = `${API_BASE_URL}/api/files/xiaoman-radio-dot.
 export const RIGHT_ICON_URL = `${API_BASE_URL}/api/files/xiaoman-icon-right.png`;
 
 // 计划相关
+export const IMAGE_BASE_URL = `${API_BASE_URL}/api/files`;
 export const FALLBACK_IMAGE_BASE_URL = `${API_BASE_URL}/api/files/plan`;
 export const ICON_RETURN_URL = `${API_BASE_URL}/api/files/xiaoman-icon-return.png`;
 export const ICON_RETURN_DARK_URL = `${API_BASE_URL}/api/files/icon-return-dark.png`;

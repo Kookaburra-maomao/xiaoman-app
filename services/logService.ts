@@ -10,6 +10,7 @@ export interface LogParams {
   spmb: string;
   spmc: string;
   spmd: string;
+  log_key: string;
   extrinfo?: string;
   user_id: string;
 }
@@ -361,6 +362,7 @@ export const LOG_POSITIONS = {
  * 发送日志（异步，不阻塞主流程）
  */
 export const sendLog = async (
+  positionKey: keyof typeof LOG_POSITIONS,
   logConfig: typeof LOG_POSITIONS[keyof typeof LOG_POSITIONS],
   userId: string,
   extraInfo?: Record<string, any>
@@ -372,6 +374,7 @@ export const sendLog = async (
       spmb: logConfig.spmb,
       spmc: logConfig.spmc,
       spmd: logConfig.spmd,
+      log_key: positionKey,
       user_id: userId,
     };
 
@@ -407,6 +410,6 @@ export const logByPosition = (
 ): void => {
   const logConfig = LOG_POSITIONS[positionKey];
   if (logConfig) {
-    sendLog(logConfig, userId, extraInfo);
+    sendLog(positionKey, logConfig, userId, extraInfo);
   }
 };

@@ -1,7 +1,7 @@
+import ChatHeader from '@/components/chat/ChatHeader';
 import PlanEditModal, { EditPlanFormData } from '@/components/plan/PlanEditModal';
 import PlanItem from '@/components/plan/PlanItem';
 import PlanSuccessModal from '@/components/plan/PlanSuccessModal';
-import { WEEKDAYS } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
 import { API_BASE_URL } from '@/constants/urls';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,9 +14,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PlanScreen() {
   const router = useRouter();
@@ -37,6 +37,10 @@ export default function PlanScreen() {
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // 获取安全区域边距，用于计算header高度
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets.top + scaleSize(16); // top inset + paddingTop + title height + date height + paddingBottom
 
   // 页面曝光打点
   useFocusEffect(
@@ -59,17 +63,17 @@ export default function PlanScreen() {
   const handleCreatePlanSave = async (formData: EditPlanFormData) => {
     try {
       setSaving(true);
-      
+
       // 如果 formData 中有 image 和 image_preview，使用它们；否则使用默认图片
       let imageUrl = formData.image;
       let imagePreviewUrl = formData.image_preview;
-      
+
       if (!imageUrl) {
         // 如果没有通过 plan_tag 生成的图片，使用默认图片
         const randomNum = Math.floor(Math.random() * 18) + 1;
         imageUrl = `${API_BASE_URL}/api/files/plan${randomNum}.png`;
       }
-      
+
       const success = await handleCreatePlan({
         name: formData.name,
         cycle: formData.cycle,
@@ -122,11 +126,11 @@ export default function PlanScreen() {
 
               setIsUploadingImage(true);
               const uploadResult = await handleUploadImage(result.assets[0].uri);
-              
+
               if (uploadResult) {
                 setUploadedImageUrl(uploadResult.imageUrl);
                 Alert.alert('成功', '图片上传成功');
-                
+
                 // 关闭弹窗并跳转到聊天页面
                 setShowSuccessModal(false);
                 router.push('/(tabs)/chat');
@@ -157,11 +161,11 @@ export default function PlanScreen() {
 
               setIsUploadingImage(true);
               const uploadResult = await handleUploadImage(result.assets[0].uri);
-              
+
               if (uploadResult) {
                 setUploadedImageUrl(uploadResult.imageUrl);
                 Alert.alert('成功', '图片上传成功');
-                
+
                 // 关闭弹窗并跳转到聊天页面
                 setShowSuccessModal(false);
                 router.push('/(tabs)/chat');
@@ -203,18 +207,6 @@ export default function PlanScreen() {
     return unsubscribe;
   }, [fetchPlans]);
 
-  // 格式化当前日期和星期
-  const currentDateInfo = useMemo(() => {
-    const now = new Date();
-    const month = now.getMonth() + 1;
-    const day = now.getDate();
-    const weekday = WEEKDAYS[now.getDay()];
-    return {
-      date: `${month}月${day}日`,
-      weekday: weekday,
-    };
-  }, []);
-
   // 处理进入设置页面
   const handleGoToSettings = () => {
     router.push('/settings');
@@ -230,80 +222,79 @@ export default function PlanScreen() {
   const handleAddPlan = () => {
     // 打点：点击新增计划
     log('PLAN_CREATE');
-    
+
     setShowCreateModal(true);
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar hidden />
-      
-      {/* 页面头部 */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>计划</Text>
-          <Text style={styles.headerDate}>
-            {currentDateInfo.date} · {currentDateInfo.weekday}
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={styles.headerRight}
-          onPress={handleGoToSettings}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="menu" size={24} color={Colors.light.text} />
-        </TouchableOpacity>
-      </View>
+      <StatusBar style="dark" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : scaleSize(20)}
+      >
+        {/* 使用 ChatHeader 组件 */}
+        <ChatHeader
+          title="计划"
+          showCard={false}
+          onToggleCard={() => { }} // 不展示运营卡片按钮，空函数
+          onShowMenu={handleGoToSettings}
+          hideCardButton={true} // 隐藏运营卡片按钮
+        />
 
-      {loading && plans.length === 0 ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.light.tint} />
-        </View>
-      ) : (
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
-          {/* 统计信息 */}
-          <View style={styles.summarySection}>
-            <Text style={styles.summaryText}>
-              你共<Text style={styles.summaryNumber}>{plans.length}</Text>项计划进行中
-            </Text>
+        {loading && plans.length === 0 ? (
+          <View style={[styles.loadingContainer, { paddingTop: headerHeight }]}>
+            <ActivityIndicator size="large" color={Colors.light.tint} />
+          </View>
+        ) : (
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={[styles.scrollViewContent, { paddingTop: headerHeight }]}
+          >
+            {/* 统计信息 */}
+            <View style={styles.summarySection}>
+              <Text style={styles.summaryText}>
+                你共<Text style={styles.summaryNumber}>{plans.length}</Text>项计划进行中
+              </Text>
+              <TouchableOpacity
+                style={styles.manageIcon}
+                onPress={handleGoToManage}
+                activeOpacity={0.7}
+              >
+                <Image
+                  source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-manage.png' }}
+                  style={styles.manageIconImage}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* 计划列表 */}
+            {plans.map((plan) => (
+              <PlanItem
+                key={plan.id}
+                plan={plan}
+                onCheckIn={onCheckIn}
+                loading={loading}
+                userId={user?.id}
+              />
+            ))}
+
+            {/* 新增计划item */}
             <TouchableOpacity
-              style={styles.manageIcon}
-              onPress={handleGoToManage}
+              style={styles.addPlanItem}
+              onPress={handleAddPlan}
               activeOpacity={0.7}
             >
-              <Image
-                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-manage.png' }}
-                style={styles.manageIconImage}
-                resizeMode="contain"
-              />
+              <View style={styles.addPlanContent}>
+                <Ionicons name="add" size={24} color={Colors.light.text} />
+                <Text style={styles.addPlanText}>新增计划</Text>
+              </View>
             </TouchableOpacity>
-          </View>
-
-          {/* 计划列表 */}
-          {plans.map((plan) => (
-            <PlanItem
-              key={plan.id}
-              plan={plan}
-              onCheckIn={onCheckIn}
-              loading={loading}
-              userId={user?.id}
-            />
-          ))}
-
-          {/* 新增计划item */}
-          <TouchableOpacity
-            style={styles.addPlanItem}
-            onPress={handleAddPlan}
-            activeOpacity={0.7}
-          >
-            <View style={styles.addPlanContent}>
-              <Ionicons name="add" size={24} color={Colors.light.text} />
-              <Text style={styles.addPlanText}>新增计划</Text>
-            </View>
-          </TouchableOpacity>
-        </ScrollView>
-      )}
-
+          </ScrollView>
+        )}
+      </KeyboardAvoidingView>
       {/* 打卡成功弹窗 */}
       <PlanSuccessModal
         visible={showSuccessModal}
@@ -337,33 +328,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F1F1F1',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: scaleSize(20),
-    paddingVertical: scaleSize(16),
-    borderBottomWidth: scaleSize(1),
-    borderBottomColor: '#E5E5E5',
-  },
-  headerLeft: {
+  keyboardView: {
     flex: 1,
-  },
-  headerTitle: {
-    fontSize: scaleSize(20),
-    fontWeight: 'bold',
-    color: Colors.light.text,
-    marginBottom: scaleSize(4),
-  },
-  headerDate: {
-    fontSize: scaleSize(14),
-    color: Colors.light.icon,
-  },
-  headerRight: {
-    width: scaleSize(40),
-    height: scaleSize(40),
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   loadingContainer: {
     flex: 1,
@@ -374,8 +340,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollViewContent: {
-    paddingHorizontal: scaleSize(12),
-    paddingTop: scaleSize(16),
+    paddingHorizontal: scaleSize(16),
     paddingBottom: scaleSize(20),
   },
   summarySection: {
@@ -385,7 +350,6 @@ const styles = StyleSheet.create({
   },
   summaryText: {
     fontSize: scaleSize(16),
-    color: Colors.light.text,
   },
   summaryNumber: {
     fontWeight: 'bold',
@@ -406,7 +370,7 @@ const styles = StyleSheet.create({
     borderRadius: scaleSize(12),
     padding: scaleSize(16),
     marginTop: scaleSize(12),
-   
+
   },
   addPlanContent: {
     flexDirection: 'row',

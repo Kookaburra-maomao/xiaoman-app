@@ -4,7 +4,7 @@
 
 import { CYCLE_MAP } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
-import { FALLBACK_IMAGE_BASE_URL, ICON_RETURN_URL } from '@/constants/urls';
+import { FALLBACK_IMAGE_BASE_URL, ICON_RETURN_URL, IMAGE_BASE_URL } from '@/constants/urls';
 import { GeneratePlanResponse } from '@/services/chatService';
 import { logByPosition } from '@/services/logService';
 import * as planService from '@/services/planService';
@@ -38,12 +38,12 @@ interface PlanAddModalProps {
 
 // 根据 plan_tag 和随机数生成计划图片 URL
 const getPlanImageUrl = (planTag: string, randomNum: number): string => {
-  return `${FALLBACK_IMAGE_BASE_URL}${planTag}/${randomNum}.png`;
+  return `${IMAGE_BASE_URL}/${planTag}${randomNum}.jpg`;
 };
 
 // 根据 plan_tag 和随机数生成计划预览图片 URL
 const getPlanImagePreviewUrl = (planTag: string, randomNum: number): string => {
-  return `${FALLBACK_IMAGE_BASE_URL}${planTag}/${randomNum}_preview.png`;
+  return `${IMAGE_BASE_URL}/${planTag}${randomNum}_preview.jpg`;
 };
 
 export default function PlanAddModal({

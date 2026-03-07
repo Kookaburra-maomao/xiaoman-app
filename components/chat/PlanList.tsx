@@ -83,13 +83,13 @@ const styles = StyleSheet.create({
     paddingLeft: scaleSize(20),
   },
   plansContainer: {
-    marginBottom: scaleSize(0),
+    marginBottom: scaleSize(12),
   },
   planItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    height: scaleSize(24),
     marginBottom: scaleSize(4),
-    paddingVertical: scaleSize(8),
     borderRadius: scaleSize(8),
   },
   planItemIcon: {
