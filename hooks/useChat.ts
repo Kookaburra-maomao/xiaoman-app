@@ -7,6 +7,7 @@ import { useTypewriter } from '@/hooks/useTypewriter';
 import * as chatService from '@/services/chatService';
 import * as imageService from '@/services/imageService';
 import { getCurrentLocation, getLocationAndWeather } from '@/services/locationService';
+import { logByPosition } from '@/services/logService';
 import { Message } from '@/types/chat';
 import { AssistantHistoryItem, clearAssistantHistory, clearPendingConversations, clearPendingMessages, clearUnreadCount, getAssistantHistory, getPendingConversations, getPendingMessages, saveAssistantHistory } from '@/utils/unread-messages';
 import { RefObject, useCallback, useEffect, useRef, useState } from 'react';

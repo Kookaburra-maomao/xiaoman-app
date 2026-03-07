@@ -6,6 +6,7 @@ import { CYCLE_MAP } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
 import { FALLBACK_IMAGE_BASE_URL, ICON_RETURN_URL } from '@/constants/urls';
 import { GeneratePlanResponse } from '@/services/chatService';
+import { logByPosition } from '@/services/logService';
 import * as planService from '@/services/planService';
 import { emitPlanRefresh } from '@/utils/planRefreshEvent';
 import { get } from '@/utils/request';
@@ -13,15 +14,15 @@ import { scaleSize } from '@/utils/screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import {
-    Alert,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PlanEditModal, { EditPlanFormData } from '../plan/PlanEditModal';

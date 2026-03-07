@@ -5,6 +5,7 @@
 import { CYCLE_MAP } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
 import { getPlanImagePreviewUrl, getPlanImageUrl } from '@/constants/urls';
+import { logByPosition } from '@/services/logService';
 import { formatDateForDisplay } from '@/utils/date-utils';
 import { get } from '@/utils/request';
 import { scaleSize } from '@/utils/screen';

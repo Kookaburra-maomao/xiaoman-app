@@ -23,7 +23,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="future"
+        name="plan"
         options={{
           title: '计划',
         }}

@@ -11,6 +11,7 @@ import {
   RADIO_ICON_URL,
   SEND_MSG_ICON_URL,
 } from '@/constants/urls';
+import { logByPosition } from '@/services/logService';
 import { scaleSize } from '@/utils/screen';
 import { LinearGradient } from 'expo-linear-gradient';
 import LottieView, { type AnimationObject } from 'lottie-react-native';
