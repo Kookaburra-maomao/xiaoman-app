@@ -583,7 +583,9 @@ const styles = StyleSheet.create({
     lineHeight: scaleSize(20),
     color: Colors.light.text,
     padding: 0,
-    textAlignVertical: 'center',
+    paddingTop: scaleSize(8),
+    paddingBottom: scaleSize(8),
+    textAlignVertical: 'top',
     minHeight: scaleSize(24),
     maxHeight: scaleSize(120), // 约5行高度（每行约24px）
   },

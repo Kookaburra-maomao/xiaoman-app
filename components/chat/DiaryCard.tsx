@@ -9,7 +9,7 @@ import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 
 interface DiaryCardProps {
@@ -68,8 +68,8 @@ const getFirstImageUrl = (pic?: string): string | undefined => {
 };
 
 // 截断文本：有图片时50字，无图片时100字
-const truncateText = (text: string, hasImage: boolean): string => {
-  const maxLength = hasImage ? 50 : 100;
+const truncateText = (text: string): string => {
+  const maxLength = 50;
   if (text.length <= maxLength) {
     return text;
   }
@@ -81,7 +81,7 @@ export default function DiaryCard({ context, pic, gmt_create, diaryId, userId }:
   const [isChecking, setIsChecking] = useState(false);
   const imageUrl = getFirstImageUrl(pic);
   const dateTimeStr = formatDateTime(gmt_create);
-  const truncatedContext = truncateText(context, !!imageUrl);
+  const truncatedContext = truncateText(context);
 
   // 组件渲染时上报曝光
   useEffect(() => {
@@ -134,10 +134,10 @@ export default function DiaryCard({ context, pic, gmt_create, diaryId, userId }:
       disabled={!diaryId || isChecking}
     >
       {/* 第一行：日期时间 */}
-      {/* {dateTimeStr && (
+      {dateTimeStr && (
         <Text style={styles.dateTimeText}>{dateTimeStr}</Text>
       )}
-       */}
+      
       {/* 日记信息区域 */}
       <View style={styles.diaryContentContainer}>
         {imageUrl ? (
@@ -151,9 +151,16 @@ export default function DiaryCard({ context, pic, gmt_create, diaryId, userId }:
           </View>
         ) : (
           <View style={styles.diaryTextOnlyContainer}>
-            <Markdown style={defaultMarkdownStyles}>
-              {truncatedContext}
-            </Markdown>
+            <Image 
+              source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-diary-icon.png' }} 
+              style={styles.diaryPlaceholderIcon} 
+              resizeMode="cover" 
+            />
+            <View style={styles.diaryTextOnlyContent}>
+              <Markdown style={defaultMarkdownStyles}>
+                {truncatedContext}
+              </Markdown>
+            </View>
           </View>
         )}
         
@@ -179,6 +186,7 @@ const styles = StyleSheet.create({
     fontSize: scaleSize(16),
     lineHeight: scaleSize(24),
     color: Colors.light.text,
+    marginBottom: scaleSize(12),
     fontFamily: 'PingFang SC',
   },
   diaryContentContainer: {
@@ -201,6 +209,16 @@ const styles = StyleSheet.create({
     // marginLeft: scaleSize(16),
   },
   diaryTextOnlyContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: scaleSize(12),
+  },
+  diaryPlaceholderIcon: {
+    width: scaleSize(78),
+    height: scaleSize(100),
+    borderRadius: scaleSize(8),
+  },
+  diaryTextOnlyContent: {
     flex: 1,
   },
   diaryText: {

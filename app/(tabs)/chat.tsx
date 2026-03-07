@@ -543,7 +543,7 @@ export default function ChatScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : scaleSize(20)}
+        keyboardVerticalOffset={0}
       >
         {/* 固定在顶部的标题部分 */}
         <ChatHeader
