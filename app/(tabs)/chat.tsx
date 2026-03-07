@@ -240,6 +240,9 @@ export default function ChatScreen() {
           }
           setShowCard(false);
           await sendMessage(trimmedText, scrollToBottom);
+        } else {
+          // 识别结果为空（可能是静音音频），显示提示
+          Alert.alert('提示', '未识别到语音内容，请重新录制');
         }
       } catch (error: any) {
         console.error('上传或识别失败:', error);

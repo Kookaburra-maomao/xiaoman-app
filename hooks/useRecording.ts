@@ -24,6 +24,11 @@ export const useRecording = () => {
         return false;
       }
 
+      // 立即设置录音状态，让UI快速响应
+      setIsRecording(true);
+      setRecordingDuration(0);
+      setAudioLevel(0);
+
       // 设置音频模式
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
@@ -37,9 +42,6 @@ export const useRecording = () => {
       });
 
       recordingRef.current = recording;
-      setIsRecording(true);
-      setRecordingDuration(0);
-      setAudioLevel(0);
 
       // 开始计时
       durationIntervalRef.current = setInterval(() => {
@@ -60,6 +62,7 @@ export const useRecording = () => {
       return true;
     } catch (error) {
       console.error('开始录音失败:', error);
+      setIsRecording(false); // 出错时重置状态
       Alert.alert('错误', '开始录音失败，请重试');
       return false;
     }

@@ -113,7 +113,13 @@ export const callASR = async (fileUrl: string): Promise<string> => {
   // 检查响应状态
   if (!response.ok) {
     // HTTP 错误（4xx, 5xx）- 服务端返回 error 字段
-    throw new Error(result.error || '语音识别失败');
+    const errorMessage = result.error || '语音识别失败';
+    // 检查是否是静音音频错误
+    if (errorMessage.includes('静音') || errorMessage.includes('silent') || errorMessage.includes('无声')) {
+      // 静音音频，返回空字符串，不抛出错误
+      return '';
+    }
+    throw new Error(errorMessage);
   }
 
   // 检查业务状态码
@@ -121,6 +127,12 @@ export const callASR = async (fileUrl: string): Promise<string> => {
     return result.data.text;
   } else {
     // 业务逻辑错误 - 服务端返回 message 字段
-    throw new Error(result.message || '语音识别失败');
+    const errorMessage = result.message || '语音识别失败';
+    // 检查是否是静音音频错误
+    if (errorMessage.includes('静音') || errorMessage.includes('silent') || errorMessage.includes('无声')) {
+      // 静音音频，返回空字符串，不抛出错误
+      return '';
+    }
+    throw new Error(errorMessage);
   }
 };

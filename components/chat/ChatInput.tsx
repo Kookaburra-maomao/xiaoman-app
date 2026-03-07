@@ -64,7 +64,13 @@ export default function ChatInput({
   const currentYRef = useRef<number>(0);
   const textInputRef = useRef<TextInput>(null);
   const shouldCancelRef = useRef<boolean>(false);
+  const isRecordingRef = useRef<boolean>(false); // 用于立即跟踪录音状态
   const [lottieRadioSource, setLottieRadioSource] = useState<AnimationObject | null>(null);
+
+  // 同步 isRecording 到 ref
+  useEffect(() => {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
 
   // 打点辅助函数
   const logAction = (positionKey: string) => {
@@ -151,20 +157,25 @@ export default function ChatInput({
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => {
-          // 在语音模式且未录音时，按钮应该响应手势（用于开始录音）
-          return isVoiceMode && !isGeneratingDiary && !isRecording;
+          // 在语音模式下，按钮应该总是响应手势
+          console.log('[PanResponder] onStartShouldSetPanResponder', { isVoiceMode, isGeneratingDiary, isRecording });
+          return isVoiceMode && !isGeneratingDiary;
         },
         onMoveShouldSetPanResponder: () => {
           // 一旦开始响应，就一直响应移动事件
           return isVoiceMode && !isGeneratingDiary;
         },
         onPanResponderGrant: (evt) => {
+          console.log('[PanResponder] onPanResponderGrant', { isVoiceMode, isGeneratingDiary, isRecording });
           if (isVoiceMode && !isGeneratingDiary && !isRecording) {
             // 记录初始触摸位置
             startYRef.current = evt.nativeEvent.pageY;
             currentYRef.current = evt.nativeEvent.pageY;
             shouldCancelRef.current = false;
             setIsMovingUp(false);
+            // 立即标记为录音状态，让UI快速响应
+            isRecordingRef.current = true;
+            console.log('[PanResponder] 开始录音，设置 isRecordingRef.current = true');
             // 开始录音
             onVoiceButtonPressIn();
           }
@@ -173,8 +184,8 @@ export default function ChatInput({
           if (isVoiceMode && !isGeneratingDiary) {
             // 更新当前触摸位置
             currentYRef.current = evt.nativeEvent.pageY;
-            // 如果正在录音，计算上滑距离
-            if (isRecording && startYRef.current > 0) {
+            // 如果正在录音，计算上滑距离（使用 ref 而不是 state）
+            if (isRecordingRef.current && startYRef.current > 0) {
               const deltaY = startYRef.current - currentYRef.current;
               const movingUp = deltaY > 50; // 向上移动超过50px认为是上滑
               shouldCancelRef.current = movingUp;
@@ -191,7 +202,7 @@ export default function ChatInput({
         },
         onPanResponderRelease: () => {
           // 在按钮上释放时处理录音结束
-          if (isRecording) {
+          if (isRecordingRef.current) {
             const shouldCancel = shouldCancelRef.current;
             onVoiceButtonPressOut(shouldCancel);
             // 重置状态
@@ -199,11 +210,12 @@ export default function ChatInput({
             shouldCancelRef.current = false;
             startYRef.current = 0;
             currentYRef.current = 0;
+            isRecordingRef.current = false;
           }
         },
         onPanResponderTerminate: () => {
           // 终止时也处理录音结束
-          if (isRecording) {
+          if (isRecordingRef.current) {
             const shouldCancel = shouldCancelRef.current;
             onVoiceButtonPressOut(shouldCancel);
             // 重置状态
@@ -211,6 +223,7 @@ export default function ChatInput({
             shouldCancelRef.current = false;
             startYRef.current = 0;
             currentYRef.current = 0;
+            isRecordingRef.current = false;
           }
         },
       }),
@@ -362,12 +375,10 @@ export default function ChatInput({
         {isVoiceMode ? (
           <View 
             style={styles.voiceContent}
-            {...buttonPanResponder.panHandlers}
           >
-            <TouchableOpacity
+            <View
               style={styles.voiceContentTouchable}
-              activeOpacity={1}
-              disabled={isGeneratingDiary}
+              {...buttonPanResponder.panHandlers}
             >
             {isRecording ? (
               <View style={styles.recordingIndicator}>
@@ -391,7 +402,7 @@ export default function ChatInput({
             ) : (
               <Text style={styles.voiceText}>按住 说话</Text>
             )}
-          </TouchableOpacity>
+            </View>
           </View>
         ) : (
           <View style={styles.textContent}>
