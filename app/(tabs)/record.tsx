@@ -454,10 +454,11 @@ export default function RecordScreen() {
       <View style={{ paddingTop: insets.top }}>
         <ChatHeader
           title="记录"
-          showCard={showCard}
-          onToggleCard={handleToggleCard}
+          showCard={false}
+          onToggleCard={()=>{}}
           onShowMenu={() => router.push('/settings' as any)}
           isStreaming={false}
+          hideCardButton={true} // 隐藏运营卡片按钮
         />
       </View>
 

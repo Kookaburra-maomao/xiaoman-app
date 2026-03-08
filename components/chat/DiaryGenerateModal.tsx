@@ -4,16 +4,13 @@
 
 import DiaryActionButtons from '@/components/diary/DiaryActionButtons';
 import DiaryImageCarousel from '@/components/diary/DiaryImageCarousel';
-import ShareModal from '@/components/diary/ShareModal';
 import { Colors } from '@/constants/theme';
 import { RETURN_ICON_URL } from '@/constants/urls';
 import { useAuth } from '@/hooks/useAuth';
 import { useLog } from '@/hooks/useLog';
-import * as imageService from '@/services/imageService';
 import { getLocationAndWeather } from '@/services/locationService';
 import { diaryModalMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
-import * as MediaLibrary from 'expo-media-library';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -86,10 +83,6 @@ export default function DiaryGenerateModal({
   const [displayedContent, setDisplayedContent] = useState('');
   const [typewriterComplete, setTypewriterComplete] = useState(false); // 打字机效果是否完成
   const [enableMarkdown, setEnableMarkdown] = useState(true); // 调试开关：是否启用 markdown
-  const [sharing, setSharing] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [screenshotUri, setScreenshotUri] = useState<string | null>(null);
-  const [localScreenshotUri, setLocalScreenshotUri] = useState<string | null>(null);
   const contentViewRef = useRef<ViewShot>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const [city, setCity] = useState<string>('');
@@ -209,73 +202,14 @@ export default function DiaryGenerateModal({
     router.push(`/diary-edit?diaryId=${diaryId}` as any);
   };
 
-  // 处理导出/分享 - 截图并上传
-  const handleExport = async () => {
-    if (!contentViewRef.current) {
-      Alert.alert('提示', '内容未准备好');
+  // 处理导出/分享 - 跳转到分享页面
+  const handleExport = () => {
+    if (!diaryId) {
+      Alert.alert('提示', '日记尚未保存，无法分享');
       return;
     }
-
-    try {
-      setSharing(true);
-
-      // 滚动到顶部，确保从开始截图
-      if (scrollViewRef.current) {
-        scrollViewRef.current.scrollTo({ y: 0, animated: false });
-      }
-
-      // 等待内容渲染和滚动完成
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // 截图整个内容区域
-      if (!contentViewRef.current || !contentViewRef.current.capture) {
-        throw new Error('ViewShot ref not available');
-      }
-      const uri = await contentViewRef.current.capture();
-
-      // 保存本地URI用于保存到相册
-      setLocalScreenshotUri(uri);
-
-      // 上传截图
-      const uploadResult = await imageService.uploadImage(uri);
-      setScreenshotUri(uploadResult.url);
-
-      // 显示分享弹窗
-      setShowShareModal(true);
-    } catch (error: any) {
-      console.error('截图或上传失败:', error);
-      Alert.alert('错误', error.message || '截图失败，请重试');
-    } finally {
-      setSharing(false);
-    }
-  };
-
-  // 保存图片到相册
-  const handleSaveImage = async () => {
-    if (!localScreenshotUri) {
-      Alert.alert('提示', '图片未准备好');
-      return;
-    }
-
-    try {
-      // 请求相册权限
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('提示', '需要相册权限才能保存图片');
-        return;
-      }
-
-      // 保存到相册
-      await MediaLibrary.createAssetAsync(localScreenshotUri);
-      
-      // 打点：保存日记图片成功
-      log('DIARY_SAVE_IMAGE_SUCCESS');
-      
-      Alert.alert('成功', '图片已保存到相册');
-    } catch (error: any) {
-      console.error('保存图片失败:', error);
-      Alert.alert('错误', error.message || '保存图片失败，请重试');
-    }
+    onClose();
+    router.push(`/diary-share?diaryId=${diaryId}` as any);
   };
 
   if (!visible) return null;
@@ -404,20 +338,11 @@ export default function DiaryGenerateModal({
                 onExport={handleExport}
                 editDisabled={isGenerating || !diaryId}
                 exportDisabled={isGenerating}
-                exportLoading={sharing}
                 exportLabel="分享"
                 userId={user?.id}
               />
             </View>
           )}
-
-          {/* 分享弹窗 */}
-          <ShareModal
-            visible={showShareModal}
-            imageUri={screenshotUri || undefined}
-            onClose={() => setShowShareModal(false)}
-            onSaveImage={handleSaveImage}
-          />
 
           {/* Toast 提示 */}
           <Toast

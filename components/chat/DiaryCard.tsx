@@ -152,7 +152,7 @@ export default function DiaryCard({ context, pic, gmt_create, diaryId, userId }:
         ) : (
           <View style={styles.diaryTextOnlyContainer}>
             <Image 
-              source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-diary-icon.png' }} 
+              source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-diary-icon2.png' }} 
               style={styles.diaryPlaceholderIcon} 
               resizeMode="cover" 
             />

@@ -23,35 +23,41 @@ export const uploadImage = async (imageUri: string): Promise<ImageUploadResult> 
   const type = match ? `image/${match[1]}` : 'image/jpeg';
   
   // 添加图片到 FormData
-  formData.append('image', {
+  const fileData = {
     uri: imageUri,
     name: filename,
     type: type,
-  } as any);
+  };
+  formData.append('image', fileData as any);
 
   // 上传图片
-  const response = await fetch(`${apiUrl}/api/upload/image`, {
-    method: 'POST',
-    body: formData,
-  });
+  try {
+    const response = await fetch(`${apiUrl}/api/upload/image`, {
+      method: 'POST',
+      body: formData,
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    throw new Error(errorData?.message || '上传失败');
-  }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || '上传失败');
+    }
 
-  const result = await response.json();
-  
-  if (result.code === 200) {
-    return {
-      url: `${apiUrl}${result.data.url}`,
-      filename: result.data.filename,
-      originalname: result.data.originalname,
-      size: result.data.size,
-      compressedSize: result.data.compressedSize,
-    };
-  } else {
-    throw new Error(result.message || '上传失败');
+    const result = await response.json();
+    
+    if (result.code === 200) {
+      return {
+        url: `${apiUrl}${result.data.url}`,
+        filename: result.data.filename,
+        originalname: result.data.originalname,
+        size: result.data.size,
+        compressedSize: result.data.compressedSize,
+      };
+    } else {
+      throw new Error(result.message || '上传失败');
+    }
+  } catch (error: any) {
+    console.error('[uploadImage] 上传失败:', error.message);
+    throw error;
   }
 };
 

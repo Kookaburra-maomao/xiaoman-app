@@ -328,10 +328,13 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       return;
     }
 
+    // 检查并转换 HEIC 格式
+    const { convertHeicToJpeg } = await import('@/utils/imageConverter');
+    const convertedUri = await convertHeicToJpeg(imageUri);
+
     // 设置超时定时器（90秒，因为图片上传和理解需要更长时间）
     let timeoutTriggered = false;
     const timeoutId = setTimeout(() => {
-      console.error('图片上传超时');
       timeoutTriggered = true;
       setIsSending(false);
       stopTypewriter();
@@ -341,17 +344,15 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     try {
       setIsSending(true);
 
-      // 上传图片
-      const uploadResult = await imageService.uploadImage(imageUri);
+      // 上传图片（使用转换后的 URI）
+      const uploadResult = await imageService.uploadImage(convertedUri);
       const imageUrl = `${uploadResult.url}`;
 
       // 将图片添加到列表（最多3张，FIFO）
       setImageList((prev) => {
         const newList = [...prev, imageUrl];
         // 如果超过3张，移除最旧的
-        const result = newList.slice(-3);
-        console.log('添加图片到列表:', { imageUrl, prev, result });
-        return result;
+        return newList.slice(-3);
       });
 
       // 在右侧显示图片消息（用户消息）

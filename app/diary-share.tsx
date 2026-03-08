@@ -6,8 +6,8 @@
 import { Colors } from '@/constants/theme';
 import { QR_CODE_URL } from '@/constants/urls';
 import { DiaryDetail, getDiaryDetail } from '@/services/chatService';
+import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
-import { Ionicons } from '@expo/vector-icons';
 import * as MediaLibrary from 'expo-media-library';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -22,8 +22,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ViewShot from 'react-native-view-shot';
+
+// 图标URL
+const RETURN_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-top-return.png';
 
 // 根据图片 URI 获取宽高比，用于高度自适应
 function useImageAspectRatios(uris: string[]) {
@@ -174,7 +178,11 @@ export default function DiaryShareScreen() {
       <StatusBar hidden />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={Colors.light.text} />
+          <Image
+            source={{ uri: RETURN_ICON_URL }}
+            style={styles.backIcon}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>分享</Text>
         <View style={styles.headerRight} />
@@ -224,7 +232,7 @@ export default function DiaryShareScreen() {
 
             {diary.context ? (
               <View style={styles.textContainer}>
-                <Text style={styles.diaryText}>{diary.context}</Text>
+                <Markdown style={defaultMarkdownStyles}>{diary.context}</Markdown>
               </View>
             ) : null}
           </View>
@@ -255,14 +263,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: scaleSize(40),
+    height: scaleSize(40),
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+  },
+  backIcon: {
+    width: scaleSize(40),
+    height: scaleSize(40),
   },
   headerTitle: {
     fontSize: 18,

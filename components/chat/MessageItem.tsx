@@ -4,9 +4,11 @@
 
 import { Colors } from '@/constants/theme';
 import { Message } from '@/types/chat';
+import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
 import { useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 import DiaryCard from './DiaryCard';
 import ImagePreviewModal from './ImagePreviewModal';
 
@@ -78,16 +80,26 @@ export default function MessageItem({ message, userId }: MessageItemProps) {
     }
     
     return (
-      <Text
-        style={[
-          styles.messageText,
-          isUserMessage ? styles.messageTextUser : styles.messageTextSystem,
-          message.isError && styles.messageTextError,
-        ]}
-        selectable={true}
-      >
-        {message.text || (message.type === 'system' ? '正在输入...' : '')}
-      </Text>
+      <>
+        {isSystemMessage ? (
+          // 系统消息使用 Markdown 渲染
+          <Markdown style={defaultMarkdownStyles}>
+            {message.text || '正在输入...'}
+          </Markdown>
+        ) : (
+          // 用户消息使用普通 Text
+          <Text
+            style={[
+              styles.messageText,
+              styles.messageTextUser,
+              message.isError && styles.messageTextError,
+            ]}
+            selectable={true}
+          >
+            {message.text || ''}
+          </Text>
+        )}
+      </>
     );
   };
   

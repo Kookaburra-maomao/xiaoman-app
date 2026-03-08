@@ -6,7 +6,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { deleteDiary, DiaryDetail, getDiaryDetail } from '@/services/chatService';
 import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
-import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -14,6 +13,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -25,6 +25,10 @@ import Markdown from 'react-native-markdown-display';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
+
+// 图标URL
+const RETURN_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-top-return.png';
+const MENU_ICON_URL = 'http://xiaomanriji.com/api/files/xiaoman-diary-menu.png';
 
 // 解析图片列表（支持JSON格式和逗号分隔的多张图片）
 const parseImages = (pic?: string | null): string[] => {
@@ -166,14 +170,22 @@ export default function DiaryDetailScreen() {
       {/* 头部 */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={Colors.light.text} />
+          <Image
+            source={{ uri: RETURN_ICON_URL }}
+            style={styles.backIcon}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>日记</Text>
         <TouchableOpacity
           onPress={() => setShowDeleteMenu(!showDeleteMenu)}
           style={styles.menuButton}
         >
-          <Ionicons name="ellipsis-horizontal-circle" size={24} color={Colors.light.text} />
+          <Image
+            source={{ uri: MENU_ICON_URL }}
+            style={styles.menuIcon}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
       </View>
 
@@ -304,10 +316,14 @@ const styles = StyleSheet.create({
     zIndex: 1001,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: scaleSize(40),
+    height: scaleSize(40),
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+  },
+  backIcon: {
+    width: scaleSize(40),
+    height: scaleSize(40),
   },
   headerTitle: {
     fontSize: 18,
@@ -315,10 +331,14 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
   },
   menuButton: {
-    width: 40,
-    height: 40,
+    width: scaleSize(40),
+    height: scaleSize(40),
     justifyContent: 'center',
-    alignItems: 'flex-end',
+    alignItems: 'center',
+  },
+  menuIcon: {
+    width: scaleSize(40),
+    height: scaleSize(40),
   },
   menuOverlay: {
     position: 'absolute',

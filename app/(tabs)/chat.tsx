@@ -368,6 +368,7 @@ export default function ChatScreen() {
             
             // 请求相册权限
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            
             if (status !== 'granted') {
               Alert.alert('提示', '需要相册权限');
               return;
@@ -385,6 +386,8 @@ export default function ChatScreen() {
               setIsUploadingImage(true);
               try {
                 await uploadImageAndUnderstand(result.assets[0].uri, scrollToBottom);
+              } catch (error: any) {
+                console.error('[openImagePicker] 图片上传失败:', error.message);
               } finally {
                 setIsUploadingImage(false);
               }
