@@ -100,6 +100,8 @@ export default function DiaryShareScreen() {
   const contentViewRef = useRef<ViewShot>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const hasAutoSavedRef = useRef(false);
+  const [imagesLoaded, setImagesLoaded] = useState<{ [key: string]: boolean }>({});
+  const [qrCodeLoaded, setQrCodeLoaded] = useState(false);
 
   useEffect(() => {
     if (!diaryId) return;
@@ -107,6 +109,11 @@ export default function DiaryShareScreen() {
     (async () => {
       try {
         setLoading(true);
+        // 重置图片加载状态
+        setImagesLoaded({});
+        setQrCodeLoaded(false);
+        hasAutoSavedRef.current = false;
+        
         const data = await getDiaryDetail(diaryId);
         if (!cancelled) setDiary(data);
       } catch (error) {
@@ -124,19 +131,29 @@ export default function DiaryShareScreen() {
     };
   }, [diaryId]);
 
-  // 进入页面后自动截图保存到相册并 toast
+  // 图片列表 & 自适应宽高比（必须在所有 return 之前调用 hook）
+  const images = diary ? parseImages(diary.pic).map(resolveImageUri) : [];
+  const imageAspectRatios = useImageAspectRatios(images);
+
+  // 检查所有图片是否已加载完成
+  const allImagesLoaded = images.length === 0 || images.every((uri) => imagesLoaded[uri]);
+  const allResourcesLoaded = allImagesLoaded && qrCodeLoaded;
+
+  // 进入页面后，等待所有图片加载完成后自动截图保存到相册
   useEffect(() => {
-    if (!diary || hasAutoSavedRef.current) return;
+    if (!diary || hasAutoSavedRef.current || !allResourcesLoaded) return;
 
     const run = async () => {
-      await new Promise((r) => setTimeout(r, 800));
+      // 等待图片自适应渲染完成
+      await new Promise((r) => setTimeout(r, 1000));
       if (!contentViewRef.current?.capture) return;
 
       try {
+        // 滚动到顶部
         if (scrollViewRef.current) {
           scrollViewRef.current.scrollTo({ y: 0, animated: false });
         }
-        await new Promise((r) => setTimeout(r, 300));
+        await new Promise((r) => setTimeout(r, 200));
 
         const uri = await contentViewRef.current.capture();
         const { status } = await MediaLibrary.requestPermissionsAsync();
@@ -154,11 +171,7 @@ export default function DiaryShareScreen() {
     };
 
     run();
-  }, [diary]);
-
-  // 图片列表 & 自适应宽高比（必须在所有 return 之前调用 hook）
-  const images = diary ? parseImages(diary.pic).map(resolveImageUri) : [];
-  const imageAspectRatios = useImageAspectRatios(images);
+  }, [diary, allResourcesLoaded]);
 
   if (loading) {
     return (
@@ -211,15 +224,22 @@ export default function DiaryShareScreen() {
             {/* 图片竖向排列，宽度 100% 高度按原图比例自适应 */}
             {images.length > 0 && (
               <View style={styles.imageColumn}>
-                {images.map((uri, index) => (
+                {images.map((uri, idx) => (
                   <Image
-                    key={index}
+                    key={idx}
                     source={{ uri }}
                     style={[
                       styles.verticalImage,
                       { aspectRatio: imageAspectRatios[uri] ?? 1 },
                     ]}
                     resizeMode="contain"
+                    onLoad={() => {
+                      setImagesLoaded((prev) => ({ ...prev, [uri]: true }));
+                    }}
+                    onError={() => {
+                      console.error('图片加载失败:', uri);
+                      setImagesLoaded((prev) => ({ ...prev, [uri]: true }));
+                    }}
                   />
                 ))}
               </View>
@@ -243,6 +263,11 @@ export default function DiaryShareScreen() {
               source={{ uri: QR_CODE_URL }}
               style={styles.qrImage}
               resizeMode="contain"
+              onLoad={() => setQrCodeLoaded(true)}
+              onError={() => {
+                console.error('二维码加载失败');
+                setQrCodeLoaded(true);
+              }}
             />
             <Text style={styles.qrLabel}>小满日记</Text>
           </View>
