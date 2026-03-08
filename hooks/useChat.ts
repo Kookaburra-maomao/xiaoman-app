@@ -178,6 +178,13 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       return;
     }
 
+    // 检查今日对话次数限制
+    const limitCheck = await checkUsageLimit(user.id, 'chat');
+    if (!limitCheck.allowed) {
+      Alert.alert('提示', limitCheck.message || '您已超过当日的体验次数');
+      return;
+    }
+
     const userMessageId = Date.now().toString();
 
     // 添加用户消息到界面
@@ -325,6 +332,13 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
   const uploadImageAndUnderstand = useCallback(async (imageUri: string, scrollToBottomFn?: () => void) => {
     if (!user?.id) {
       Alert.alert('错误', '用户信息不存在');
+      return;
+    }
+
+    // 检查今日上传图片次数限制
+    const limitCheck = await checkUsageLimit(user.id, 'image');
+    if (!limitCheck.allowed) {
+      Alert.alert('提示', limitCheck.message || '您已超过当日的体验次数');
       return;
     }
 
@@ -661,6 +675,13 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
   const generateDiary = useCallback(async () => {
     if (!user?.id) {
       Alert.alert('错误', '用户信息不存在');
+      return;
+    }
+
+    // 检查今日生成日记次数限制
+    const limitCheck = await checkUsageLimit(user.id, 'diary');
+    if (!limitCheck.allowed) {
+      Alert.alert('提示', limitCheck.message || '您已超过当日的体验次数');
       return;
     }
 
