@@ -1077,7 +1077,8 @@ export const createUserMemory = async (userId: string, memory: string = ''): Pro
 
 // 抽取用户记忆
 export const extractUserMemory = async (
-  userContent: AssistantHistoryItem[]
+  userContent: AssistantHistoryItem[],
+  userId: string
 ): Promise<any | null> => {
   try {
     // 1. 先获取位置信息
@@ -1138,6 +1139,7 @@ export const extractUserMemory = async (
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        userId: userId,
         userContent: finalUserContent,
       }),
     });

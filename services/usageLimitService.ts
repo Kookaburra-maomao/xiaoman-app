@@ -8,7 +8,7 @@ const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 export const USAGE_LIMITS = {
   CHAT: 100,    // 对话次数限制
   IMAGE: 5,     // 上传图片次数限制
-  DIARY: 3,     // 生成日记次数限制
+  DIARY: 20,     // 生成日记次数限制
 };
 
 // 今日使用次数统计（所有类型）
