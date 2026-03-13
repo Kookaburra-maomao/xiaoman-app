@@ -101,7 +101,7 @@ export const uploadAudio = async (audioUri: string): Promise<{ url: string }> =>
 };
 
 // ASR语音识别
-export const callASR = async (fileUrl: string): Promise<string> => {
+export const callASR = async (fileUrl: string, userId?: string): Promise<string> => {
   const response = await fetch(`${apiUrl}/api/asr/doubao`, {
     method: 'POST',
     headers: {
@@ -109,10 +109,12 @@ export const callASR = async (fileUrl: string): Promise<string> => {
     },
     body: JSON.stringify({
       file_url: fileUrl,
+      userId,
     }),
   });
-  console.log("body:", JSON.stringify({
+  console.log("callASR body:", JSON.stringify({
       file_url: fileUrl,
+      userId,
     }))
   const result = await response.json();
 

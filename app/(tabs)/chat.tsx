@@ -234,7 +234,7 @@ export default function ChatScreen() {
     const uri = await stopRecording();
     if (uri) {
       try {
-        const recognizedText = await uploadAndRecognize(uri);
+        const recognizedText = await uploadAndRecognize(uri, user?.id);
         // 将识别结果自动发送
         if (recognizedText?.trim()) {
           const trimmedText = recognizedText.trim();

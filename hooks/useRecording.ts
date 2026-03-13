@@ -108,7 +108,7 @@ export const useRecording = () => {
   }, [recordingDuration]);
 
   // 上传录音并调用ASR
-  const uploadAndRecognize = useCallback(async (uri: string): Promise<string | null> => {
+  const uploadAndRecognize = useCallback(async (uri: string, userId?: string): Promise<string | null> => {
     try {
       // 上传录音文件
       const uploadResult = await imageService.uploadAudio(uri);
@@ -117,7 +117,7 @@ export const useRecording = () => {
       // 调用 ASR 语音识别
       const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
       const fileUrl = `${apiUrl}${uploadResult.url}`;
-      const recognizedText = await imageService.callASR(fileUrl);
+      const recognizedText = await imageService.callASR(fileUrl, userId);
       
       return recognizedText;
     } catch (error: any) {
