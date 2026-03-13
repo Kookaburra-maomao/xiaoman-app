@@ -4,6 +4,7 @@ import DiaryGenerateModal from '@/components/chat/DiaryGenerateModal';
 import MessageList from '@/components/chat/MessageList';
 import OperationCardCarousel from '@/components/chat/OperationCard';
 import PlanAddModal from '@/components/chat/PlanAddModal';
+import Toast from '@/components/common/Toast';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
@@ -68,6 +69,7 @@ export default function ChatScreen() {
     currentDiaryId,
     diaryImageList,
     userMemory,
+    assistantHistory,
     setShowDiaryModal,
     sendMessage,
     uploadImageAndUnderstand,
@@ -79,6 +81,10 @@ export default function ChatScreen() {
     scrollToBottom,
     setAssistantEmoji,
   } = useChat(scrollViewRef);
+  
+  // Toast 状态
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   const {
     isRecording,
@@ -422,8 +428,25 @@ export default function ChatScreen() {
 
   // 处理生成日记
   const handleGenerateDiary = useCallback(() => {
+    // 检查用户消息长度
+    // 统计 assistantHistory 中 role 为 'user' 的消息总字符数
+    const userMessages = assistantHistory.filter((item: { role: string }) => item.role === 'user');
+    const totalUserChars = userMessages.reduce((sum: number, item: { content: string }) => {
+      // 过滤掉 [图片] 这样的占位符，只统计实际文字
+      const content = item.content;
+      if (content === '[图片]') return sum;
+      return sum + content.length;
+    }, 0);
+    
+    // 少于 20 个汉字（一个汉字两个字符，所以是 40 字符）
+    if (totalUserChars < 40) {
+      setToastMessage('聊的太少啦，再多聊一点吧');
+      setToastVisible(true);
+      return;
+    }
+    
     generateDiary();
-  }, [generateDiary]);
+  }, [generateDiary, assistantHistory]);
 
   // 处理添加到计划
   const handleAddToPlan = useCallback((message: any) => {
@@ -663,6 +686,13 @@ export default function ChatScreen() {
           </View>
         </View>
       )}
+
+      {/* Toast 提示 */}
+      <Toast
+        message={toastMessage}
+        visible={toastVisible}
+        onHide={() => setToastVisible(false)}
+      />
     </SafeAreaView>
   );
 }
