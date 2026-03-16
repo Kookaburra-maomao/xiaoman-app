@@ -15,7 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PlanScreen() {
@@ -227,73 +227,71 @@ export default function PlanScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['top'] : []}>
+      <StatusBar hidden />
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : scaleSize(20)}
+        keyboardVerticalOffset={0}
       >
-        {/* 使用 ChatHeader 组件 */}
-        <ChatHeader
-          title="计划"
-          showCard={false}
-          onToggleCard={() => { }} // 不展示运营卡片按钮，空函数
-          onShowMenu={handleGoToSettings}
-          hideCardButton={true} // 隐藏运营卡片按钮
-        />
+        {/* 头部 - 添加顶部内边距以避免被状态栏遮挡 */}
+        <View style={{ paddingTop: scaleSize(0) }}>
+          <ChatHeader
+            title="计划"
+            showCard={false}
+            onToggleCard={() => { }} // 不展示运营卡片按钮，空函数
+            onShowMenu={handleGoToSettings}
+            hideCardButton={true} // 隐藏运营卡片按钮
+          />
+        </View>
 
-        {loading && plans.length === 0 ? (
-          <View style={[styles.loadingContainer, { paddingTop: headerHeight }]}>
-            <ActivityIndicator size="large" color={Colors.light.tint} />
-          </View>
-        ) : (
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={[styles.scrollViewContent, { paddingTop: headerHeight }]}
-          >
-            {/* 统计信息 */}
-            <View style={styles.summarySection}>
-              <Text style={styles.summaryText}>
-                你共<Text style={styles.summaryNumber}>{plans.length}</Text>项计划进行中
-              </Text>
-              <TouchableOpacity
-                style={styles.manageIcon}
-                onPress={handleGoToManage}
-                activeOpacity={0.7}
-              >
-                <Image
-                  source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-manage.png' }}
-                  style={styles.manageIconImage}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* 计划列表 */}
-            {plans.map((plan) => (
-              <PlanItem
-                key={plan.id}
-                plan={plan}
-                onCheckIn={onCheckIn}
-                loading={loading}
-                userId={user?.id}
-              />
-            ))}
-
-            {/* 新增计划item */}
+       
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.scrollViewContent, { paddingTop: Platform.OS === 'ios' ? scaleSize(60) : scaleSize(80) }]}
+        >
+          {/* 统计信息 */}
+          <View style={styles.summarySection}>
+            <Text style={styles.summaryText}>
+              你共<Text style={styles.summaryNumber}>{plans.length}</Text>项计划进行中
+            </Text>
             <TouchableOpacity
-              style={styles.addPlanItem}
-              onPress={handleAddPlan}
+              style={styles.manageIcon}
+              onPress={handleGoToManage}
               activeOpacity={0.7}
             >
-              <View style={styles.addPlanContent}>
-                <Ionicons name="add" size={24} color={Colors.light.text} />
-                <Text style={styles.addPlanText}>新增计划</Text>
-              </View>
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-manage.png' }}
+                style={styles.manageIconImage}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
-          </ScrollView>
-        )}
+          </View>
+
+          {/* 计划列表 */}
+          {plans.map((plan) => (
+            <PlanItem
+              key={plan.id}
+              plan={plan}
+              onCheckIn={onCheckIn}
+              loading={loading}
+              userId={user?.id}
+            />
+          ))}
+
+          {/* 新增计划item */}
+          <TouchableOpacity
+            style={styles.addPlanItem}
+            onPress={handleAddPlan}
+            activeOpacity={0.7}
+          >
+            <View style={styles.addPlanContent}>
+              <Ionicons name="add" size={24} color={Colors.light.text} />
+              <Text style={styles.addPlanText}>新增计划</Text>
+            </View>
+          </TouchableOpacity>
+        </ScrollView>
+        
       </KeyboardAvoidingView>
       {/* 打卡成功弹窗 */}
       <PlanSuccessModal

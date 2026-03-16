@@ -6,7 +6,7 @@ import { WEEKDAYS } from '@/constants/chat';
 import { Colors } from '@/constants/theme';
 import { HEADER_DOWN_ICON_URL, HEADER_UP_ICON_URL } from '@/constants/urls';
 import { scaleSize } from '@/utils/screen';
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ChatHeaderProps {
@@ -90,6 +90,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: scaleSize(16),
+    paddingTop: Platform.OS === 'android' ? scaleSize(20) : 0,
     paddingBottom: scaleSize(20),
     backgroundColor: Colors.light.background,
   },

@@ -440,7 +440,7 @@ export default function ChatScreen() {
     
     // 少于 20 个汉字（一个汉字两个字符，所以是 40 字符）
     if (totalUserChars < 40) {
-      setToastMessage('聊的太少啦，再多聊一点吧');
+      setToastMessage('多聊几句再生成日记吧~');
       setToastVisible(true);
       return;
     }
@@ -567,7 +567,7 @@ export default function ChatScreen() {
   }, [showCard]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['top'] : []}>
       <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -588,7 +588,7 @@ export default function ChatScreen() {
             style={[
               styles.cardWrapper,
               {
-                top: headerHeight - scaleSize(60), // 上移 60px
+                top: Platform.OS === 'ios' ? scaleSize(60) : scaleSize(80), // 上移 60px
                 opacity: cardSlideAnim, // 透明度实现渐显/渐隐效果
                 transform: [{ translateY: cardTranslateY }], // 垂直位移实现下拉/上拉效果
               },
@@ -606,7 +606,7 @@ export default function ChatScreen() {
         <ScrollView 
           ref={scrollViewRef}
           style={styles.scrollView}
-          contentContainerStyle={[styles.scrollViewContent, { paddingTop: headerHeight }]}
+          contentContainerStyle={[styles.scrollViewContent,  { paddingTop: Platform.OS === 'ios' ? scaleSize(60) : scaleSize(80) }]}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={scrollToBottom}
           onScroll={handleScroll}

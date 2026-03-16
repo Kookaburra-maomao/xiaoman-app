@@ -1,5 +1,4 @@
 import ChatHeader from '@/components/chat/ChatHeader';
-import OperationCardCarousel from '@/components/chat/OperationCard';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useLog } from '@/hooks/useLog';
@@ -9,7 +8,7 @@ import { scaleSize } from '@/utils/screen';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
-import { Animated, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
@@ -447,11 +446,15 @@ export default function RecordScreen() {
   // }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['top'] : []}>
       <StatusBar hidden />
-      
+      <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              style={styles.keyboardView}
+              keyboardVerticalOffset={0}
+            >
       {/* 头部 - 添加顶部内边距以避免被状态栏遮挡 */}
-      <View style={{ paddingTop: insets.top }}>
+      <View style={{ paddingTop: scaleSize(0) }}>
         <ChatHeader
           title="记录"
           showCard={false}
@@ -461,30 +464,11 @@ export default function RecordScreen() {
           hideCardButton={true} // 隐藏运营卡片按钮
         />
       </View>
-
-      {/* 悬浮的运营卡片 */}
-      {operationCards.length > 0 && (
-        <Animated.View
-          style={[
-            styles.cardWrapper,
-            {
-              top: headerHeight + insets.top - scaleSize(60), // 上移 60px
-              opacity: cardSlideAnim,
-              transform: [{ translateY: cardTranslateY }],
-            },
-          ]}
-          pointerEvents={showCard ? 'auto' : 'none'}
-        >
-          <OperationCardCarousel
-            cards={operationCards}
-            username={user?.nick || user?.username || '用户'}
-            onItemSelect={handleOperationItemSelect}
-          />
-        </Animated.View>
-      )}
       
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollViewContent, { paddingTop: scaleSize(20) }]}>
-
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={[styles.scrollViewContent,  { paddingTop: Platform.OS === 'ios' ? scaleSize(60) : scaleSize(80) }]}
+      >
         {/* 日历 */}
         <View style={styles.calendarContainer}>
           {/* 年月和切换按钮 */}
@@ -602,27 +586,25 @@ export default function RecordScreen() {
           </Text>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     backgroundColor: Colors.light.background,
+  },
+  keyboardView: {
+    flex: 1,
   },
   scrollView: {
   },
   scrollViewContent: {
     // paddingTop is set dynamically based on header height
   },
-  cardWrapper: {
-    position: 'absolute',
-    // top is set dynamically based on header height
-    left: 0,
-    right: 0,
-    zIndex: 998, // 低于header的zIndex（1000），确保不覆盖title区域
-    overflow: 'hidden', // 裁剪超出部分，确保卡片收起时不会透出到title区域上方
-  },
+
 
   calendarContainer: {
     marginHorizontal: scaleSize(16),
