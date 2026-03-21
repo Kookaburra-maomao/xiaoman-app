@@ -2,9 +2,11 @@
  * 位置和天气服务
  */
 
+import { getLocationCache, saveLocationCache } from '@/utils/locationCache';
+
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 
-// 获取用户当前经纬度
+// 获取用户当前经纬度（带缓存）
 export const getCurrentLocation = async (): Promise<{
   latitude: number;
   longitude: number;
@@ -14,16 +16,16 @@ export const getCurrentLocation = async (): Promise<{
     const Location = await import('expo-location').catch(() => null);
     
     if (!Location) {
-      console.log('expo-location 未安装');
-      return null;
+      console.log('[Location] expo-location 未安装，尝试使用缓存');
+      return await getLocationCache();
     }
 
     // 请求位置权限
     const { status } = await Location.requestForegroundPermissionsAsync();
     
     if (status !== 'granted') {
-      console.log('位置权限未授予');
-      return null;
+      console.log('[Location] 位置权限未授予，尝试使用缓存');
+      return await getLocationCache();
     }
 
     // 获取当前位置，设置1秒超时
@@ -33,7 +35,7 @@ export const getCurrentLocation = async (): Promise<{
 
     const timeoutPromise = new Promise<null>((resolve) => {
       setTimeout(() => {
-        console.log('获取位置超时（1秒），使用默认值');
+        console.log('[Location] 获取位置超时（1秒）');
         resolve(null);
       }, 1000);
     });
@@ -41,46 +43,53 @@ export const getCurrentLocation = async (): Promise<{
     const location = await Promise.race([locationPromise, timeoutPromise]);
 
     if (!location) {
-      return null;
+      console.log('[Location] 获取位置失败，尝试使用缓存');
+      return await getLocationCache();
     }
 
-    return {
+    const coords = {
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
     };
+
+    // 保存到缓存
+    await saveLocationCache(coords.latitude, coords.longitude);
+
+    return coords;
   } catch (error) {
-    // 静默处理错误，不打印到控制台
-    console.log('位置服务不可用，使用默认值');
-    return null;
+    console.log('[Location] 位置服务异常，尝试使用缓存');
+    return await getLocationCache();
   }
 };
 
-// 获取用户当前位置和天气信息
+// 获取用户当前位置和天气信息（带缓存）
 export const getLocationAndWeather = async (): Promise<{
   city: string;
   weather: string;
 }> => {
   try {
-    // 动态导入 expo-location，如果未安装则返回空值
+    // 动态导入 expo-location，如果未安装则尝试使用缓存
     const Location = await import('expo-location').catch(() => null);
     
     if (!Location) {
-      console.log('expo-location 未安装，使用默认值');
-      return {
-        city: '',
-        weather: '',
-      };
+      console.log('[LocationWeather] expo-location 未安装，尝试使用缓存');
+      const cachedLocation = await getLocationCache();
+      if (cachedLocation) {
+        return await fetchWeatherByCoords(cachedLocation.latitude, cachedLocation.longitude);
+      }
+      return { city: '', weather: '' };
     }
 
     // 1. 请求位置权限
     const { status } = await Location.requestForegroundPermissionsAsync();
     
     if (status !== 'granted') {
-      console.log('位置权限未授予，使用默认值');
-      return {
-        city: '',
-        weather: '',
-      };
+      console.log('[LocationWeather] 位置权限未授予，尝试使用缓存');
+      const cachedLocation = await getLocationCache();
+      if (cachedLocation) {
+        return await fetchWeatherByCoords(cachedLocation.latitude, cachedLocation.longitude);
+      }
+      return { city: '', weather: '' };
     }
 
     // 2. 获取当前位置，设置3秒超时
@@ -90,7 +99,7 @@ export const getLocationAndWeather = async (): Promise<{
 
     const timeoutPromise = new Promise<null>((resolve) => {
       setTimeout(() => {
-        console.log('获取位置超时（3秒），使用默认值');
+        console.log('[LocationWeather] 获取位置超时（3秒）');
         resolve(null);
       }, 3000);
     });
@@ -98,15 +107,37 @@ export const getLocationAndWeather = async (): Promise<{
     const location = await Promise.race([locationPromise, timeoutPromise]);
 
     if (!location) {
-      return {
-        city: '',
-        weather: '',
-      };
+      console.log('[LocationWeather] 获取位置失败，尝试使用缓存');
+      const cachedLocation = await getLocationCache();
+      if (cachedLocation) {
+        return await fetchWeatherByCoords(cachedLocation.latitude, cachedLocation.longitude);
+      }
+      return { city: '', weather: '' };
     }
 
     const { latitude, longitude } = location.coords;
 
-    // 3. 调用后端接口获取城市和天气信息
+    // 保存到缓存
+    await saveLocationCache(latitude, longitude);
+
+    // 3. 获取天气信息
+    return await fetchWeatherByCoords(latitude, longitude);
+  } catch (error) {
+    console.log('[LocationWeather] 位置和天气服务异常，尝试使用缓存');
+    const cachedLocation = await getLocationCache();
+    if (cachedLocation) {
+      return await fetchWeatherByCoords(cachedLocation.latitude, cachedLocation.longitude);
+    }
+    return { city: '', weather: '' };
+  }
+};
+
+// 根据经纬度获取天气信息（内部辅助函数）
+const fetchWeatherByCoords = async (
+  latitude: number,
+  longitude: number
+): Promise<{ city: string; weather: string }> => {
+  try {
     const response = await fetch(`${apiUrl}/api/weather/location`, {
       method: 'POST',
       headers: {
@@ -119,11 +150,8 @@ export const getLocationAndWeather = async (): Promise<{
     });
 
     if (!response.ok) {
-      console.log('获取天气信息失败');
-      return {
-        city: '',
-        weather: '',
-      };
+      console.log('[LocationWeather] 获取天气信息失败');
+      return { city: '', weather: '' };
     }
 
     const result = await response.json();
@@ -135,16 +163,9 @@ export const getLocationAndWeather = async (): Promise<{
       };
     }
 
-    return {
-      city: '',
-      weather: '',
-    };
+    return { city: '', weather: '' };
   } catch (error) {
-    // 静默处理错误，不打印到控制台
-    console.log('位置和天气服务不可用，使用默认值');
-    return {
-      city: '',
-      weather: '',
-    };
+    console.log('[LocationWeather] 获取天气信息异常');
+    return { city: '', weather: '' };
   }
 };

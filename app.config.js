@@ -52,22 +52,11 @@ module.exports = ({ config }) => {
     },
     plugins: [
       "expo-router",
+      "expo-secure-store",
       [
         "expo-local-authentication",
         {
           faceIDPermission: "允许使用面容 ID 验证日记身份"
-        }
-      ],
-      [
-        "expo-splash-screen",
-        {
-          image: "./assets/images/splash-icon.png",
-          imageWidth: 200,
-          resizeMode: "contain",
-          backgroundColor: "#ffffff",
-          dark: {
-            backgroundColor: "#000000"
-          }
         }
       ]
     ],

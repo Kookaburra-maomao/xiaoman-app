@@ -11,6 +11,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   ScrollView,
   StyleSheet,
@@ -27,6 +28,7 @@ export default function LoginScreen() {
   const [countdown, setCountdown] = useState(0);
   const [sendingCode, setSendingCode] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const router = useRouter();
   const { login } = useAuth();
@@ -111,6 +113,11 @@ export default function LoginScreen() {
       return;
     }
 
+    if (!agreedToTerms) {
+      Alert.alert('提示', '请先同意隐私协议和服务条款');
+      return;
+    }
+
     try {
       setVerifying(true);
 
@@ -124,6 +131,21 @@ export default function LoginScreen() {
       Alert.alert('错误', error.message || '登录失败，请重试');
     } finally {
       setVerifying(false);
+    }
+  };
+
+  // 打开链接
+  const openLink = async (url: string) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('提示', '无法打开链接');
+      }
+    } catch (error) {
+      console.error('打开链接失败:', error);
+      Alert.alert('提示', '打开链接失败');
     }
   };
 
@@ -199,10 +221,33 @@ export default function LoginScreen() {
               </View>
             </View>
 
+            {/* 隐私协议和服务条款 */}
+            <View style={styles.termsContainer}>
+              <TouchableOpacity
+                style={styles.checkbox}
+                onPress={() => setAgreedToTerms(!agreedToTerms)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkboxBox, agreedToTerms && styles.checkboxBoxChecked]}>
+                  {agreedToTerms && <Text style={styles.checkboxCheck}>✓</Text>}
+                </View>
+              </TouchableOpacity>
+              <View style={styles.termsTextContainer}>
+                <Text style={styles.termsText}>同意</Text>
+                <TouchableOpacity onPress={() => openLink('http://xiaomanriji.com/privacy')}>
+                  <Text style={styles.termsLink}>《隐私协议》</Text>
+                </TouchableOpacity>
+                <Text style={styles.termsText}>和</Text>
+                <TouchableOpacity onPress={() => openLink('http://xiaomanriji.com/terms')}>
+                  <Text style={styles.termsLink}>《服务条款》</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
             <TouchableOpacity
-              style={[styles.submitButton, verifying && styles.submitButtonDisabled]}
+              style={[styles.submitButton, (verifying || !agreedToTerms) && styles.submitButtonDisabled]}
               onPress={handleVerify}
-              disabled={verifying}
+              disabled={verifying || !agreedToTerms}
             >
               {verifying ? (
                 <ActivityIndicator color="#fff" />
@@ -324,6 +369,49 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: scaleSize(16),
     fontWeight: '600',
+  },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: scaleSize(16),
+    marginBottom: scaleSize(8),
+  },
+  checkbox: {
+    marginRight: scaleSize(8),
+  },
+  checkboxBox: {
+    width: scaleSize(18),
+    height: scaleSize(18),
+    borderWidth: 1,
+    borderColor: '#000000',
+    borderRadius: scaleSize(4),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FAFAFA',
+  },
+  checkboxBoxChecked: {
+    backgroundColor: '#000000',
+  },
+  checkboxCheck: {
+    color: '#FFFFFF',
+    fontSize: scaleSize(12),
+    fontWeight: 'bold',
+  },
+  termsTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    flex: 1,
+  },
+  termsText: {
+    fontSize: scaleSize(12),
+    color: '#666666',
+  },
+  termsLink: {
+    fontSize: scaleSize(12),
+    color: '#000000',
+    textDecorationLine: 'underline',
+    marginHorizontal: scaleSize(2),
   },
 });
 

@@ -3,7 +3,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { clearJwtToken, getJwtToken, jwtGet, jwtPost, saveJwtToken } from './jwtRequest';
+import { clearJwtToken, getJwtToken, jwtGet, jwtPost, jwtPut, saveJwtToken } from './jwtRequest';
 
 const JWT_USER_STORAGE_KEY = '@xiaoman_jwt_user';
 
@@ -182,4 +182,27 @@ export const jwtLogout = async (): Promise<void> => {
 export const hasJwtToken = async (): Promise<boolean> => {
   const token = await getJwtToken();
   return !!token;
+};
+
+/**
+ * 更新用户信息
+ */
+export const jwtUpdateUser = async (userId: string, updates: Partial<JwtUser>): Promise<JwtUser> => {
+  console.log('[jwtAuth] jwtUpdateUser 被调用，userId:', userId, 'updates:', updates);
+  
+  try {
+    const response = await jwtPut<JwtUserResponse>(`/api/users/${userId}`, updates);
+
+    if (response.code === 200 && response.data) {
+      // 保存更新后的用户信息到本地
+      await saveJwtUser(response.data);
+      console.log('[jwtAuth] jwtUpdateUser: 用户信息更新成功');
+      return response.data;
+    }
+
+    throw new Error(response.message || '更新用户信息失败');
+  } catch (error: any) {
+    console.error('[jwtAuth] jwtUpdateUser: 发生错误', error.message);
+    throw error;
+  }
 };

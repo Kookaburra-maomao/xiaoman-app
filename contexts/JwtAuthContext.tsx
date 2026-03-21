@@ -9,7 +9,7 @@
  * 5. 定期心跳机制（每 30 分钟调用一次接口）
  */
 
-import { clearJwtUser, getJwtUser, jwtGetMe, jwtLogin, jwtLogout, JwtUser, saveJwtUser } from '@/utils/jwtAuth';
+import { clearJwtUser, getJwtUser, jwtGetMe, jwtLogin, jwtLogout, jwtUpdateUser, JwtUser } from '@/utils/jwtAuth';
 import { clearJwtToken, getJwtToken, setTokenRefreshCallback, setUnauthorizedCallback } from '@/utils/jwtRequest';
 import NetInfo from '@react-native-community/netinfo';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
@@ -288,8 +288,24 @@ export const JwtAuthProvider = ({ children }: { children: ReactNode }) => {
    * 更新用户信息
    */
   const handleUpdateUserInfo = useCallback(async (updatedUser: JwtUser) => {
-    setUser(updatedUser);
-    await saveJwtUser(updatedUser);
+    if (!updatedUser.id) {
+      throw new Error('用户ID不存在');
+    }
+
+    try {
+      console.log('[JWT Auth] 更新用户信息，调用服务端接口');
+      
+      // 调用服务端接口更新用户信息
+      const serverUser = await jwtUpdateUser(updatedUser.id, updatedUser);
+      
+      // 更新本地状态
+      setUser(serverUser);
+      
+      console.log('[JWT Auth] 用户信息更新成功');
+    } catch (error: any) {
+      console.error('[JWT Auth] 更新用户信息失败:', error);
+      throw error;
+    }
   }, []);
 
   const value: JwtAuthContextType = {

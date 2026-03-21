@@ -1,9 +1,13 @@
 import { Colors } from '@/constants/theme';
 import { JwtAuthProvider, useJwtAuth } from '@/contexts/JwtAuthContext';
+import { disableFontScaling } from '@/utils/disableFontScaling';
 import { Audio } from 'expo-av';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+
+// 禁用全局字体缩放，防止系统字体设置影响 app 布局
+disableFontScaling();
 
 function RootLayoutContent() {
   const { isAuthenticated, loading } = useJwtAuth();

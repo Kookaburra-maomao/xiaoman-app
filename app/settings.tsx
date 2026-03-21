@@ -17,6 +17,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View
@@ -37,6 +38,9 @@ export default function SettingsScreen() {
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<'system' | 'dark' | 'light'>('system');
   const [showAboutModal, setShowAboutModal] = useState(false); // 关于小满弹窗
+  const [showNickEditModal, setShowNickEditModal] = useState(false); // 编辑昵称弹窗
+  const [editingNick, setEditingNick] = useState(''); // 编辑中的昵称
+  const [savingNick, setSavingNick] = useState(false); // 保存昵称中
 
   // 主题选项配置
   const THEME_OPTIONS = [
@@ -204,11 +208,10 @@ export default function SettingsScreen() {
       // 提取相对路径（去掉域名部分）
       const avatarPath = uploadResult.url.replace(apiUrl, '');
 
-      // 更新用户信息
+      // 更新用户信息（保留原有信息，只更新头像）
       await updateUserInfo({
+        ...user,
         avatar: avatarPath,
-        id: '',
-        username: ''
       });
 
       Alert.alert('成功', '头像更新成功');
@@ -244,6 +247,105 @@ export default function SettingsScreen() {
         },
       ]
     );
+  };
+
+  // 处理注销用户
+  const handleCancelAccount = () => {
+    Alert.alert(
+      '注销账号',
+      '注销后将无法恢复账号数据，确定要注销吗？',
+      [
+        {
+          text: '取消',
+          style: 'cancel',
+        },
+        {
+          text: '确定注销',
+          style: 'destructive',
+          onPress: async () => {
+            if (!user?.id) {
+              Alert.alert('错误', '用户信息不存在');
+              return;
+            }
+
+            try {
+              // 调用注销接口
+              const response = await fetch(`${apiUrl}/api/users/cancel`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  userId: user.id,
+                }),
+              });
+
+              const result = await response.json();
+
+              if (result.code === 200) {
+                // 注销成功，清除本地数据并跳转到登录页
+                await logout();
+                Alert.alert('成功', '账号已注销', [
+                  {
+                    text: '确定',
+                    onPress: () => router.replace('/login'),
+                  },
+                ]);
+              } else {
+                Alert.alert('错误', result.message || '注销失败，请重试');
+              }
+            } catch (error: any) {
+              console.error('注销账号失败:', error);
+              Alert.alert('错误', error.message || '注销失败，请重试');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // 打开编辑昵称弹窗
+  const handleEditNick = () => {
+    setEditingNick(user?.nick || user?.username || '');
+    setShowNickEditModal(true);
+  };
+
+  // 保存昵称
+  const handleSaveNick = async () => {
+    const trimmedNick = editingNick.trim();
+    
+    if (!trimmedNick) {
+      Alert.alert('提示', '昵称不能为空');
+      return;
+    }
+
+    if (trimmedNick.length > 20) {
+      Alert.alert('提示', '昵称不能超过20个字符');
+      return;
+    }
+
+    if (!user?.id) {
+      Alert.alert('错误', '用户信息不存在');
+      return;
+    }
+
+    try {
+      setSavingNick(true);
+
+      // 调用更新用户接口（保留原有信息，只更新昵称）
+      await updateUserInfo({
+        ...user,
+        nick: trimmedNick,
+      });
+
+      Alert.alert('成功', '昵称更新成功');
+      setShowNickEditModal(false);
+    } catch (error: any) {
+      console.error('更新昵称失败:', error);
+      Alert.alert('错误', error.message || '更新昵称失败，请重试');
+    } finally {
+      setSavingNick(false);
+    }
   };
 
   // 如果正在加载，显示加载状态
@@ -366,7 +468,20 @@ export default function SettingsScreen() {
               />
             </TouchableOpacity>
           </TouchableOpacity>
-          <Text style={styles.username}>{user?.nick || user?.username || '用户'}</Text>
+          <View style={styles.nicknameContainer}>
+            <Text style={styles.username}>{user?.nick || user?.username || '用户'}</Text>
+            <TouchableOpacity
+              style={styles.editNickButton}
+              onPress={handleEditNick}
+              activeOpacity={0.7}
+            >
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-edit.png' }}
+                style={styles.editNickIcon}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          </View>
           {/* {(() => {
             // 检查是否是有效会员
             const isVipValid = () => {
@@ -644,6 +759,24 @@ export default function SettingsScreen() {
               <Ionicons name="chevron-forward" size={18} color={Colors.light.icon} />
             </View>
           </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.settingItem} 
+            activeOpacity={0.7}
+            onPress={handleCancelAccount}
+          >
+            <View style={styles.settingItemLeft}>
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-edit.png' }}
+                style={styles.settingIcon}
+                resizeMode="contain"
+              />
+              <Text style={[styles.settingItemText, { color: '#FF3B30' }]}>注销用户</Text>
+            </View>
+            <View style={styles.settingItemRight}>
+              <Ionicons name="chevron-forward" size={18} color={Colors.light.icon} />
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* 退出登录 */}
@@ -692,6 +825,57 @@ export default function SettingsScreen() {
             />
           </TouchableOpacity>
         </View>
+      </Modal>
+
+      {/* 编辑昵称弹窗 */}
+      <Modal
+        visible={showNickEditModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowNickEditModal(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowNickEditModal(false)}>
+          <View style={styles.nickModalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.nickModalContent}>
+                <Text style={styles.nickModalTitle}>编辑昵称</Text>
+                
+                <TextInput
+                  style={styles.nickInput}
+                  value={editingNick}
+                  onChangeText={setEditingNick}
+                  placeholder="请输入昵称"
+                  placeholderTextColor="#CCCCCC"
+                  maxLength={20}
+                  autoFocus={true}
+                />
+                
+                <View style={styles.nickModalButtons}>
+                  <TouchableOpacity
+                    style={[styles.nickModalButton, styles.nickModalCancelButton]}
+                    onPress={() => setShowNickEditModal(false)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.nickModalCancelText}>取消</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.nickModalButton, styles.nickModalSaveButton]}
+                    onPress={handleSaveNick}
+                    activeOpacity={0.7}
+                    disabled={savingNick}
+                  >
+                    {savingNick ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.nickModalSaveText}>保存</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </SafeAreaView>
   );
@@ -979,5 +1163,71 @@ const styles = StyleSheet.create({
   aboutCloseIcon: {
     width: scaleSize(24),
     height: scaleSize(24),
+  },
+  nicknameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scaleSize(8),
+  },
+  editNickButton: {
+    padding: scaleSize(0),
+  },
+  editNickIcon: {
+    width: scaleSize(16),
+    height: scaleSize(16),
+  },
+  nickModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  nickModalContent: {
+    width: '80%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: scaleSize(16),
+    padding: scaleSize(24),
+  },
+  nickModalTitle: {
+    fontSize: scaleSize(18),
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginBottom: scaleSize(20),
+    textAlign: 'center',
+  },
+  nickInput: {
+    height: scaleSize(48),
+    backgroundColor: '#F5F5F5',
+    borderRadius: scaleSize(12),
+    paddingHorizontal: scaleSize(16),
+    fontSize: scaleSize(16),
+    color: Colors.light.text,
+    marginBottom: scaleSize(20),
+  },
+  nickModalButtons: {
+    flexDirection: 'row',
+    gap: scaleSize(12),
+  },
+  nickModalButton: {
+    flex: 1,
+    height: scaleSize(44),
+    borderRadius: scaleSize(12),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  nickModalCancelButton: {
+    backgroundColor: '#F5F5F5',
+  },
+  nickModalCancelText: {
+    fontSize: scaleSize(16),
+    color: Colors.light.text,
+  },
+  nickModalSaveButton: {
+    backgroundColor: '#000000',
+  },
+  nickModalSaveText: {
+    fontSize: scaleSize(16),
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
 });
