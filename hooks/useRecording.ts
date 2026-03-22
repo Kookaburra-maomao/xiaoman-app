@@ -7,15 +7,18 @@ import { Audio } from 'expo-av';
 import { useCallback, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
+const MAX_RECORDING_DURATION = 60; // 最大录音时长（秒）
+
 export const useRecording = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [audioLevel, setAudioLevel] = useState(0); // 音量级别 0-1
   const recordingRef = useRef<Audio.Recording | null>(null);
   const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoStopCallbackRef = useRef<(() => void) | null>(null); // 自动停止回调
 
   // 开始录音
-  const startRecording = useCallback(async () => {
+  const startRecording = useCallback(async (onMaxDurationReached?: () => void) => {
     try {
       // 请求录音权限
       const { status } = await Audio.requestPermissionsAsync();
@@ -23,6 +26,9 @@ export const useRecording = () => {
         Alert.alert('提示', '需要录音权限才能使用语音功能');
         return false;
       }
+
+      // 保存自动停止回调
+      autoStopCallbackRef.current = onMaxDurationReached || null;
 
       // 立即设置录音状态，让UI快速响应
       setIsRecording(true);
@@ -45,7 +51,20 @@ export const useRecording = () => {
 
       // 开始计时
       durationIntervalRef.current = setInterval(() => {
-        setRecordingDuration((prev) => prev + 1);
+        setRecordingDuration((prev) => {
+          const newDuration = prev + 1;
+          
+          // 检查是否达到最大时长
+          if (newDuration >= MAX_RECORDING_DURATION) {
+            console.log('录音达到最大时长，自动停止');
+            // 触发自动停止回调
+            if (autoStopCallbackRef.current) {
+              autoStopCallbackRef.current();
+            }
+          }
+          
+          return newDuration;
+        });
       }, 1000);
 
       // 监听录音状态，获取音量数据
@@ -139,6 +158,9 @@ export const useRecording = () => {
         durationIntervalRef.current = null;
       }
 
+      // 清除自动停止回调
+      autoStopCallbackRef.current = null;
+
       // 停止并卸载录音
       await recordingRef.current.stopAndUnloadAsync();
       
@@ -158,6 +180,7 @@ export const useRecording = () => {
     isRecording,
     recordingDuration,
     audioLevel, // 导出音量级别
+    maxDuration: MAX_RECORDING_DURATION, // 导出最大时长
     startRecording,
     stopRecording,
     cancelRecording,

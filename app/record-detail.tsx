@@ -62,11 +62,20 @@ export default function RecordDetailScreen() {
     return `${hours}:${minutes}`;
   };
 
-  // 格式化时间段显示（上午/下午）
+  // 格式化时间段显示（深夜/上午/下午/晚上）
   const formatTimePeriod = (dateStr: string) => {
     const date = new Date(dateStr);
     const hours = date.getHours();
-    return hours < 12 ? '上午' : '下午';
+    
+    if (hours < 4) {
+      return '深夜';
+    } else if (hours < 12) {
+      return '上午';
+    } else if (hours < 18) {
+      return '下午';
+    } else {
+      return '晚上';
+    }
   };
 
   // 获取日记列表

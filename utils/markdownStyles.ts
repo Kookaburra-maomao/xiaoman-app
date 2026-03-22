@@ -21,7 +21,7 @@ export const getMarkdownStyles = (options?: {
 }) => {
   return StyleSheet.create({
     body: {
-      fontSize: scaleSize(14),
+      fontSize: scaleSize(16),
       lineHeight: scaleSize(22),
       color: Colors.light.text,
       fontFamily: 'PingFang SC',

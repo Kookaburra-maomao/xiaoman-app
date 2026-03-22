@@ -90,6 +90,7 @@ export default function ChatScreen() {
     isRecording,
     recordingDuration,
     audioLevel,
+    maxDuration,
     startRecording,
     stopRecording,
     cancelRecording,
@@ -281,12 +282,17 @@ export default function ChatScreen() {
     }
     if (!isRecording) {
       console.log('Starting recording...');
-      const result = await startRecording();
+      // 传入自动停止回调
+      const result = await startRecording(() => {
+        // 达到最大时长，自动停止并发送
+        console.log('录音达到最大时长，自动发送');
+        handleStopRecording();
+      });
       console.log('startRecording result:', result);
     } else {
       console.log('Already recording');
     }
-  }, [isGeneratingDiary, isRecording, startRecording]);
+  }, [isGeneratingDiary, isRecording, startRecording, handleStopRecording]);
 
   // 处理松手（发送或取消录音）
   const handleVoiceButtonPressOut = useCallback(async (shouldCancel: boolean) => {
@@ -437,9 +443,9 @@ export default function ChatScreen() {
       if (content === '[图片]') return sum;
       return sum + content.length;
     }, 0);
-    
+
     // 少于 20 个汉字（一个汉字两个字符，所以是 40 字符）
-    if (totalUserChars < 40) {
+    if (totalUserChars < 20) {
       setToastMessage('多聊几句再生成日记吧~');
       setToastVisible(true);
       return;
@@ -629,6 +635,7 @@ export default function ChatScreen() {
           isVoiceMode={isVoiceMode}
           isRecording={isRecording}
           recordingDuration={recordingDuration}
+          maxRecordingDuration={maxDuration}
           audioLevel={audioLevel}
           isSending={isSending}
           isGeneratingDiary={isGeneratingDiary}

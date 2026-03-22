@@ -23,6 +23,7 @@ interface ChatInputProps {
   isVoiceMode: boolean;
   isRecording: boolean;
   recordingDuration: number;
+  maxRecordingDuration?: number; // 最大录音时长
   audioLevel?: number; // 音量级别 0-1
   isSending: boolean;
   isGeneratingDiary: boolean;
@@ -43,6 +44,7 @@ export default function ChatInput({
   isVoiceMode,
   isRecording,
   recordingDuration,
+  maxRecordingDuration = 60,
   audioLevel = 0,
   isSending,
   isGeneratingDiary,
@@ -187,7 +189,7 @@ export default function ChatInput({
             // 如果正在录音，计算上滑距离（使用 ref 而不是 state）
             if (isRecordingRef.current && startYRef.current > 0) {
               const deltaY = startYRef.current - currentYRef.current;
-              const movingUp = deltaY > 50; // 向上移动超过50px认为是上滑
+              const movingUp = deltaY > 80; // 向上移动超过50px认为是上滑
               shouldCancelRef.current = movingUp;
               
               setIsMovingUp((prevMovingUp) => {
@@ -321,7 +323,18 @@ export default function ChatInput({
     if (isMovingUp) {
       return '松手取消';
     }
-    return '松手发送 上移取消';
+    // 格式化时长显示：00:05
+    const minutes = Math.floor(recordingDuration / 60);
+    const seconds = recordingDuration % 60;
+    const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    // 如果接近最大时长（最后5秒），显示倒计时提示
+    const remainingSeconds = maxRecordingDuration - recordingDuration;
+    if (remainingSeconds <= 5 && remainingSeconds > 0) {
+      return `${timeStr} 还剩${remainingSeconds}秒`;
+    }
+    
+    return `${timeStr} 松手发送 上移取消`;
   };
 
   // 判断是否应该显示全宽输入框（录音或上划取消时）
