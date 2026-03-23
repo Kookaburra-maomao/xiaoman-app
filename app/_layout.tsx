@@ -1,7 +1,6 @@
 import { Colors } from '@/constants/theme';
 import { JwtAuthProvider, useJwtAuth } from '@/contexts/JwtAuthContext';
 import { disableFontScaling } from '@/utils/disableFontScaling';
-import { Audio } from 'expo-av';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
@@ -14,22 +13,6 @@ function RootLayoutContent() {
   const segments = useSegments();
   const router = useRouter();
   const prevAuthenticatedRef = useRef<boolean | null>(null);
-
-  // 请求录音权限
-  useEffect(() => {
-    const requestAudioPermission = async () => {
-      try {
-        const { status } = await Audio.requestPermissionsAsync();
-        if (status !== 'granted') {
-          console.warn('录音权限未授予');
-        }
-      } catch (error) {
-        console.error('请求录音权限失败:', error);
-      }
-    };
-
-    requestAudioPermission();
-  }, []);
 
   useEffect(() => {
     console.log('[Route Guard] Effect triggered', {

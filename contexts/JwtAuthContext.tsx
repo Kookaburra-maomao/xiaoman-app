@@ -11,6 +11,7 @@
 
 import { clearJwtUser, getJwtUser, jwtGetMe, jwtLogin, jwtLogout, jwtUpdateUser, JwtUser } from '@/utils/jwtAuth';
 import { clearJwtToken, getJwtToken, setTokenRefreshCallback, setUnauthorizedCallback } from '@/utils/jwtRequest';
+import { getPrivacyConsent } from '@/utils/privacyConsent';
 import NetInfo from '@react-native-community/netinfo';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
@@ -202,28 +203,46 @@ export const JwtAuthProvider = ({ children }: { children: ReactNode }) => {
 
   /**
    * 网络状态监听（网络恢复时刷新）
+   * 只有在用户同意隐私协议后才启用
    */
   useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
     let previousIsConnected: boolean | null = null;
     
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      console.log('[JWT Auth] 网络状态变化:', { 
-        isConnected: state.isConnected, 
-        previousIsConnected,
-        hasUser: !!user 
-      });
+    const initNetworkListener = async () => {
+      // 检查用户是否同意隐私协议
+      const hasConsent = await getPrivacyConsent();
       
-      // 只在网络从断开到连接时刷新（避免频繁刷新）
-      if (state.isConnected && previousIsConnected === false && user && refreshAuthRef.current) {
-        console.log('[JWT Auth] 网络已恢复，刷新用户信息');
-        refreshAuthRef.current();
+      if (!hasConsent) {
+        console.log('[JWT Auth] 用户未同意隐私协议，跳过网络监听初始化');
+        return;
       }
       
-      previousIsConnected = state.isConnected;
-    });
+      console.log('[JWT Auth] 用户已同意隐私协议，初始化网络监听');
+      
+      unsubscribe = NetInfo.addEventListener((state) => {
+        console.log('[JWT Auth] 网络状态变化:', { 
+          isConnected: state.isConnected, 
+          previousIsConnected,
+          hasUser: !!user 
+        });
+        
+        // 只在网络从断开到连接时刷新（避免频繁刷新）
+        if (state.isConnected && previousIsConnected === false && user && refreshAuthRef.current) {
+          console.log('[JWT Auth] 网络已恢复，刷新用户信息');
+          refreshAuthRef.current();
+        }
+        
+        previousIsConnected = state.isConnected;
+      });
+    };
+    
+    initNetworkListener();
 
     return () => {
-      unsubscribe();
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, [user?.id]); // 只依赖 user.id，避免 user 对象变化导致重复执行
 
@@ -281,6 +300,9 @@ export const JwtAuthProvider = ({ children }: { children: ReactNode }) => {
   const handleLogout = useCallback(async () => {
     setUser(null);
     await jwtLogout();
+    // 清除隐私协议同意状态
+    await clearPrivacyConsent();
+    console.log('[JWT Auth] 已清除隐私协议同意状态');
     await new Promise(resolve => setTimeout(resolve, 0));
   }, []);
 

@@ -4,6 +4,7 @@ import DiaryGenerateModal from '@/components/chat/DiaryGenerateModal';
 import MessageList from '@/components/chat/MessageList';
 import OperationCardCarousel from '@/components/chat/OperationCard';
 import PlanAddModal from '@/components/chat/PlanAddModal';
+import PermissionExplainModal from '@/components/common/PermissionExplainModal';
 import Toast from '@/components/common/Toast';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
@@ -91,10 +92,13 @@ export default function ChatScreen() {
     recordingDuration,
     audioLevel,
     maxDuration,
+    showPermissionExplain,
     startRecording,
     stopRecording,
     cancelRecording,
     uploadAndRecognize,
+    confirmPermission,
+    cancelPermission,
   } = useRecording();
 
   // 更新函数引用到 ref
@@ -699,6 +703,14 @@ export default function ChatScreen() {
         message={toastMessage}
         visible={toastVisible}
         onHide={() => setToastVisible(false)}
+      />
+
+      {/* 权限说明弹窗 */}
+      <PermissionExplainModal
+        visible={showPermissionExplain}
+        permissionType="microphone"
+        onConfirm={confirmPermission}
+        onCancel={cancelPermission}
       />
     </SafeAreaView>
   );

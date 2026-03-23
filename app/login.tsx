@@ -2,6 +2,7 @@ import { Colors } from '@/constants/theme';
 import { LOGO_URL, SLOGAN_URL } from '@/constants/urls';
 import { useAuth } from '@/hooks/useAuth';
 import { sendSmsCode } from '@/utils/auth';
+import { setPrivacyConsent } from '@/utils/privacyConsent';
 import { scaleSize } from '@/utils/screen';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -120,6 +121,10 @@ export default function LoginScreen() {
 
     try {
       setVerifying(true);
+
+      // 保存用户同意隐私协议的状态（在登录之前）
+      await setPrivacyConsent(true);
+      console.log('[Login] 用户已同意隐私协议，状态已保存');
 
       // 直接使用 JWT 登录（服务器会自动验证验证码并注册新用户）
       // login 接口内部已经包含了验证码验证和用户注册逻辑
