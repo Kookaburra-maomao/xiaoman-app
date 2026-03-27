@@ -252,8 +252,8 @@ export default function PlanScreen() {
         >
           {/* 统计信息 */}
           <View style={styles.summarySection}>
-            <Text style={styles.summaryText}>
-              你共<Text style={styles.summaryNumber}>{plans.length}</Text>项计划进行中
+            <Text style={styles.summaryText} allowFontScaling={false}>
+              你共<Text style={styles.summaryNumber} allowFontScaling={false}>{plans.length}</Text>项计划进行中
             </Text>
             <TouchableOpacity
               style={styles.manageIcon}
@@ -287,7 +287,7 @@ export default function PlanScreen() {
           >
             <View style={styles.addPlanContent}>
               <Ionicons name="add" size={24} color={Colors.light.text} />
-              <Text style={styles.addPlanText}>新增计划</Text>
+              <Text style={styles.addPlanText} allowFontScaling={false}>新增计划</Text>
             </View>
           </TouchableOpacity>
         </ScrollView>

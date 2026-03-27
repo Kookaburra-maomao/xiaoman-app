@@ -409,11 +409,11 @@ export default function ChatInput({
                     style={styles.lottieRadio}
                   />
                 ) : (
-                  <Text style={styles.voiceText}>...</Text>
+                  <Text style={styles.voiceText} allowFontScaling={false}>...</Text>
                 )}
               </View>
             ) : (
-              <Text style={styles.voiceText}>按住 说话</Text>
+              <Text style={styles.voiceText} allowFontScaling={false}>按住 说话</Text>
             )}
             </View>
           </View>
@@ -438,6 +438,7 @@ export default function ChatInput({
               multiline
               maxLength={500}
               editable={!isGeneratingDiary}
+              allowFontScaling={false}
             />
             
           </View>
@@ -536,6 +537,7 @@ const styles = StyleSheet.create({
     fontSize: scaleSize(14),
     color: Colors.light.text,
     fontWeight: '400',
+    allowFontScaling: false,
   },
   recordingHintTextCancel: {
     color: '#FF326C',
@@ -612,6 +614,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     minHeight: scaleSize(24),
     maxHeight: scaleSize(120), // 约5行高度（每行约24px）
+    allowFontScaling: false,
   },
   sendButton: {
     width: scaleSize(36),
@@ -650,6 +653,7 @@ const styles = StyleSheet.create({
     fontSize: scaleSize(16),
     color: Colors.light.text,
     fontWeight: '400',
+    allowFontScaling: false,
   },
   recordingIndicator: {
     flexDirection: 'row',

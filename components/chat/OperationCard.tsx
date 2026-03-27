@@ -123,7 +123,7 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
         {/* 情况1: 有选项、有问题、没有按钮 */}
         {isType1 && (
           <View style={styles.type1Container}>
-            <Text style={styles.type1Text}>{item.record_topic}</Text>
+            <Text style={styles.type1Text} allowFontScaling={false}>{item.record_topic}</Text>
             <View style={styles.type1ItemsContainer}>
               {recordItems.map((recordItem, itemIndex) => {
                 const isEmojiImage = isImageUrl(recordItem.emoji);
@@ -145,12 +145,12 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
                       />
                     ) : (
                       <View style={styles.type1ItemEmoji}>
-                        <Text style={{ fontSize: scaleSize(52), lineHeight: scaleSize(52) }}>
+                        <Text style={{ fontSize: scaleSize(52), lineHeight: scaleSize(52) }} allowFontScaling={false}>
                           {recordItem.emoji}
                         </Text>
                       </View>
                     )}
-                    <Text style={styles.type1ItemText}>{recordItem.text}</Text>
+                    <Text style={styles.type1ItemText} allowFontScaling={false}>{recordItem.text}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -162,7 +162,7 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
         {isType2 && (
           <View style={styles.type2Container}>
             <View style={styles.type2Text}>
-              <Text style={{ color: '#FFFFFF', fontSize: scaleSize(20), lineHeight: scaleSize(28), textAlign: 'center' }}>
+              <Text style={{ color: '#FFFFFF', fontSize: scaleSize(20), lineHeight: scaleSize(28), textAlign: 'center' }} allowFontScaling={false}>
                 {item.record_topic}
               </Text>
             </View>
@@ -172,6 +172,7 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
               onPress={() => handleButtonPress(item.content_url)}
             >
               <Text 
+                allowFontScaling={false}
                 style={[
                   styles.type2ButtonText,
                   item.button_name && item.button_color && { color: item.button_color }
@@ -186,7 +187,7 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
         {/* 情况3: 有问题、无选项、无按钮 */}
         {isType3 && (
           <View style={styles.type3Container}>
-            <Text style={styles.type3Text}>{item.record_topic}</Text>
+            <Text style={styles.type3Text} allowFontScaling={false}>{item.record_topic}</Text>
           </View>
         )}
       </View>

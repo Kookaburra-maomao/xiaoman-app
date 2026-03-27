@@ -14,7 +14,6 @@ import { scaleSize } from '@/utils/screen';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Markdown from 'react-native-markdown-display';
 import ViewShot from 'react-native-view-shot';
 import Toast from '../common/Toast';
 
@@ -229,7 +228,7 @@ export default function DiaryGenerateModal({
       return (
         <View style={styles.generatingContainer}>
           <ActivityIndicator size="small" color={Colors.light.tint} style={{ marginRight: scaleSize(8) }} />
-          <Text style={styles.generatingText}>正在生成中...</Text>
+          <Text style={styles.generatingText} allowFontScaling={false}>正在生成中...</Text>
         </View>
       );
     }
@@ -241,11 +240,11 @@ export default function DiaryGenerateModal({
     return (
       <View style={styles.diaryContentWrapper}>
         {enableMarkdown ? (
-          <Markdown style={diaryModalMarkdownStyles}>
+          <MarkdownText style={diaryModalMarkdownStyles}>
             {displayedContent}
-          </Markdown>
+          </MarkdownText>
         ) : (
-          <Text style={styles.diaryText}>{displayedContent}</Text>
+          <Text style={styles.diaryText} allowFontScaling={false}>{displayedContent}</Text>
         )}
       </View>
     );
@@ -269,7 +268,7 @@ export default function DiaryGenerateModal({
                 resizeMode="contain"
               />
             </TouchableOpacity>
-            <Text style={styles.title}>日记</Text>
+            <Text style={styles.title} allowFontScaling={false}>日记</Text>
             <TouchableOpacity
               onPress={() => setEnableMarkdown(!enableMarkdown)}
               style={[
@@ -278,7 +277,7 @@ export default function DiaryGenerateModal({
               ]}
               disabled={isGenerating}
             >
-              <Text style={styles.debugToggleText}>
+              <Text style={styles.debugToggleText} allowFontScaling={false}>
                 {enableMarkdown ? '' : ''}
               </Text>
             </TouchableOpacity>
@@ -300,9 +299,9 @@ export default function DiaryGenerateModal({
               <View style={styles.diaryContainer}>
                 {/* 日期和天气区域 */}
                 <View style={styles.dateWeatherContainer}>
-                  <Text style={styles.dateText}>{dateStr}</Text>
+                  <Text style={styles.dateText} allowFontScaling={false}>{dateStr}</Text>
                   {(city || weather) && (
-                    <Text style={styles.weatherText}>
+                    <Text style={styles.weatherText} allowFontScaling={false}>
                       {city && weather ? `${city} · ${weather}` : city || weather}
                     </Text>
                   )}
@@ -319,7 +318,7 @@ export default function DiaryGenerateModal({
 
                 {/* 时间显示 */}
                 <View style={styles.timeContainer}>
-                  <Text style={styles.timeText}>{formatTime(gmt_create)}</Text>
+                  <Text style={styles.timeText} allowFontScaling={false}>{formatTime(gmt_create)}</Text>
                 </View>
 
                 {/* 日记内容区域 */}

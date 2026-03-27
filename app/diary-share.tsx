@@ -3,6 +3,7 @@
  * 进入页面后自动截图保存到相册并 toast 保存成功
  */
 
+import MarkdownText from '@/components/common/MarkdownText';
 import { Colors } from '@/constants/theme';
 import { QR_CODE_URL } from '@/constants/urls';
 import { DiaryDetail, getDiaryDetail } from '@/services/chatService';
@@ -13,16 +14,15 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import Markdown from 'react-native-markdown-display';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ViewShot from 'react-native-view-shot';
 
@@ -197,7 +197,7 @@ export default function DiaryShareScreen() {
             resizeMode="contain"
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>分享</Text>
+        <Text style={styles.headerTitle} allowFontScaling={false}>分享</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -211,11 +211,11 @@ export default function DiaryShareScreen() {
             {/* 日期和天气区域 */}
             <View style={styles.dateWeatherContainer}>
               <View style={styles.dateContainer}>
-                <Text style={styles.dateText}>Date</Text>
-                <Text style={styles.dateValue}>{formatDate(diary.gmt_create)}</Text>
+                <Text style={styles.dateText} allowFontScaling={false}>Date</Text>
+                <Text style={styles.dateValue} allowFontScaling={false}>{formatDate(diary.gmt_create)}</Text>
               </View>
               {(diary.city || diary.weather) && (
-                <Text style={styles.weatherText}>
+                <Text style={styles.weatherText} allowFontScaling={false}>
                   {diary.city && diary.weather ? `${diary.city} · ${diary.weather}` : diary.city || diary.weather}
                 </Text>
               )}
@@ -247,12 +247,12 @@ export default function DiaryShareScreen() {
 
             {/* 时间显示 */}
             <View style={styles.timeContainer}>
-              <Text style={styles.timeText}>{formatTime(diary.gmt_create)}</Text>
+              <Text style={styles.timeText} allowFontScaling={false}>{formatTime(diary.gmt_create)}</Text>
             </View>
 
             {diary.context ? (
               <View style={styles.textContainer}>
-                <Markdown style={defaultMarkdownStyles}>{diary.context}</Markdown>
+                <MarkdownText style={defaultMarkdownStyles}>{diary.context}</MarkdownText>
               </View>
             ) : null}
           </View>
@@ -269,7 +269,7 @@ export default function DiaryShareScreen() {
                 setQrCodeLoaded(true);
               }}
             />
-            <Text style={styles.qrLabel}>小满日记</Text>
+            <Text style={styles.qrLabel} allowFontScaling={false}>小满日记</Text>
           </View>
         </ViewShot>
       </ScrollView>

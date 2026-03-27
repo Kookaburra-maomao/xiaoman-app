@@ -83,7 +83,7 @@ export default function DayChatRecordScreen() {
       >
         {/* 只为用户消息显示时间戳（在气泡上方） */}
         {isUser && (
-          <Text style={styles.messageTimestamp}>
+          <Text style={styles.messageTimestamp} allowFontScaling={false}>
             {formatTime(record.gmt_create)}
           </Text>
         )}
@@ -112,6 +112,7 @@ export default function DayChatRecordScreen() {
                 styles.messageText,
                 isUser ? styles.messageTextUser : styles.messageTextSystem,
               ]}
+              allowFontScaling={false}
             >
               {record.chat_context}
             </Text>
@@ -134,7 +135,7 @@ export default function DayChatRecordScreen() {
             resizeMode="contain"
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
+        <Text style={styles.headerTitle} allowFontScaling={false}>
           {date ? `${formatDate(date)}的对话` : '对话记录'}
         </Text>
         <View style={styles.backButton} />
@@ -146,7 +147,7 @@ export default function DayChatRecordScreen() {
         </View>
       ) : records.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>这一天还没有对话记录</Text>
+          <Text style={styles.emptyText} allowFontScaling={false}>这一天还没有对话记录</Text>
         </View>
       ) : (
         <ScrollView
@@ -215,11 +216,12 @@ const styles = StyleSheet.create({
   },
   messageItemUser: {
     alignItems: 'flex-end',
-    paddingRight: 20,
+    paddingRight: 10,
   },
   messageItemSystem: {
     alignItems: 'flex-start',
-    paddingLeft: 20,
+    paddingLeft: 10,
+    paddingRight: 10,
   },
   messageTimestamp: {
     fontSize: 12,

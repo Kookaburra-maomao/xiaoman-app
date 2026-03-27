@@ -1,6 +1,7 @@
 import DiaryActionButtons from '@/components/diary/DiaryActionButtons';
 import DiaryImageCarousel from '@/components/diary/DiaryImageCarousel';
 // import LinedText from '@/components/diary/LinedText';
+import MarkdownText from '@/components/common/MarkdownText';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { deleteDiary, DiaryDetail, getDiaryDetail } from '@/services/chatService';
@@ -21,7 +22,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Markdown from 'react-native-markdown-display';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
@@ -176,7 +176,7 @@ export default function DiaryDetailScreen() {
             resizeMode="contain"
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>日记</Text>
+        <Text style={styles.headerTitle} allowFontScaling={false}>日记</Text>
         <TouchableOpacity
           onPress={() => setShowDeleteMenu(!showDeleteMenu)}
           style={styles.menuButton}
@@ -206,7 +206,7 @@ export default function DiaryDetailScreen() {
               }}
               activeOpacity={0.7}
             >
-              <Text style={styles.deleteMenuText}>删除日记</Text>
+              <Text style={styles.deleteMenuText} allowFontScaling={false}>删除日记</Text>
             </TouchableOpacity>
           </View>
         </>
@@ -218,10 +218,10 @@ export default function DiaryDetailScreen() {
             {/* 日期和天气区域 */}
             <View style={styles.dateWeatherContainer}>
               <View style={styles.dateContainer}>
-                <Text style={styles.dateText}>Date <Text style={styles.dateValue}>{formatDate(diary.gmt_create)}</Text></Text>
+                <Text style={styles.dateText} allowFontScaling={false}>Date <Text style={styles.dateValue} allowFontScaling={false}>{formatDate(diary.gmt_create)}</Text></Text>
               </View>
               {(diary.city || diary.weather) && (
-                <Text style={styles.weatherText}>
+                <Text style={styles.weatherText} allowFontScaling={false}>
                   {diary.city && diary.weather ? `${diary.city} · ${diary.weather}` : diary.city || diary.weather}
                 </Text>
               )}
@@ -238,13 +238,13 @@ export default function DiaryDetailScreen() {
 
             {/* 时间显示 */}
             <View style={styles.timeContainer}>
-              <Text style={styles.timeText}>{formatTime(diary.gmt_create)}</Text>
+              <Text style={styles.timeText} allowFontScaling={false}>{formatTime(diary.gmt_create)}</Text>
             </View>
 
             {/* 日记正文 */}
             {diary.context && (
               <View style={styles.textContainer}>
-                <Markdown style={defaultMarkdownStyles}>{diary.context}</Markdown>
+                <MarkdownText style={defaultMarkdownStyles}>{diary.context}</MarkdownText>
               </View>
             )}
           </View>
@@ -267,8 +267,8 @@ export default function DiaryDetailScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>删除日记</Text>
-            <Text style={styles.modalMessage}>
+            <Text style={styles.modalTitle} allowFontScaling={false}>删除日记</Text>
+            <Text style={styles.modalMessage} allowFontScaling={false}>
               删除后你可以在最近删除列表里查看，确认删除吗?
             </Text>
             <View style={styles.modalButtonRow}>
@@ -277,7 +277,7 @@ export default function DiaryDetailScreen() {
                 onPress={() => setShowDeleteModal(false)}
                 disabled={deleting}
               >
-                <Text style={styles.cancelButtonText}>取消</Text>
+                <Text style={styles.cancelButtonText} allowFontScaling={false}>取消</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
@@ -287,7 +287,7 @@ export default function DiaryDetailScreen() {
                 {deleting ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.confirmButtonText}>确认</Text>
+                  <Text style={styles.confirmButtonText} allowFontScaling={false}>确认</Text>
                 )}
               </TouchableOpacity>
             </View>

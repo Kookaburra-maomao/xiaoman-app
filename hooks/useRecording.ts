@@ -4,8 +4,11 @@
 
 import * as imageService from '@/services/imageService';
 import {
+    clearPermissionDenied,
     hasExplainedPermission,
-    markPermissionExplained
+    hasPermissionDenied,
+    markPermissionDenied,
+    markPermissionExplained,
 } from '@/utils/permissionManager';
 import { Audio } from 'expo-av';
 import { useCallback, useRef, useState } from 'react';

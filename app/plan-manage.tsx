@@ -150,7 +150,7 @@ export default function PlanManageScreen() {
             resizeMode="contain"
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>管理计划</Text>
+        <Text style={styles.headerTitle} allowFontScaling={false}>管理计划</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -161,7 +161,7 @@ export default function PlanManageScreen() {
       ) : (
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
           {/* 进行中区域 */}
-          <Text style={styles.sectionTitle}>进行中</Text>
+          <Text style={styles.sectionTitle} allowFontScaling={false}>进行中</Text>
           <View style={styles.section}>
             {plans.active.length === 0 ? (
               <View style={styles.emptyContainer}>
@@ -170,7 +170,7 @@ export default function PlanManageScreen() {
                   style={styles.emptyImage}
                   resizeMode="contain"
                 />
-                <Text style={styles.emptyText}>暂无进行中的计划</Text>
+                <Text style={styles.emptyText} allowFontScaling={false}>暂无进行中的计划</Text>
               </View>
             ) : (
               plans.active.map((plan, index) => {
@@ -195,10 +195,10 @@ export default function PlanManageScreen() {
                       
                       {/* 左侧信息区域 */}
                       <View style={styles.planInfo}>
-                        <Text style={styles.planName}>{plan.name}</Text>
-                        <Text style={styles.planCycle}>{cycleText}</Text>
+                        <Text style={styles.planName} allowFontScaling={false}>{plan.name}</Text>
+                        <Text style={styles.planCycle} allowFontScaling={false}>{cycleText}</Text>
                         {deadlineText && (
-                          <Text style={styles.planDeadline}>{deadlineText}</Text>
+                          <Text style={styles.planDeadline} allowFontScaling={false}>{deadlineText}</Text>
                         )}
                       </View>
                       
@@ -218,7 +218,7 @@ export default function PlanManageScreen() {
                             style={styles.pinIcon}
                             resizeMode="contain"
                           />
-                          <Text style={styles.topActionText}>
+                          <Text style={styles.topActionText} allowFontScaling={false}>
                             {isTop ? '取消置顶' : '置顶'}
                           </Text>
                         </TouchableOpacity>
@@ -231,7 +231,7 @@ export default function PlanManageScreen() {
           </View>
 
           {/* 已结束区域 */}
-          <Text style={styles.sectionTitle}>已结束</Text>
+          <Text style={styles.sectionTitle} allowFontScaling={false}>已结束</Text>
           <View style={styles.section}>
             {plans.finish.length === 0 ? (
               <View style={styles.emptyContainer}>
@@ -240,7 +240,7 @@ export default function PlanManageScreen() {
                   style={styles.emptyImage}
                   resizeMode="contain"
                 />
-                <Text style={styles.emptyText}>暂无已结束的计划</Text>
+                <Text style={styles.emptyText} allowFontScaling={false}>暂无已结束的计划</Text>
               </View>
             ) : (
               plans.finish.map((plan, index) => {
@@ -264,10 +264,10 @@ export default function PlanManageScreen() {
                       
                       {/* 左侧信息区域 */}
                       <View style={styles.planInfo}>
-                        <Text style={styles.planName}>{plan.name}</Text>
-                        <Text style={styles.planCycle}>{cycleText}</Text>
+                        <Text style={styles.planName} allowFontScaling={false}>{plan.name}</Text>
+                        <Text style={styles.planCycle} allowFontScaling={false}>{cycleText}</Text>
                         {deadlineText && (
-                          <Text style={styles.planDeadline}>{deadlineText}</Text>
+                          <Text style={styles.planDeadline} allowFontScaling={false}>{deadlineText}</Text>
                         )}
                       </View>
                     </TouchableOpacity>

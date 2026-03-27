@@ -8,7 +8,7 @@ import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
 import { useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Markdown from 'react-native-markdown-display';
+import MarkdownText from '../common/MarkdownText';
 import DiaryCard from './DiaryCard';
 import ImagePreviewModal from './ImagePreviewModal';
 
@@ -83,12 +83,13 @@ export default function MessageItem({ message, userId }: MessageItemProps) {
       <>
         {isSystemMessage ? (
           // 系统消息使用 Markdown 渲染
-          <Markdown style={defaultMarkdownStyles}>
+          <MarkdownText style={defaultMarkdownStyles}>
             {message.text || '正在输入...'}
-          </Markdown>
+          </MarkdownText>
         ) : (
           // 用户消息使用普通 Text
           <Text
+            allowFontScaling={false}
             style={[
               styles.messageText,
               styles.messageTextUser,

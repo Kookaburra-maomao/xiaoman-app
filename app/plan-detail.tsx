@@ -2,35 +2,36 @@ import PlanEditModal, { EditPlanFormData } from '@/components/plan/PlanEditModal
 import { CYCLE_MAP } from '@/constants/plan';
 import { Colors } from '@/constants/theme';
 import {
-    FALLBACK_IMAGE_BASE_URL,
-    getFullImageUrl,
-    ICON_CALC_URL,
-    ICON_OK_URL,
-    ICON_REPEAT_URL,
-    ICON_RETURN_URL,
-    ICON_WARNING_URL,
-    MISSION_COMPLETED_ICON_URL,
-    OPTION_ICON_URL
+  FALLBACK_IMAGE_BASE_URL,
+  getFullImageUrl,
+  ICON_CALC_URL,
+  ICON_OK_URL,
+  ICON_REPEAT_URL,
+  ICON_RETURN_URL,
+  ICON_WARNING_URL,
+  MISSION_COMPLETED_ICON_URL,
+  OPTION_ICON_URL
 } from '@/constants/urls';
 import { getPlanKeepTimesList } from '@/utils/plan-utils';
 import { del, get, put } from '@/utils/request';
+import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    Image,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -327,7 +328,7 @@ export default function PlanDetailScreen() {
           </View>
         </View>
         <View style={styles.loadingContainer}>
-          <Text style={styles.emptyText}>计划不存在</Text>
+          <Text style={styles.emptyText} allowFontScaling={false}>计划不存在</Text>
         </View>
       </SafeAreaView>
     );
@@ -373,7 +374,7 @@ export default function PlanDetailScreen() {
                 activeOpacity={0.7}
               >
                 <Ionicons name="create-outline" size={18} color="#222" />
-                <Text style={styles.deleteMenuText}>编辑计划</Text>
+                <Text style={styles.deleteMenuText} allowFontScaling={false}>编辑计划</Text>
               </TouchableOpacity>
               <View style={styles.menuDivider} />
               <TouchableOpacity
@@ -382,7 +383,7 @@ export default function PlanDetailScreen() {
                 activeOpacity={0.7}
               >
                 <Ionicons name="trash-outline" size={18} color="#222" />
-                <Text style={styles.deleteMenuText}>删除计划</Text>
+                <Text style={styles.deleteMenuText} allowFontScaling={false}>删除计划</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -411,7 +412,7 @@ export default function PlanDetailScreen() {
             locations={[0, 1]}
             style={styles.imageGradient}
           >
-            <Text style={styles.planNameOverlay}>{plan.name}</Text>
+            <Text style={styles.planNameOverlay} allowFontScaling={false}>{plan.name}</Text>
           </LinearGradient>
         </View>
         {/* 完成图标 */}
@@ -432,12 +433,12 @@ export default function PlanDetailScreen() {
                 style={styles.infoIcon}
                 resizeMode="contain"
               />
-              <Text style={styles.infoText}>
+              <Text style={styles.infoText} allowFontScaling={false}>
                 {plan.cycle === 'no' ? '不重复' : '重复'}
               </Text>
             </View>
             {plan.cycle !== 'no' && (
-              <Text style={styles.infoTextRight}>
+              <Text style={styles.infoTextRight} allowFontScaling={false}>
                 每{CYCLE_MAP[plan.cycle] || plan.cycle} {plan.times}次
               </Text>
             )}
@@ -452,9 +453,9 @@ export default function PlanDetailScreen() {
                   style={styles.infoIcon}
                   resizeMode="contain"
                 />
-                <Text style={styles.infoText}>截止日期</Text>
+                <Text style={styles.infoText} allowFontScaling={false}>截止日期</Text>
               </View>
-              <Text style={styles.infoTextRight}>{formatDateFull(plan.gmt_limit)}</Text>
+              <Text style={styles.infoTextRight} allowFontScaling={false}>{formatDateFull(plan.gmt_limit)}</Text>
             </View>
           )}
         </View>
@@ -462,7 +463,7 @@ export default function PlanDetailScreen() {
 
         {/* 完成记录 */}
         <View style={styles.recordsSection}>
-          <Text style={styles.recordsTitle}>完成记录</Text>
+          <Text style={styles.recordsTitle} allowFontScaling={false}>完成记录</Text>
           <View style={styles.recordsCard}>
             {plan.cycle === 'no' && plan.state === 'finish' ? (
               // 不重复计划且已完成，显示完成日期
@@ -473,13 +474,13 @@ export default function PlanDetailScreen() {
                     style={styles.recordStatusIcon}
                     resizeMode="contain"
                   />
-                  <Text style={styles.recordPeriod}>{formatDateFull(plan.gmt_modified)}</Text>
+                  <Text style={styles.recordPeriod} allowFontScaling={false}>{formatDateFull(plan.gmt_modified)}</Text>
                 </View>
-                <Text style={styles.recordCount}>1/1</Text>
+                <Text style={styles.recordCount} allowFontScaling={false}>1/1</Text>
               </View>
             ) : planKeepTimesList.length === 0 ? (
               <View style={styles.emptyRecords}>
-                <Text style={styles.emptyRecordsText}>暂无完成记录</Text>
+                <Text style={styles.emptyRecordsText} allowFontScaling={false}>暂无完成记录</Text>
               </View>
             ) : (
               planKeepTimesList.map((item, index) => {
@@ -494,9 +495,9 @@ export default function PlanDetailScreen() {
                           style={styles.recordStatusIcon}
                           resizeMode="contain"
                         />
-                        <Text style={styles.recordPeriod}>{item.key}</Text>
+                        <Text style={styles.recordPeriod} allowFontScaling={false}>{item.key}</Text>
                       </View>
-                      <Text style={styles.recordCount}>
+                      <Text style={styles.recordCount} allowFontScaling={false}>
                         {item.times}/{plan.times}
                       </Text>
                     </View>
@@ -518,7 +519,7 @@ export default function PlanDetailScreen() {
             onPress={handleFinishPlan}
             disabled={loading || saving}
           >
-            <Text style={styles.finishButtonText}>完成计划</Text>
+            <Text style={styles.finishButtonText} allowFontScaling={false}>完成计划</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -549,13 +550,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   backButton: {
-    width: 60,
-    height: 60,
+    width: scaleSize(40),
+    height: scaleSize(40),
     alignItems: 'center',
     justifyContent: 'center',
   },
   backIcon: {
-    width: 60,
+    width: scaleSize(40),
     height: '100%',
   },
   headerRight: {

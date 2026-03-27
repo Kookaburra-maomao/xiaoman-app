@@ -55,7 +55,7 @@ export default function PlanCreateModal({
         <View style={styles.createModalContent}>
           {/* 标题 */}
           <View style={styles.createModalHeader}>
-            <Text style={styles.createModalTitle}>创建计划</Text>
+            <Text style={styles.createModalTitle} allowFontScaling={false}>创建计划</Text>
             <TouchableOpacity
               onPress={onClose}
               activeOpacity={0.7}
@@ -73,6 +73,7 @@ export default function PlanCreateModal({
                 placeholderTextColor={Colors.light.icon}
                 value={formData.name}
                 onChangeText={(text) => onFormChange({ ...formData, name: text })}
+                allowFontScaling={false}
               />
             </View>
 
@@ -88,7 +89,7 @@ export default function PlanCreateModal({
                   <View style={styles.radioButton}>
                     {formData.cycle === 'no' && <View style={styles.radioButtonInner} />}
                   </View>
-                  <Text style={styles.radioLabel}>不重复</Text>
+                  <Text style={styles.radioLabel} allowFontScaling={false}>不重复</Text>
                 </TouchableOpacity>
 
                 {/* 重复选项 */}
@@ -100,13 +101,13 @@ export default function PlanCreateModal({
                         onPress={handleCycleToggle}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.selectButtonText}>
+                        <Text style={styles.selectButtonText} allowFontScaling={false}>
                           {CYCLE_MAP[formData.cycle] || formData.cycle}
                         </Text>
                         <Image source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-sort.png' }} style={styles.sortIcon} />
                       </TouchableOpacity>
                     </View>
-                    <Text style={styles.repeatText}>至少完成</Text>
+                    <Text style={styles.repeatText} allowFontScaling={false}>至少完成</Text>
                     <TextInput
                       style={[styles.formInput, styles.timesInput]}
                       placeholder="1"
@@ -117,8 +118,9 @@ export default function PlanCreateModal({
                         onFormChange({ ...formData, times: num });
                       }}
                       keyboardType="number-pad"
+                      allowFontScaling={false}
                     />
-                    <Text style={styles.repeatText}>次</Text>
+                    <Text style={styles.repeatText} allowFontScaling={false}>次</Text>
                   </>
                 )}
 
@@ -132,7 +134,7 @@ export default function PlanCreateModal({
                     <View style={styles.radioButton}>
                       {formData.cycle !== 'no' && <View style={styles.radioButtonInner} />}
                     </View>
-                    <Text style={styles.radioLabel}>重复</Text>
+                    <Text style={styles.radioLabel} allowFontScaling={false}>重复</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -145,7 +147,7 @@ export default function PlanCreateModal({
                 onPress={onShowDatePicker}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.dateInputText, !formData.gmt_limit && styles.dateInputPlaceholder]}>
+                <Text style={[styles.dateInputText, !formData.gmt_limit && styles.dateInputPlaceholder]} allowFontScaling={false}>
                   {formData.gmt_limit ? formatDateForDisplay(formData.gmt_limit) : '请选择截止日期'}
                 </Text>
                 <Ionicons name="calendar-outline" size={20} color={Colors.light.icon} />
@@ -168,7 +170,7 @@ export default function PlanCreateModal({
               onPress={onClose}
               activeOpacity={0.7}
             >
-              <Text style={styles.cancelButtonText}>取消</Text>
+              <Text style={styles.cancelButtonText} allowFontScaling={false}>取消</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.createModalButton, styles.confirmButton]}
@@ -179,7 +181,7 @@ export default function PlanCreateModal({
               {loading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.confirmButtonText}>完成创建</Text>
+                <Text style={styles.confirmButtonText} allowFontScaling={false}>完成创建</Text>
               )}
             </TouchableOpacity>
           </View>

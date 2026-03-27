@@ -42,8 +42,8 @@ export default function ChatHeader({ title = '小满日记', showCard, onToggleC
     <View style={styles.header}>
       {/* 左边：标题和日期信息 */}
       <View style={styles.headerLeft}>
-        <Text style={styles.headerTitle}>{title}</Text>
-        <Text style={styles.headerDate}>
+        <Text style={styles.headerTitle} allowFontScaling={false}>{title}</Text>
+        <Text style={styles.headerDate} allowFontScaling={false}>
           {month}月{date}日 · {weekday}
         </Text>
       </View>

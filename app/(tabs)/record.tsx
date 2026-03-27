@@ -480,7 +480,7 @@ export default function RecordScreen() {
                 resizeMode="contain"
               />
             </TouchableOpacity>
-            <Text style={styles.monthYearText}>
+            <Text style={styles.monthYearText} allowFontScaling={false}>
               {year} - {month + 1}
             </Text>
             <TouchableOpacity 
@@ -504,7 +504,7 @@ export default function RecordScreen() {
           <View style={styles.weekdaysRow}>
             {WEEKDAYS.map((day, index) => (
               <View key={index} style={styles.weekdayCell}>
-                <Text style={styles.weekdayText}>{day}</Text>
+                <Text style={styles.weekdayText} allowFontScaling={false}>{day}</Text>
               </View>
             ))}
           </View>
@@ -544,7 +544,7 @@ export default function RecordScreen() {
                         resizeMode="cover"
                       />
                       <View style={styles.dayImageOverlay} >
-                        <Text style={styles.dayTextOnImage}>{isTodayDate ? '今' : day}</Text>
+                        <Text style={styles.dayTextOnImage} allowFontScaling={false}>{isTodayDate ? '今' : day}</Text>
                       </View>
                     </View>
                   ) : hasEmoji && !isFuture ? (
@@ -553,7 +553,7 @@ export default function RecordScreen() {
                       <Image source={{ uri: dayData.emoji }} style={styles.dayImage}
                         resizeMode="cover"/>
                       <View style={styles.dayImageOverlay} >
-                        <Text style={styles.dayTextOnImage}>{isTodayDate ? '今' : day}</Text>
+                        <Text style={styles.dayTextOnImage} allowFontScaling={false}>{isTodayDate ? '今' : day}</Text>
                       </View>
                     </View>
                     
@@ -561,6 +561,7 @@ export default function RecordScreen() {
                     // 情况3和4：正常展示或特殊背景色
                     day !== null && (
                       <Text
+                        allowFontScaling={false}
                         style={[
                           styles.dayText,
                           !isCurrentMonthDay && styles.dayTextOtherMonth,
@@ -580,9 +581,9 @@ export default function RecordScreen() {
 
         {/* 我的记录 */}
         <View style={styles.myRecordContainer}>
-          <Text style={styles.myRecordTitle}>我的记录</Text>
-          <Text style={styles.myRecordContent}>
-            今天你对话了 <Text style={styles.myRecordHighlight}>{todayRecords}</Text> 轮，本周累计记录了 <Text style={styles.myRecordHighlight}>{weekDays}</Text> 天，共生成日记 <Text style={styles.myRecordHighlight}>{weekDiaryCount}</Text> 篇。再多聊聊让小满更了解你~
+          <Text style={styles.myRecordTitle} allowFontScaling={false}>我的记录</Text>
+          <Text style={styles.myRecordContent} allowFontScaling={false}>
+            今天你对话了 <Text style={styles.myRecordHighlight} allowFontScaling={false}>{todayRecords}</Text> 轮，本周累计记录了 <Text style={styles.myRecordHighlight} allowFontScaling={false}>{weekDays}</Text> 天，共生成日记 <Text style={styles.myRecordHighlight} allowFontScaling={false}>{weekDiaryCount}</Text> 篇。再多聊聊让小满更了解你~
           </Text>
         </View>
       </ScrollView>

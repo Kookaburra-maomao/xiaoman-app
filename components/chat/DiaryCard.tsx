@@ -10,7 +10,7 @@ import { scaleSize } from '@/utils/screen';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Markdown from 'react-native-markdown-display';
+import MarkdownText from '../common/MarkdownText';
 
 interface DiaryCardProps {
   context: string;
@@ -135,7 +135,7 @@ export default function DiaryCard({ context, pic, gmt_create, diaryId, userId }:
     >
       {/* 第一行：日期时间 */}
       {dateTimeStr && (
-        <Text style={styles.dateTimeText}>{dateTimeStr}</Text>
+        <Text style={styles.dateTimeText} allowFontScaling={false}>{dateTimeStr}</Text>
       )}
       
       {/* 日记信息区域 */}
@@ -144,9 +144,9 @@ export default function DiaryCard({ context, pic, gmt_create, diaryId, userId }:
           <View style={styles.diaryContentWithImage}>
             <Image source={{ uri: imageUrl }} style={styles.diaryImage} resizeMode="cover" />
             <View style={styles.diaryTextContainer}>
-              <Markdown style={defaultMarkdownStyles}>
+              <MarkdownText style={defaultMarkdownStyles}>
                 {truncatedContext}
-              </Markdown>
+              </MarkdownText>
             </View>
           </View>
         ) : (
@@ -157,9 +157,9 @@ export default function DiaryCard({ context, pic, gmt_create, diaryId, userId }:
               resizeMode="cover" 
             />
             <View style={styles.diaryTextOnlyContent}>
-              <Markdown style={defaultMarkdownStyles}>
+              <MarkdownText style={defaultMarkdownStyles}>
                 {truncatedContext}
-              </Markdown>
+              </MarkdownText>
             </View>
           </View>
         )}

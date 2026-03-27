@@ -132,33 +132,15 @@ export const getMarkdownStyles = (options?: {
       height: options?.hrHeight ?? scaleSize(1),
       marginVertical: options?.hrMarginVertical ?? scaleSize(8),
     },
+    // 添加 text 样式以禁用字体缩放
+    text: {
+      fontSize: scaleSize(16),
+      lineHeight: scaleSize(22),
+    },
   });
 };
 
 // 默认样式（用于 DiaryCard）
 export const defaultMarkdownStyles = getMarkdownStyles();
 
-// 生成日记弹窗样式（用于 DiaryGenerateModal）
-export const diaryModalMarkdownStyles = {
-  ...getMarkdownStyles({
-    paragraphMarginBottom: 0,
-    paragraphPaddingBottom: scaleSize(6),
-    listItemPaddingBottom: scaleSize(6),
-    listItemBorderBottom: false,
-    hrBackgroundColor: '#44413A',
-    hrHeight: 0.5,
-    hrMarginVertical: scaleSize(6),
-  }),
-  // 确保默认文字样式
-  body: {
-    fontSize: scaleSize(14),
-    lineHeight: scaleSize(22),
-    color: Colors.light.text,
-    fontFamily: 'PingFang SC',
-  },
-  text: {
-    fontSize: scaleSize(14),
-    lineHeight: scaleSize(28),
-    color: Colors.light.text,
-  },
-};
+

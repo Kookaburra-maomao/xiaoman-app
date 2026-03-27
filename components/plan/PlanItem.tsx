@@ -124,7 +124,7 @@ export default function PlanItem({ plan, onCheckIn, loading = false, userId }: P
             <View style={styles.planTextContainer}>
               {/* 计划名称 + 置顶icon */}
               <View style={styles.planNameRow}>
-                <Text style={[styles.planName, isFinish && styles.planNameFinished]}>
+                <Text style={[styles.planName, isFinish && styles.planNameFinished]} allowFontScaling={false}>
                   {plan.name}
                 </Text>
                 {isTop && (
@@ -138,14 +138,14 @@ export default function PlanItem({ plan, onCheckIn, loading = false, userId }: P
               
               {/* 目标每个周期几次 */}
               {isCyclePlan && (
-                <Text style={styles.cycleText}>
+                <Text style={styles.cycleText} allowFontScaling={false}>
                   每{cycleText} {plan.times}次
                 </Text>
               )}
               
               {/* 截止日期 */}
               {deadlineInfo && (
-                <Text style={styles.deadlineText}>
+                <Text style={styles.deadlineText} allowFontScaling={false}>
                   截止{deadlineInfo.date}
                 </Text>
               )}
@@ -157,7 +157,7 @@ export default function PlanItem({ plan, onCheckIn, loading = false, userId }: P
         <View style={styles.planRight}>
           {/* 本周期完成次数（仅周期任务显示） */}
           {isCyclePlan && (
-            <Text style={styles.progressText}>
+            <Text style={styles.progressText} allowFontScaling={false}>
               {finishTimes}/{plan.times}
             </Text>
           )}

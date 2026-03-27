@@ -78,12 +78,12 @@ export default function CustomTabBar({ state, descriptors, navigation }: CustomT
           >
             <View style={styles.tabContent}>
               <View style={styles.textContainer}>
-                <Text style={isFocused ? styles.chineseTextActive : styles.chineseTextInactive}>
+                <Text style={isFocused ? styles.chineseTextActive : styles.chineseTextInactive} allowFontScaling={false}>
                   {tabConfig.chinese}
                 </Text>
                 {showBadge && (
                   <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                    <Text style={styles.badgeText} allowFontScaling={false}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
                   </View>
                 )}
               </View>
@@ -94,10 +94,10 @@ export default function CustomTabBar({ state, descriptors, navigation }: CustomT
                   end={{ x: 1, y: 0 }}
                   style={styles.gradientBackground}
                 >
-                  <Text style={styles.englishTextActive}>{tabConfig.english}</Text>
+                  <Text style={styles.englishTextActive} allowFontScaling={false}>{tabConfig.english}</Text>
                 </LinearGradient>
               ) : (
-                <Text style={styles.englishTextInactive}>{tabConfig.english}</Text>
+                <Text style={styles.englishTextInactive} allowFontScaling={false}>{tabConfig.english}</Text>
               )}
             </View>
           </TouchableOpacity>

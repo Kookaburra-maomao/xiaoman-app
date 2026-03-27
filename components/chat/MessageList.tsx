@@ -87,11 +87,11 @@ export default function MessageList({ messages, isGeneratingDiary, onGenerateDia
                   {isGeneratingDiary ? (
                     <>
                       <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: scaleSize(8) }} />
-                      <Text style={styles.generateDiaryButtonText}>正在生成中...</Text>
+                      <Text style={styles.generateDiaryButtonText} allowFontScaling={false}>正在生成中...</Text>
                     </>
                   ) : (
                     <>
-                      <Text style={styles.generateDiaryButtonText}>生成日记</Text>
+                      <Text style={styles.generateDiaryButtonText} allowFontScaling={false}>生成日记</Text>
                       <Image
                         source={{ uri: RIGHT_ICON_URL }}
                         style={styles.generateDiaryButtonIcon}

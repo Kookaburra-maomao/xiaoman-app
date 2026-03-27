@@ -212,7 +212,7 @@ export default function PlanEditModal({
                 resizeMode="contain"
               />
             </TouchableOpacity>
-            <Text style={styles.editModalTitle}>{plan ? '编辑计划' : '新建计划'}</Text>
+            <Text style={styles.editModalTitle} allowFontScaling={false}>{plan ? '编辑计划' : '新建计划'}</Text>
             <TouchableOpacity
               onPress={handleSave}
               style={styles.editModalSaveButton}
@@ -239,6 +239,7 @@ export default function PlanEditModal({
                     placeholderTextColor={Colors.light.icon}
                     value={editFormData.name}
                     onChangeText={(text) => setEditFormData({ ...editFormData, name: text })}
+                    allowFontScaling={false}
                   />
                 </View>
               </View>
@@ -251,7 +252,7 @@ export default function PlanEditModal({
               <View style={styles.editFormItemRow}>
                 <View style={styles.editFormItemLeft}>
                   <Ionicons name="repeat-outline" size={20} color={Colors.light.text} />
-                  <Text style={styles.editFormLabel}>重复</Text>
+                  <Text style={styles.editFormLabel} allowFontScaling={false}>重复</Text>
                 </View>
                 <View style={styles.editFormSelectContainer}>
                   <TouchableOpacity
@@ -259,7 +260,7 @@ export default function PlanEditModal({
                     onPress={() => setShowCycleMenu(!showCycleMenu)}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.editFormSelectText}>
+                    <Text style={styles.editFormSelectText} allowFontScaling={false}>
                       {editFormData.cycle === 'no' ? '不重复' : CYCLE_MAP[editFormData.cycle]}
                     </Text>
                     <Image 
@@ -280,7 +281,7 @@ export default function PlanEditModal({
                           }}
                           activeOpacity={0.7}
                         >
-                          <Text style={styles.cycleMenuText}>{option.label}</Text>
+                          <Text style={styles.cycleMenuText} allowFontScaling={false}>{option.label}</Text>
                           {editFormData.cycle === option.value && (
                             <Ionicons name="checkmark" size={18} color="#222" />
                           )}
@@ -301,7 +302,7 @@ export default function PlanEditModal({
                 <View style={styles.editFormItemRow}>
                   <View style={styles.editFormItemLeft}>
                     <Ionicons name="checkmark-circle-outline" size={20} color={Colors.light.text} />
-                    <Text style={styles.editFormLabel}>次数</Text>
+                    <Text style={styles.editFormLabel} allowFontScaling={false}>次数</Text>
                   </View>
                   <TouchableOpacity
                     style={styles.editFormSelect}
@@ -328,7 +329,7 @@ export default function PlanEditModal({
                     }}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.editFormSelectText}>{editFormData.times}次</Text>
+                    <Text style={styles.editFormSelectText} allowFontScaling={false}>{editFormData.times}次</Text>
                     <Image 
                       source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-sort.png' }} 
                       style={styles.sortIcon} 
@@ -346,14 +347,14 @@ export default function PlanEditModal({
               <View style={styles.editFormItemRow}>
                 <View style={styles.editFormItemLeft}>
                   <Ionicons name="calendar-outline" size={20} color={Colors.light.text} />
-                  <Text style={styles.editFormLabel}>截止日期</Text>
+                  <Text style={styles.editFormLabel} allowFontScaling={false}>截止日期</Text>
                 </View>
                 <TouchableOpacity
                   style={styles.editFormSelect}
                   onPress={() => setShowDatePicker(true)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.editFormSelectText, !editFormData.gmt_limit && styles.editFormSelectPlaceholder]}>
+                  <Text style={[styles.editFormSelectText, !editFormData.gmt_limit && styles.editFormSelectPlaceholder]} allowFontScaling={false}>
                     {editFormData.gmt_limit ? formatDateForDisplay(editFormData.gmt_limit) : '请选择截止日期'}
                   </Text>
                   <Image 

@@ -1,3 +1,4 @@
+import MarkdownText from '@/components/common/MarkdownText';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useLog } from '@/hooks/useLog';
@@ -8,7 +9,6 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Markdown from 'react-native-markdown-display';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // 获取第一张图片（pic 为 JSON 字符串数组，如 '["/api/files/xxx.png", ...]'）
@@ -137,7 +137,7 @@ export default function RecordDetailScreen() {
             resizeMode="contain"
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{date ? formatDate(date) : '日记详情'}</Text>
+        <Text style={styles.headerTitle} allowFontScaling={false}>{date ? formatDate(date) : '日记详情'}</Text>
         <View style={styles.backButton} />
       </View>
 
@@ -147,7 +147,7 @@ export default function RecordDetailScreen() {
         </View>
       ) : diaries.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>这一天还没有日记</Text>
+          <Text style={styles.emptyText} allowFontScaling={false}>这一天还没有日记</Text>
         </View>
       ) : (
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -157,8 +157,8 @@ export default function RecordDetailScreen() {
                 {/* 时间轴左侧：时间在节点上方 */}
                 <View style={styles.timelineLeft}>
                   <View style={styles.timeContainer}>
-                    <Text style={styles.timeText}>{formatTime(diary.gmt_create)}</Text>
-                    <Text style={styles.timePeriodText}>{formatTimePeriod(diary.gmt_create)}</Text>
+                    <Text style={styles.timeText} allowFontScaling={false}>{formatTime(diary.gmt_create)}</Text>
+                    <Text style={styles.timePeriodText} allowFontScaling={false}>{formatTimePeriod(diary.gmt_create)}</Text>
                   </View>
                   <View style={styles.timelineDot} />
                   {/* 只有不是最后一个日记时才显示连接线和底部圆点 */}
@@ -194,9 +194,9 @@ export default function RecordDetailScreen() {
                       <>
                         <View style={styles.diaryTextWrapper}>
                           <View style={styles.diaryTextContainer}>
-                            <Markdown style={defaultMarkdownStyles}>
+                            <MarkdownText style={defaultMarkdownStyles}>
                               {diary.context}
-                            </Markdown>
+                            </MarkdownText>
                           </View>
                           
                         </View>
@@ -221,7 +221,7 @@ export default function RecordDetailScreen() {
                             style={styles.viewFullButtonIcon}
                             resizeMode="contain"
                           />
-                          <Text style={styles.viewFullButtonText}>查看全文</Text>
+                          <Text style={styles.viewFullButtonText} allowFontScaling={false}>查看全文</Text>
                         </TouchableOpacity>
                       </>
                     )}
@@ -253,7 +253,7 @@ export default function RecordDetailScreen() {
                 style={styles.chatRecordIcon}
                 resizeMode="contain"
               />
-              <Text style={styles.chatRecordText}>{chatRecordsCount}条对话记录</Text>
+              <Text style={styles.chatRecordText} allowFontScaling={false}>{chatRecordsCount}条对话记录</Text>
             </TouchableOpacity>
           )}
         </ScrollView>
