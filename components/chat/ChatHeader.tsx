@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: scaleSize(16),
-    paddingTop: Platform.OS === 'android' ? scaleSize(20) : 0,
+    paddingTop: Platform.OS === 'android' ? scaleSize(30) : 0,
     paddingBottom: scaleSize(20),
     backgroundColor: Colors.light.background,
   },

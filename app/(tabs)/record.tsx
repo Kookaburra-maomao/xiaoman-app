@@ -467,7 +467,7 @@ export default function RecordScreen() {
       
       <ScrollView 
         style={styles.scrollView} 
-        contentContainerStyle={[styles.scrollViewContent,  { paddingTop: Platform.OS === 'ios' ? scaleSize(60) : scaleSize(80) }]}
+        contentContainerStyle={[styles.scrollViewContent,  { paddingTop: Platform.OS === 'ios' ? scaleSize(60) : scaleSize(90) }]}
       >
         {/* 日历 */}
         <View style={styles.calendarContainer}>
@@ -586,6 +586,16 @@ export default function RecordScreen() {
             今天你对话了 <Text style={styles.myRecordHighlight} allowFontScaling={false}>{todayRecords}</Text> 轮，本周累计记录了 <Text style={styles.myRecordHighlight} allowFontScaling={false}>{weekDays}</Text> 天，共生成日记 <Text style={styles.myRecordHighlight} allowFontScaling={false}>{weekDiaryCount}</Text> 篇。再多聊聊让小满更了解你~
           </Text>
         </View>
+
+        {/* 补写日记 */}
+        {/* <TouchableOpacity
+          style={styles.addDiaryButton}
+          onPress={() => router.push('/diary-edit?mode=create' as any)}
+          activeOpacity={0.7}
+        >
+          <Image source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-diary-detail.png' }} style={styles.addDiaryIcon} resizeMode="contain" />
+          <Text style={styles.addDiaryText} allowFontScaling={false}>补写日记</Text>
+        </TouchableOpacity> */}
       </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -783,5 +793,28 @@ const styles = StyleSheet.create({
     fontSize: scaleSize(14),
     fontWeight: '600',
     // color: Colors.light.tint,
+  },
+  addDiaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#000000',
+    borderRadius: scaleSize(10),
+    padding: scaleSize(12),
+    marginHorizontal: scaleSize(16),
+    marginTop: scaleSize(16),
+    marginBottom: scaleSize(24),
+  },
+  addDiaryIcon: {
+    width: scaleSize(16),
+    height: scaleSize(16),
+    marginRight: scaleSize(6),
+    tintColor: '#FFFFFF',
+  },
+  addDiaryText: {
+    fontSize: scaleSize(14),
+    fontWeight: '400',
+    lineHeight: scaleSize(22),
+    color: '#FFFFFF',
   },
 });

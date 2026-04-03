@@ -106,6 +106,12 @@ export default function MessageItem({ message, userId }: MessageItemProps) {
   
   return (
     <View style={containerStyle}>
+      {/* 用户消息显示时间戳 */}
+      {isUserMessage && message.timestamp && (
+        <Text style={styles.messageTimestamp} allowFontScaling={false}>
+          {message.timestamp}
+        </Text>
+      )}
       <View style={bubbleStyle}>
         {renderContent()}
       </View>
@@ -116,7 +122,16 @@ export default function MessageItem({ message, userId }: MessageItemProps) {
 const styles = StyleSheet.create({
   messageItem: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     marginBottom: scaleSize(0),
+  },
+  messageTimestamp: {
+    width: '100%',
+    fontSize: scaleSize(12),
+    color: '#999999',
+    marginBottom: scaleSize(4),
+    textAlign: 'right',
+    paddingRight: scaleSize(20),
   },
   messageItemUser: {
     justifyContent: 'flex-end',
@@ -125,6 +140,8 @@ const styles = StyleSheet.create({
   messageItemSystem: {
     justifyContent: 'flex-start',
     paddingLeft: scaleSize(20),
+    paddingRight: scaleSize(20),
+    maxWidth: '100%',
   },
   messageItemDiary: {
     paddingLeft: scaleSize(20),
@@ -152,6 +169,8 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: scaleSize(4),
     paddingRight: scaleSize(12),
     paddingLeft: 0,
+    maxWidth: '100%',
+    flex: 1,
   },
   messageBubbleDiary: {
     width: '100%',

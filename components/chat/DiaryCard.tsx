@@ -79,9 +79,21 @@ const truncateText = (text: string): string => {
 export default function DiaryCard({ context, pic, gmt_create, diaryId, userId }: DiaryCardProps) {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(false);
+  const [diaryCreateTime, setDiaryCreateTime] = useState<string | undefined>(gmt_create);
   const imageUrl = getFirstImageUrl(pic);
-  const dateTimeStr = formatDateTime(gmt_create);
+  const dateTimeStr = formatDateTime(diaryCreateTime);
   const truncatedContext = truncateText(context);
+
+  // 获取日记详情的创建时间
+  useEffect(() => {
+    if (diaryId) {
+      chatService.getDiaryDetail(diaryId).then((detail) => {
+        if (detail?.gmt_create) {
+          setDiaryCreateTime(detail.gmt_create);
+        }
+      }).catch(() => {});
+    }
+  }, [diaryId]);
 
   // 组件渲染时上报曝光
   useEffect(() => {

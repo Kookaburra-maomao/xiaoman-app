@@ -1,9 +1,9 @@
-import { Colors } from '@/constants/theme';
 import { JwtAuthProvider, useJwtAuth } from '@/contexts/JwtAuthContext';
 import { disableFontScaling } from '@/utils/disableFontScaling';
+import { scaleSize } from '@/utils/screen';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 // 禁用全局字体缩放，防止系统字体设置影响 app 布局
 disableFontScaling();
@@ -77,7 +77,12 @@ function RootLayoutContent() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.light.tint} />
+        {/* <Image
+          source={require('@/assets/images/icon.png')}
+          style={styles.loadingLogo}
+          resizeMode="contain"
+        />
+        <Text style={styles.loadingText} allowFontScaling={false}>小满日记</Text> */}
       </View>
     );
   }
@@ -103,9 +108,19 @@ export default function RootLayout() {
 
 const styles = StyleSheet.create({
   loadingContainer: {
-        flex: 1,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.light.background,
+    backgroundColor: '#F5F5F5',
+  },
+  loadingLogo: {
+    width: scaleSize(178),
+    height: scaleSize(178),
+    borderRadius: 20,
+  },
+  loadingText: {
+    marginTop: scaleSize(16),
+    fontSize: 16,
+    color: '#666666',
   },
 });

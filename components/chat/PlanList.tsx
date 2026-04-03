@@ -51,11 +51,11 @@ export default function PlanList({ message, onAddToPlan, userId }: PlanListProps
               style={styles.planItemIcon}
               resizeMode="contain"
             />
-            <Text style={styles.planName}>
+            <Text style={styles.planName} allowFontScaling={false}>
               {plan.plan_name}
             </Text>
             {plan.repeat?.plan_quality_score !== undefined && (
-              <Text style={styles.qualityScore}>
+              <Text style={styles.qualityScore} allowFontScaling={false}>
                 推荐指数:{plan.repeat.plan_quality_score}分
               </Text>
             )}
@@ -65,7 +65,7 @@ export default function PlanList({ message, onAddToPlan, userId }: PlanListProps
 
       {/* 添加到我的计划按钮 */}
       <TouchableOpacity style={styles.addButton} onPress={handleAddToPlan} activeOpacity={0.7}>
-        <Text style={styles.addButtonText}>去添加计划</Text>
+        <Text style={styles.addButtonText} allowFontScaling={false}>去添加计划</Text>
         <Image
           source={{ uri: RIGHT_ICON_URL }}
           style={styles.addButtonIcon}

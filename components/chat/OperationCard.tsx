@@ -94,10 +94,10 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
       bgImageUrl = getImageUrl(item.bg_image);
     }
 
-    // 判断渲染类型
-    const isType1 = hasItems && hasTopic && !hasButton; // 有选项、有问题、没有按钮
-    const isType2 = !hasItems && hasTopic && hasButton; // 有问题、没有选项、有按钮
-    const isType3 = !hasItems && hasTopic && !hasButton; // 有问题、无选项、无按钮
+    // 判断渲染类型（不再要求 hasTopic 为 true）
+    const isType1 = hasItems && !hasButton; // 有选项、没有按钮
+    const isType2 = !hasItems && hasButton; // 没有选项、有按钮
+    const isType3 = !hasItems && !hasButton; // 无选项、无按钮
 
     return (
       <View style={[
@@ -123,7 +123,11 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
         {/* 情况1: 有选项、有问题、没有按钮 */}
         {isType1 && (
           <View style={styles.type1Container}>
-            <Text style={styles.type1Text} allowFontScaling={false}>{item.record_topic}</Text>
+            <View style={styles.type1TextContainer}>
+              {hasTopic && (
+                <Text style={[styles.type1Text, { color: item.record_topic_color || '#000000' }]} allowFontScaling={false}>{item.record_topic}</Text>
+              )}
+            </View>
             <View style={styles.type1ItemsContainer}>
               {recordItems.map((recordItem, itemIndex) => {
                 const isEmojiImage = isImageUrl(recordItem.emoji);
@@ -162,9 +166,11 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
         {isType2 && (
           <View style={styles.type2Container}>
             <View style={styles.type2Text}>
-              <Text style={{ color: '#FFFFFF', fontSize: scaleSize(20), lineHeight: scaleSize(28), textAlign: 'center' }} allowFontScaling={false}>
-                {item.record_topic}
-              </Text>
+              {hasTopic && (
+                <Text style={{ color: item.record_topic_color || '#000000', fontSize: scaleSize(20), lineHeight: scaleSize(28), textAlign: 'center' }} allowFontScaling={false}>
+                  {item.record_topic}
+                </Text>
+              )}
             </View>
             <TouchableOpacity
               style={styles.type2Button}
@@ -187,7 +193,9 @@ export default function OperationCardCarousel({ cards, username, onItemSelect }:
         {/* 情况3: 有问题、无选项、无按钮 */}
         {isType3 && (
           <View style={styles.type3Container}>
-            <Text style={styles.type3Text} allowFontScaling={false}>{item.record_topic}</Text>
+            {hasTopic && (
+              <Text style={[styles.type3Text, { color: item.record_topic_color || '#000000' }]} allowFontScaling={false}>{item.record_topic}</Text>
+            )}
           </View>
         )}
       </View>
@@ -265,6 +273,14 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     flexDirection: 'column',
+    padding: scaleSize(16),
+  },
+  type1TextContainer: {
+    width: '100%',
+    minHeight: scaleSize(28), // 保留高度：24 (marginTop) + 28 (lineHeight)
+    marginBottom: scaleSize(12),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   type1Text: {
     fontFamily: 'PingFang SC',
@@ -272,10 +288,8 @@ const styles = StyleSheet.create({
     fontSize: scaleSize(20),
     lineHeight: scaleSize(28),
     textAlign: 'center',
-    color: '#333',
-    marginBottom: scaleSize(12),
+    color: '#000000',
     width: '100%',
-    marginTop: scaleSize(24),
   },
   type1ItemsContainer: {
     flexDirection: 'row',
@@ -365,7 +379,7 @@ const styles = StyleSheet.create({
     paddingRight: scaleSize(40),
   },
   type3Text: {
-    color: '#FFFFFF',
+    color: '#000000',
     lineHeight: scaleSize(28),
     fontSize: scaleSize(20),
     textAlign: 'center',

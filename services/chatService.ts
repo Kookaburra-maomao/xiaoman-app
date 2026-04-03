@@ -196,9 +196,13 @@ export const sendChatMessage = async (
     finalHistory.unshift({ role: 'assistant', content: userMemory });
   }
 
-  // 构建请求体
+  // 构建请求体 - 给当前用户消息添加时间前缀
+  const now = new Date();
+  const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+  const formattedContent = `内容：${userContent},时间：${timeStr}`;
+
   const requestBody: any = {
-    userContent: [...finalHistory, { role: 'user', content: userContent }],
+    userContent: [...finalHistory, { role: 'user', content: formattedContent }],
     userId,
   };
 
@@ -318,7 +322,11 @@ export const generateDiary = async (
       userId: userId,
     }),
   });
-
+  console.log("generateDiary:"+JSON.stringify({
+      userContent: userContent,
+      assistantHistory: assistantHistory,
+      userId: userId,
+  }));
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
     throw new Error(errorData?.message || '生成日记失败');
@@ -436,24 +444,30 @@ export const saveDiary = async (
   emoji?: string,
   id?: string,
   city?: string,
-  weather?: string
+  weather?: string,
+  gmt_create?: string
 ): Promise<string> => {
-  console.log('[saveDiary] 调用参数:', { context: context.substring(0, 50) + '...', creator, pic, emoji, id, city, weather });
+  console.log('[saveDiary] 调用参数:', { context: context.substring(0, 50) + '...', creator, pic, emoji, id, city, weather, gmt_create });
   
+  const body: any = {
+    id: id,
+    context: context,
+    creator: creator,
+    pic: pic || '',
+    emoji: emoji || '',
+    city: city || '',
+    weather: weather || '',
+  };
+  if (gmt_create) {
+    body.gmt_create = gmt_create;
+  }
+
   const response = await fetch(`${apiUrl}/api/diaries`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      id: id,
-      context: context,
-      creator: creator,
-      pic: pic || '',
-      emoji: emoji || '',
-      city: city || '',
-      weather: weather || '',
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -476,19 +490,27 @@ export const updateDiary = async (
   id: string,
   context: string,
   creator: string,
-  pic?: string
+  pic?: string,
+  weather?: string,
+  city?: string,
+  gmt_create?: string
 ): Promise<DiaryDetail> => {
+  const body: any = {
+    id,
+    context,
+    creator,
+    pic: pic || '',
+  };
+  if (weather !== undefined) body.weather = weather;
+  if (city !== undefined) body.city = city;
+  if (gmt_create !== undefined) body.gmt_create = gmt_create;
+
   const response = await fetch(`${apiUrl}/api/diaries`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      id: id,
-      context: context,
-      creator: creator,
-      pic: pic || '', // 保留图片字段
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -565,6 +587,51 @@ export const getChatRecords = async (
 
   if (result.code === 200 && Array.isArray(result.data)) {
     return result.data;
+  } else {
+    throw new Error(result.message || '获取对话记录失败');
+  }
+};
+
+// 获取最近对话记录（游标分页）
+export interface RecentChatRecordsResponse {
+  list: ChatRecord[];
+  hasMore: boolean;
+  nextBeforeId: string | null;
+}
+
+export const getRecentChatRecords = async (
+  userId: string,
+  limit: number = 30,
+  beforeId?: string
+): Promise<RecentChatRecordsResponse> => {
+  const params = new URLSearchParams({
+    user_id: userId,
+    limit: limit.toString(),
+  });
+  if (beforeId) {
+    params.append('before_id', beforeId);
+  }
+
+  const response = await fetch(`${apiUrl}/api/chat/records/recent?${params.toString()}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || '获取对话记录失败');
+  }
+
+  const result = await response.json();
+
+  if (result.code === 200 && result.data) {
+    return {
+      list: result.data.list || [],
+      hasMore: result.data.hasMore || false,
+      nextBeforeId: result.data.nextBeforeId || null,
+    };
   } else {
     throw new Error(result.message || '获取对话记录失败');
   }
@@ -811,6 +878,7 @@ export interface OperationCard {
   push_time: string;
   if_top: string;
   record_topic: string;
+  record_topic_color?: string; // record_topic 文字颜色，默认 #000000
   record_item: RecordItem[]; // 数组类型
   button_name?: string;
   button_color?: string; // 按钮文字颜色

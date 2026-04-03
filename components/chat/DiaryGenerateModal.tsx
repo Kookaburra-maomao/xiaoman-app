@@ -3,18 +3,20 @@
  */
 
 import DiaryActionButtons from '@/components/diary/DiaryActionButtons';
+import DiaryCardContent from '@/components/diary/DiaryCardContent';
 import DiaryImageCarousel from '@/components/diary/DiaryImageCarousel';
 import { Colors } from '@/constants/theme';
 import { RETURN_ICON_URL } from '@/constants/urls';
 import { useAuth } from '@/hooks/useAuth';
 import { useLog } from '@/hooks/useLog';
 import { getLocationAndWeather } from '@/services/locationService';
-import { diaryModalMarkdownStyles } from '@/utils/markdownStyles';
+import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import ViewShot from 'react-native-view-shot';
+import MarkdownText from '../common/MarkdownText';
 import Toast from '../common/Toast';
 
 interface DiaryGenerateModalProps {
@@ -28,29 +30,13 @@ interface DiaryGenerateModalProps {
   diaryId?: string; // 日记ID（用于编辑和导出）
 }
 
-// 格式化日期：Date 2025/12/25
+// 格式化日期：YYYY/MM/DD
 const formatDate = (gmt_create?: string): string => {
-  if (!gmt_create) {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const day = now.getDate().toString().padStart(2, '0');
-    return `Date ${year} / ${month} / ${day}`;
-  }
-  
-  try {
-    const date = new Date(gmt_create);
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `Date ${year} / ${month} / ${day}`;
-  } catch {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const day = now.getDate().toString().padStart(2, '0');
-    return `Date ${year} / ${month} / ${day}`;
-  }
+  const date = gmt_create ? new Date(gmt_create) : new Date();
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  return `${year}/${month}/${day}`;
 };
 
 // 格式化时间：星期日 16:33
@@ -240,7 +226,7 @@ export default function DiaryGenerateModal({
     return (
       <View style={styles.diaryContentWrapper}>
         {enableMarkdown ? (
-          <MarkdownText style={diaryModalMarkdownStyles}>
+          <MarkdownText style={defaultMarkdownStyles}>
             {displayedContent}
           </MarkdownText>
         ) : (
@@ -296,36 +282,20 @@ export default function DiaryGenerateModal({
               options={{ format: 'png', quality: 1, result: 'tmpfile' }}
               style={styles.contentView}
             >
-              <View style={styles.diaryContainer}>
-                {/* 日期和天气区域 */}
-                <View style={styles.dateWeatherContainer}>
-                  <Text style={styles.dateText} allowFontScaling={false}>{dateStr}</Text>
-                  {(city || weather) && (
-                    <Text style={styles.weatherText} allowFontScaling={false}>
-                      {city && weather ? `${city} · ${weather}` : city || weather}
-                    </Text>
-                  )}
-                </View>
-                
-                {/* 图片区域 - 公共轮播组件 */}
-                {carouselImageUrls.length > 0 && (
+              <DiaryCardContent
+                date={dateStr}
+                weather={weather}
+                weekdayTime={formatTime(gmt_create)}
+                city={city}
+                imageContent={carouselImageUrls.length > 0 ? (
                   <DiaryImageCarousel
                     imageUrls={carouselImageUrls}
                     apiUrl={apiUrl}
                     showIndicator={false}
                   />
-                )}
-
-                {/* 时间显示 */}
-                <View style={styles.timeContainer}>
-                  <Text style={styles.timeText} allowFontScaling={false}>{formatTime(gmt_create)}</Text>
-                </View>
-
-                {/* 日记内容区域 */}
-                <View style={styles.diaryContentContainer}>
-                  {renderDiaryContent()}
-                </View>
-              </View>
+                ) : undefined}
+                diaryContent={renderDiaryContent()}
+              />
             </ViewShot>
           </ScrollView>
 

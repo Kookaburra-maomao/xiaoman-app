@@ -118,11 +118,13 @@ export default function RecordDetailScreen() {
     fetchChatRecordsCount();
   }, [user?.id, date]);
 
-  // 页面曝光打点
+  // 页面曝光打点 + 刷新数据（从编辑/补写页面返回时）
   useFocusEffect(
     useCallback(() => {
       log('RECORD_REVIEW_EXPO');
-    }, [])
+      fetchDiaries();
+      fetchChatRecordsCount();
+    }, [user?.id, date])
   );
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -148,6 +150,14 @@ export default function RecordDetailScreen() {
       ) : diaries.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText} allowFontScaling={false}>这一天还没有日记</Text>
+          <TouchableOpacity
+            style={styles.addDiaryButton}
+            onPress={() => router.push(`/diary-edit?mode=create&defaultDate=${date}` as any)}
+            activeOpacity={0.7}
+          >
+            <Image source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-diary-detail.png' }} style={styles.addDiaryIcon} resizeMode="contain" />
+            <Text style={styles.addDiaryText} allowFontScaling={false}>补写日记</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -429,6 +439,28 @@ const styles = StyleSheet.create({
   chatRecordText: {
     fontSize: scaleSize(14),
     color: '#666666',
+  },
+  addDiaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#000000',
+    borderRadius: scaleSize(10),
+    padding: scaleSize(12),
+    marginTop: scaleSize(26),
+    width: scaleSize(200),
+  },
+  addDiaryIcon: {
+    width: scaleSize(16),
+    height: scaleSize(16),
+    marginRight: scaleSize(6),
+    tintColor: '#FFFFFF',
+  },
+  addDiaryText: {
+    fontSize: scaleSize(14),
+    fontWeight: '400',
+    lineHeight: scaleSize(22),
+    color: '#FFFFFF',
   },
 });
 

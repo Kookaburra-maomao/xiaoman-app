@@ -1,26 +1,25 @@
 import DiaryActionButtons from '@/components/diary/DiaryActionButtons';
+import DiaryCardContent from '@/components/diary/DiaryCardContent';
 import DiaryImageCarousel from '@/components/diary/DiaryImageCarousel';
 // import LinedText from '@/components/diary/LinedText';
-import MarkdownText from '@/components/common/MarkdownText';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { deleteDiary, DiaryDetail, getDiaryDetail } from '@/services/chatService';
-import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -58,7 +57,7 @@ const formatDate = (dateStr: string) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
-  return `${year} / ${month} / ${day}`;
+  return `${year}/${month}/${day}`;
 };
 
 // 格式化时间显示
@@ -214,40 +213,21 @@ export default function DiaryDetailScreen() {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.contentView}>
-          <View style={styles.infoCard}>
-            {/* 日期和天气区域 */}
-            <View style={styles.dateWeatherContainer}>
-              <View style={styles.dateContainer}>
-                <Text style={styles.dateText} allowFontScaling={false}>Date <Text style={styles.dateValue} allowFontScaling={false}>{formatDate(diary.gmt_create)}</Text></Text>
-              </View>
-              {(diary.city || diary.weather) && (
-                <Text style={styles.weatherText} allowFontScaling={false}>
-                  {diary.city && diary.weather ? `${diary.city} · ${diary.weather}` : diary.city || diary.weather}
-                </Text>
-              )}
-            </View>
-
-            {/* 图片区域 - 与生成弹窗统一的轮播组件 */}
-            {images.length > 0 && (
+          <DiaryCardContent
+            date={formatDate(diary.gmt_create)}
+            weather={diary.weather}
+            weekdayTime={formatTime(diary.gmt_create)}
+            province={diary.city?.split('·')[0]?.trim()}
+            city={diary.city?.includes('·') ? diary.city.split('·')[1]?.trim() : diary.city}
+            imageContent={images.length > 0 ? (
               <DiaryImageCarousel
                 imageUrls={images}
                 apiUrl={apiUrl}
                 showIndicator={true}
               />
-            )}
-
-            {/* 时间显示 */}
-            <View style={styles.timeContainer}>
-              <Text style={styles.timeText} allowFontScaling={false}>{formatTime(diary.gmt_create)}</Text>
-            </View>
-
-            {/* 日记正文 */}
-            {diary.context && (
-              <View style={styles.textContainer}>
-                <MarkdownText style={defaultMarkdownStyles}>{diary.context}</MarkdownText>
-              </View>
-            )}
-          </View>
+            ) : undefined}
+            context={diary.context}
+          />
         </View>
 
         {/* 操作按钮 - 分享跳转至分享页 */}

@@ -28,6 +28,8 @@ export default function ChatScreen() {
   const router = useRouter();
   const params = useLocalSearchParams(); // 获取路由参数
   const scrollViewRef = useRef<ScrollView>(null);
+  const loadMoreCooldownRef = useRef(false); // 加载更多冷却锁
+  const pendingScrollToOffsetRef = useRef<number | null>(null); // 加载更多后需要滚动到的目标 offset
   const [inputText, setInputText] = useState('');
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [cardStateBeforeKeyboard, setCardStateBeforeKeyboard] = useState(true); // 记录键盘弹出前的卡片状态
@@ -71,12 +73,15 @@ export default function ChatScreen() {
     diaryImageList,
     userMemory,
     assistantHistory,
+    isLoadingMore,
+    hasMoreHistory,
     setShowDiaryModal,
     sendMessage,
     uploadImageAndUnderstand,
     generateDiary,
     loadPendingMessages,
     loadChatHistory,
+    loadMoreHistory,
     initUserMemory,
     refreshChatHistory,
     scrollToBottom,
@@ -568,13 +573,50 @@ export default function ChatScreen() {
     );
   }, [logout]);
 
-  // 处理滚动事件，当发生滚动时自动隐藏运营卡片
-  const handleScroll = useCallback(() => {
-    // 只要发生滚动事件，就隐藏运营卡片
+  // 处理滚动事件
+  const handleScroll = useCallback((event: any) => {
+    // 隐藏运营卡片
     if (showCard) {
       setShowCard(false);
     }
-  }, [showCard]);
+
+    const { contentOffset, contentSize } = event.nativeEvent;
+
+    // 距离顶部还剩多少像素
+    const distanceFromTop = contentOffset.y;
+
+    // 当距离顶部不足 300px 时，触发加载更多
+    if (distanceFromTop < 300 && hasMoreHistory && !loadMoreCooldownRef.current && !isLoadingMore && pendingScrollToOffsetRef.current === null) {
+      loadMoreCooldownRef.current = true;
+
+      // 记录当前内容高度，用于加载后恢复位置
+      pendingScrollToOffsetRef.current = contentSize.height;
+
+      loadMoreHistory();
+
+      // 3 秒冷却
+      setTimeout(() => {
+        loadMoreCooldownRef.current = false;
+      }, 3000);
+    }
+  }, [showCard, hasMoreHistory, isLoadingMore, loadMoreHistory]);
+
+  // 内容尺寸变化回调
+  const handleContentSizeChange = useCallback((_w: number, newHeight: number) => {
+    if (pendingScrollToOffsetRef.current !== null) {
+      const prevHeight = pendingScrollToOffsetRef.current;
+      const diff = newHeight - prevHeight;
+      if (diff > 0 && scrollViewRef.current) {
+        // 滚动到新增内容的底部（即之前的顶部位置）
+        scrollViewRef.current.scrollTo({ y: diff, animated: false });
+      }
+      // 不立即清除，延迟清除以处理多次 onContentSizeChange（图片加载等）
+      // 但 prevHeight 保持不变，始终基于原始高度计算 diff
+      setTimeout(() => {
+        pendingScrollToOffsetRef.current = null;
+      }, 2000);
+    }
+  }, []);
 
   return (
     <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['top'] : []}>
@@ -598,7 +640,7 @@ export default function ChatScreen() {
             style={[
               styles.cardWrapper,
               {
-                top: Platform.OS === 'ios' ? scaleSize(60) : scaleSize(80), // 上移 60px
+                top: Platform.OS === 'ios' ? scaleSize(60) : scaleSize(90), // 上移 60px
                 opacity: cardSlideAnim, // 透明度实现渐显/渐隐效果
                 transform: [{ translateY: cardTranslateY }], // 垂直位移实现下拉/上拉效果
               },
@@ -618,11 +660,17 @@ export default function ChatScreen() {
           style={styles.scrollView}
           contentContainerStyle={[styles.scrollViewContent,  { paddingTop: Platform.OS === 'ios' ? scaleSize(60) : scaleSize(80) }]}
           showsVerticalScrollIndicator={false}
-          onContentSizeChange={scrollToBottom}
           onScroll={handleScroll}
+          onContentSizeChange={handleContentSizeChange}
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
         >
+          {/* 加载更多历史记录指示器 */}
+          {isLoadingMore && (
+            <View style={styles.loadMoreContainer}>
+              <ActivityIndicator size="small" color="#999" />
+            </View>
+          )}
           {/* 消息列表 */}
           <MessageList
             messages={messages}
@@ -729,6 +777,10 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     // paddingTop is set dynamically based on header height
+  },
+  loadMoreContainer: {
+    paddingVertical: scaleSize(12),
+    alignItems: 'center',
   },
   cardWrapper: {
     position: 'absolute',

@@ -248,7 +248,7 @@ export default function PlanScreen() {
        
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={[styles.scrollViewContent, { paddingTop: Platform.OS === 'ios' ? scaleSize(60) : scaleSize(80) }]}
+          contentContainerStyle={[styles.scrollViewContent, { paddingTop: Platform.OS === 'ios' ? scaleSize(60) : scaleSize(90) }]}
         >
           {/* 统计信息 */}
           <View style={styles.summarySection}>

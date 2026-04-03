@@ -12,18 +12,18 @@ import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View
+    ActivityIndicator,
+    Alert,
+    Image,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View
 } from 'react-native';
 import DatePicker from './DatePicker';
 
@@ -84,6 +84,7 @@ export default function PlanEditModal({
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCycleMenu, setShowCycleMenu] = useState(false);
+  const [showTimesMenu, setShowTimesMenu] = useState(false);
   const [isFetchingTag, setIsFetchingTag] = useState(false);
 
   // 初始化表单数据
@@ -304,37 +305,40 @@ export default function PlanEditModal({
                     <Ionicons name="checkmark-circle-outline" size={20} color={Colors.light.text} />
                     <Text style={styles.editFormLabel} allowFontScaling={false}>次数</Text>
                   </View>
-                  <TouchableOpacity
-                    style={styles.editFormSelect}
-                    onPress={() => {
-                      // 显示次数选择器
-                      Alert.prompt(
-                        '选择次数',
-                        '请输入1-10之间的数字',
-                        [
-                          { text: '取消', style: 'cancel' },
-                          {
-                            text: '确定',
-                            onPress: (value: string | undefined) => {
-                              const times = parseInt(value || '1', 10);
-                              if (times >= 1 && times <= 10) {
-                                setEditFormData({ ...editFormData, times });
-                              }
-                            },
-                          },
-                        ],
-                        'plain-text',
-                        editFormData.times.toString()
-                      );
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.editFormSelectText} allowFontScaling={false}>{editFormData.times}次</Text>
-                    <Image 
-                      source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-sort.png' }} 
-                      style={styles.sortIcon} 
-                    />
-                  </TouchableOpacity>
+                  <View style={styles.editFormSelectContainer}>
+                    <TouchableOpacity
+                      style={styles.editFormSelect}
+                      onPress={() => setShowTimesMenu(!showTimesMenu)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.editFormSelectText} allowFontScaling={false}>{editFormData.times}次</Text>
+                      <Image 
+                        source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-plan-sort.png' }} 
+                        style={styles.sortIcon} 
+                      />
+                    </TouchableOpacity>
+                    {/* 次数选择气泡菜单 */}
+                    {showTimesMenu && (
+                      <View style={styles.cycleMenuBubble}>
+                        {[1, 2, 3, 4, 5].map((num) => (
+                          <TouchableOpacity
+                            key={num}
+                            style={styles.cycleMenuItem}
+                            onPress={() => {
+                              setEditFormData({ ...editFormData, times: num });
+                              setShowTimesMenu(false);
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.cycleMenuText} allowFontScaling={false}>{num}次</Text>
+                            {editFormData.times === num && (
+                              <Ionicons name="checkmark" size={18} color="#222" />
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </View>
                 </View>
               </View>
             )}

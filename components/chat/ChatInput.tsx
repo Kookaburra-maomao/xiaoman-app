@@ -348,7 +348,7 @@ export default function ChatInput({
       {/* 录音状态提示文字 */}
       {isRecording && (
         <View style={styles.recordingHintContainer}>
-          <Text style={[styles.recordingHintText, isMovingUp && styles.recordingHintTextCancel]}>
+          <Text style={[styles.recordingHintText, isMovingUp && styles.recordingHintTextCancel]} allowFontScaling={false}>
             {getRecordingHintText()}
           </Text>
         </View>
@@ -537,7 +537,6 @@ const styles = StyleSheet.create({
     fontSize: scaleSize(14),
     color: Colors.light.text,
     fontWeight: '400',
-    allowFontScaling: false,
   },
   recordingHintTextCancel: {
     color: '#FF326C',
@@ -614,7 +613,6 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     minHeight: scaleSize(24),
     maxHeight: scaleSize(120), // 约5行高度（每行约24px）
-    allowFontScaling: false,
   },
   sendButton: {
     width: scaleSize(36),
@@ -653,7 +651,6 @@ const styles = StyleSheet.create({
     fontSize: scaleSize(16),
     color: Colors.light.text,
     fontWeight: '400',
-    allowFontScaling: false,
   },
   recordingIndicator: {
     flexDirection: 'row',

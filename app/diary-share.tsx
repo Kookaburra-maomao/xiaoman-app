@@ -3,11 +3,10 @@
  * 进入页面后自动截图保存到相册并 toast 保存成功
  */
 
-import MarkdownText from '@/components/common/MarkdownText';
+import DiaryCardContent from '@/components/diary/DiaryCardContent';
 import { Colors } from '@/constants/theme';
 import { QR_CODE_URL } from '@/constants/urls';
 import { DiaryDetail, getDiaryDetail } from '@/services/chatService';
-import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
 import * as MediaLibrary from 'expo-media-library';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -74,7 +73,7 @@ const formatDate = (dateStr: string) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
-  return `${year} / ${month} / ${day}`;
+  return `${year}/${month}/${day}`;
 };
 
 const formatTime = (dateStr: string) => {
@@ -207,22 +206,13 @@ export default function DiaryShareScreen() {
           options={{ format: 'png', quality: 1, result: 'tmpfile' }}
           style={styles.contentView}
         >
-          <View style={styles.infoCard}>
-            {/* 日期和天气区域 */}
-            <View style={styles.dateWeatherContainer}>
-              <View style={styles.dateContainer}>
-                <Text style={styles.dateText} allowFontScaling={false}>Date</Text>
-                <Text style={styles.dateValue} allowFontScaling={false}>{formatDate(diary.gmt_create)}</Text>
-              </View>
-              {(diary.city || diary.weather) && (
-                <Text style={styles.weatherText} allowFontScaling={false}>
-                  {diary.city && diary.weather ? `${diary.city} · ${diary.weather}` : diary.city || diary.weather}
-                </Text>
-              )}
-            </View>
-
-            {/* 图片竖向排列，宽度 100% 高度按原图比例自适应 */}
-            {images.length > 0 && (
+          <DiaryCardContent
+            date={formatDate(diary.gmt_create)}
+            weather={diary.weather}
+            weekdayTime={formatTime(diary.gmt_create)}
+            province={diary.city?.split('·')[0]?.trim()}
+            city={diary.city?.includes('·') ? diary.city.split('·')[1]?.trim() : diary.city}
+            imageContent={images.length > 0 ? (
               <View style={styles.imageColumn}>
                 {images.map((uri, idx) => (
                   <Image
@@ -243,19 +233,9 @@ export default function DiaryShareScreen() {
                   />
                 ))}
               </View>
-            )}
-
-            {/* 时间显示 */}
-            <View style={styles.timeContainer}>
-              <Text style={styles.timeText} allowFontScaling={false}>{formatTime(diary.gmt_create)}</Text>
-            </View>
-
-            {diary.context ? (
-              <View style={styles.textContainer}>
-                <MarkdownText style={defaultMarkdownStyles}>{diary.context}</MarkdownText>
-              </View>
-            ) : null}
-          </View>
+            ) : undefined}
+            context={diary.context}
+          />
 
           {/* 居中二维码 + 小满日记 */}
           <View style={styles.qrSection}>

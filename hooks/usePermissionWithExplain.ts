@@ -4,7 +4,6 @@
  */
 
 import { hasExplainedPermission, markPermissionExplained } from '@/utils/permissionManager';
-import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useCallback, useState } from 'react';
@@ -34,7 +33,7 @@ export const usePermissionWithExplain = () => {
               // 标记已说明
               await markPermissionExplained('microphone');
               // 申请权限
-              const { status } = await Audio.requestPermissionsAsync();
+              const { status } = await AudioModule.requestRecordingPermissionsAsync();
               resolve(status === 'granted');
             } else {
               resolve(false);
@@ -42,7 +41,7 @@ export const usePermissionWithExplain = () => {
           });
         } else {
           // 已经说明过，直接申请权限
-          const { status } = await Audio.requestPermissionsAsync();
+          const { status } = await AudioModule.requestRecordingPermissionsAsync();
           resolve(status === 'granted');
         }
       } catch (error) {

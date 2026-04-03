@@ -1,8 +1,7 @@
-import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
 export default function IndexScreen() {
   const router = useRouter();
@@ -20,7 +19,12 @@ export default function IndexScreen() {
 
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color={Colors.light.tint} />
+      <Image
+        source={require('@/assets/images/icon.png')}
+        style={styles.logo}
+        resizeMode="contain"
+      />
+      <Text style={styles.appName} allowFontScaling={false}>小满日记</Text>
     </View>
   );
 }
@@ -30,6 +34,16 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.light.background,
+    backgroundColor: '#F5F5F5',
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    borderRadius: 20,
+  },
+  appName: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666666',
   },
 });

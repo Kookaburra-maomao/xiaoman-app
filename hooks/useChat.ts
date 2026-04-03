@@ -18,6 +18,15 @@ const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 
 export const useChat = (scrollViewRef?: RefObject<any>) => {
   const { user } = useAuth();
+
+  // 格式化时间为 MM-DD HH:mm
+  const formatTimeHHmm = (date: Date = new Date()): string => {
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    return `${mm}-${dd} ${hh}:${min}`;
+  };
   
   // 监听 user 变化
   useEffect(() => {
@@ -40,6 +49,11 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
   const hasLoadedHistoryRef = useRef(false); // 标记是否已加载过历史记录
   const hasLoadedMemoryRef = useRef(false); // 标记是否已加载过用户记忆
   const currentSystemMessageRef = useRef<string>('');
+  const hasMoreHistoryRef = useRef(false); // 是否还有更早的历史记录
+  const nextBeforeIdRef = useRef<string | null>(null); // 下次加载的游标
+  const isLoadingMoreRef = useRef(false); // 是否正在加载更多
+  const [isLoadingMore, setIsLoadingMore] = useState(false); // 加载更多状态
+  const [hasMoreHistory, setHasMoreHistory] = useState(false); // 是否还有更多历史
 
   // 打字机效果更新回调
   const handleTypewriterUpdate = useCallback((messageId: string, text: string) => {
@@ -64,10 +78,10 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
   } = useTypewriter(handleTypewriterUpdate);
 
   // 滚动到底部
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottom = useCallback((animated: boolean = true) => {
     if (scrollViewRef?.current) {
       setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
+        scrollViewRef.current?.scrollToEnd({ animated });
       }, 100);
     }
   }, [scrollViewRef]);
@@ -85,7 +99,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
             // 图片消息
             setMessages((prev) => [
               ...prev,
-              { id: userMessageId, type: 'user', text: '', imageUrl: conversation.userImageUrl },
+              { id: userMessageId, type: 'user', text: '', imageUrl: conversation.userImageUrl, timestamp: formatTimeHHmm() },
             ]);
             setAssistantHistory((prev) => {
               const newHistory = [...prev, { role: 'user' as const, content: '[图片]' }];
@@ -96,7 +110,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
             // 文本消息
             setMessages((prev) => [
               ...prev,
-              { id: userMessageId, type: 'user', text: conversation.userMessage },
+              { id: userMessageId, type: 'user', text: conversation.userMessage, timestamp: formatTimeHHmm() },
             ]);
             setAssistantHistory((prev) => {
               const newHistory = [...prev, { role: 'user' as const, content: conversation.userMessage }];
@@ -191,7 +205,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     // 添加用户消息到界面
     setMessages((prev) => [
       ...prev,
-      { id: userMessageId, type: 'user', text: userContent },
+      { id: userMessageId, type: 'user', text: userContent, timestamp: formatTimeHHmm() },
     ]);
 
     // 添加到历史记录
@@ -376,6 +390,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         type: 'user',
         text: '',
         imageUrl: imageUrl,
+        timestamp: formatTimeHHmm(),
       };
 
       setMessages((prev) => [...prev, imageMessage]);
@@ -525,10 +540,78 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     }
   }, [user?.id]);
 
-  // 加载历史对话记录
+  // 将对话记录转换为消息格式
+  const processRecords = useCallback(async (records: chatService.ChatRecord[]): Promise<Message[]> => {
+    const newMessages: Message[] = [];
+
+    for (let i = 0; i < records.length; i++) {
+      const record = records[i];
+      const isUser = record.chat_from === 'user';
+      const timestamp = isUser ? formatTimeHHmm(new Date(record.gmt_create)) : undefined;
+
+      if (record.type === 'diary') {
+        const diaryDetail = await chatService.getDiaryDetail(record.chat_context);
+        if (!diaryDetail) {
+          console.log(`日记 ${record.chat_context} 不存在或已被删除，跳过显示`);
+          continue;
+        }
+        newMessages.push({
+          id: record.id,
+          type: isUser ? 'user' : 'system',
+          text: '',
+          timestamp,
+          recordType: 'diary',
+          diaryData: {
+            id: diaryDetail.id,
+            context: diaryDetail.context,
+            pic: diaryDetail.pic,
+            gmt_create: record.gmt_create,
+          },
+        });
+      } else if (record.type === 'image') {
+        const imageUrl = record.chat_context.startsWith('http')
+          ? record.chat_context
+          : `${apiUrl}${record.chat_context}`;
+        newMessages.push({
+          id: record.id,
+          type: isUser ? 'user' : 'system',
+          text: '',
+          imageUrl: imageUrl,
+          timestamp,
+          recordType: 'image',
+        });
+      } else if (record.type === 'emoji') {
+        newMessages.push({
+          id: record.id,
+          type: isUser ? 'user' : 'system',
+          text: `我今天的心情是${record.chat_context}`,
+          timestamp,
+          recordType: 'emoji',
+        });
+        setAssistantEmoji(record.chat_context);
+      } else {
+        const message: Message = {
+          id: record.id,
+          type: isUser ? 'user' : 'system',
+          text: record.chat_context,
+          timestamp,
+          recordType: record.type,
+        };
+        if (message.type === 'system' &&
+          message.text.includes('日记生成完成') &&
+          message.text.includes('计划')) {
+          message.plansProcessed = true;
+        }
+        newMessages.push(message);
+      }
+    }
+
+    return newMessages;
+  }, []);
+
+  // 加载历史对话记录（使用新的游标分页接口）
   const loadChatHistory = useCallback(async () => {
     if (!user?.id || hasLoadedHistoryRef.current) {
-      // 如果已加载过，不再加载
       return;
     }
 
@@ -540,22 +623,24 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       await clearAssistantHistory();
       setAssistantHistory([]);
 
-      // 计算时间范围：今天的 00:00:00 到当前时间
+      // 使用新的游标分页接口获取最近的对话记录
+      const result = await chatService.getRecentChatRecords(user.id, 30);
+      const records = result.list;
+
+      // 保存分页状态
+      hasMoreHistoryRef.current = result.hasMore;
+      nextBeforeIdRef.current = result.nextBeforeId;
+      setHasMoreHistory(result.hasMore);
+
+      // 转换记录为消息格式
+      const newMessages = await processRecords(records);
+
+      // 构建 assistantHistory（只取最新一次 diary 之后的记录）
       const now = new Date();
       const today = new Date(now);
       today.setHours(0, 0, 0, 0);
-
-      const startTime = today.toISOString();
-      const endTime = now.toISOString();
-
-      // 获取对话记录
-      const records = await chatService.getChatRecords(user.id, startTime, endTime);
-
-      // 转换记录为消息格式
-      const newMessages: Message[] = [];
       const todayStart = today.getTime();
 
-      // 找到当天最新一次 type=diary 的记录位置（不包含这条记录）
       let lastDiaryIndex = -1;
       for (let i = records.length - 1; i >= 0; i--) {
         const recordTime = new Date(records[i].gmt_create).getTime();
@@ -565,83 +650,12 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         }
       }
 
-      // 收集需要添加到 assistantHistory 的记录
       const historyItems: AssistantHistoryItem[] = [];
-
-      // 处理每条记录
       for (let i = 0; i < records.length; i++) {
         const record = records[i];
         const recordTime = new Date(record.gmt_create).getTime();
         const isToday = recordTime >= todayStart;
 
-        if (record.type === 'diary') {
-          // 日记类型，需要获取详情
-          const diaryDetail = await chatService.getDiaryDetail(record.chat_context);
-          
-          // 如果日记已被删除或不存在，跳过这条记录
-          if (!diaryDetail) {
-            console.log(`日记 ${record.chat_context} 不存在或已被删除，跳过显示`);
-            continue;
-          }
-          
-          const message: Message = {
-            id: record.id,
-            type: record.chat_from === 'user' ? 'user' : 'system',
-            text: '',
-            recordType: 'diary',
-            diaryData: {
-              id: diaryDetail.id,
-              context: diaryDetail.context,
-              pic: diaryDetail.pic,
-              gmt_create: record.gmt_create,
-            },
-          };
-          newMessages.push(message);
-        } else if (record.type === 'image') {
-          // 图片类型
-          const imageUrl = record.chat_context.startsWith('http')
-            ? record.chat_context
-            : `${apiUrl}${record.chat_context}`;
-          const message: Message = {
-            id: record.id,
-            type: record.chat_from === 'user' ? 'user' : 'system',
-            text: '',
-            imageUrl: imageUrl,
-            recordType: 'image',
-          };
-          newMessages.push(message);
-        } else if (record.type === 'emoji') {
-          // emoji类型
-          const message: Message = {
-            id: record.id,
-            type: record.chat_from === 'user' ? 'user' : 'system',
-            text: `我今天的心情是${record.chat_context}`,
-            recordType: 'emoji',
-          };
-          newMessages.push(message);
-          // 更新assistantEmoji的值
-          setAssistantEmoji(record.chat_context);
-        } else {
-          // 文字类型（chat 或 text）
-          const message: Message = {
-            id: record.id,
-            type: record.chat_from === 'user' ? 'user' : 'system',
-            text: record.chat_context,
-            recordType: record.type,
-          };
-
-          // 如果是包含计划提示的系统消息，标记为已处理（因为计划数据不会从数据库恢复）
-          // 如果用户已经看到过这个消息，说明计划可能已经被处理过，或者用户已经选择不添加计划
-          if (message.type === 'system' &&
-            message.text.includes('日记生成完成') &&
-            message.text.includes('计划')) {
-            message.plansProcessed = true;
-          }
-
-          newMessages.push(message);
-        }
-
-        // 如果是当天的记录，且在最新一次 diary 之后（不包含 diary），添加到 historyItems
         if (isToday && i > lastDiaryIndex) {
           if (record.chat_from === 'user') {
             const content = record.type === 'image' ? '[图片]' : record.chat_context;
@@ -652,7 +666,6 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         }
       }
 
-      // 统一设置 assistantHistory
       if (historyItems.length > 0) {
         setAssistantHistory(historyItems);
         saveAssistantHistory(historyItems);
@@ -660,17 +673,48 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
 
       setMessages(newMessages);
 
-      // 滚动到底部
-      setTimeout(() => {
-        scrollToBottom();
-      }, 300);
+      // 冷启动加载完成后，无动画直接定位到底部，多次尝试确保内容已渲染
+      setTimeout(() => { scrollToBottom(false); }, 100);
+      setTimeout(() => { scrollToBottom(false); }, 300);
+      setTimeout(() => { scrollToBottom(false); }, 600);
     } catch (error: any) {
       console.error('加载历史记录失败:', error);
-      // 静默处理错误，不显示提示
     } finally {
       setIsLoadingHistory(false);
     }
-  }, [user?.id, messages.length, scrollToBottom]);
+  }, [user?.id, messages.length, scrollToBottom, processRecords]);
+
+  // 加载更早的历史记录
+  const loadMoreHistory = useCallback(async () => {
+    if (!user?.id || !hasMoreHistoryRef.current || !nextBeforeIdRef.current || isLoadingMoreRef.current) {
+      return;
+    }
+
+    try {
+      isLoadingMoreRef.current = true;
+      setIsLoadingMore(true);
+
+      const result = await chatService.getRecentChatRecords(user.id, 30, nextBeforeIdRef.current);
+
+      // 更新分页状态
+      hasMoreHistoryRef.current = result.hasMore;
+      nextBeforeIdRef.current = result.nextBeforeId;
+      setHasMoreHistory(result.hasMore);
+
+      // 转换记录为消息格式
+      const olderMessages = await processRecords(result.list);
+
+      // prepend 到消息列表头部
+      if (olderMessages.length > 0) {
+        setMessages((prev) => [...olderMessages, ...prev]);
+      }
+    } catch (error: any) {
+      console.error('加载更多历史记录失败:', error);
+    } finally {
+      isLoadingMoreRef.current = false;
+      setIsLoadingMore(false);
+    }
+  }, [user?.id, processRecords]);
 
   // 生成日记
   const generateDiary = useCallback(async () => {
@@ -927,6 +971,8 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     isSending,
     isGeneratingDiary,
     isLoadingHistory,
+    isLoadingMore,
+    hasMoreHistory,
     showDiaryModal,
     diaryContent,
     diaryImageUrl,
@@ -940,6 +986,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     generateDiary,
     loadPendingMessages,
     loadChatHistory,
+    loadMoreHistory,
     initUserMemory, // 初始化用户记忆
     refreshChatHistory,
     scrollToBottom,
