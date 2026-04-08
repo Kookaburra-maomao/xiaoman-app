@@ -4,12 +4,12 @@
 
 import { Colors } from '@/constants/theme';
 import {
-  KEYBOARD_ICON_URL,
-  LOTTIE_RADIO_URL,
-  PIC_ICON_URL,
-  RADIO_DOT_IMAGE_URL,
-  RADIO_ICON_URL,
-  SEND_MSG_ICON_URL,
+    KEYBOARD_ICON_URL,
+    LOTTIE_RADIO_URL,
+    PIC_ICON_URL,
+    RADIO_DOT_IMAGE_URL,
+    RADIO_ICON_URL,
+    SEND_MSG_ICON_URL,
 } from '@/constants/urls';
 import { logByPosition } from '@/services/logService';
 import { scaleSize } from '@/utils/screen';
@@ -36,7 +36,8 @@ interface ChatInputProps {
   onVoiceButtonMove: (isMovingUp: boolean) => void;
   onSend: () => void;
   onImagePicker: () => void;
-  onInputFocus?: () => void; // 输入框获得焦点时的回调
+  onInputFocus?: () => void;
+  onSubmitEditing?: () => void; // 回车发送
 }
 
 export default function ChatInput({
@@ -58,6 +59,7 @@ export default function ChatInput({
   onSend,
   onImagePicker,
   onInputFocus,
+  onSubmitEditing,
 }: ChatInputProps) {
   const [isMovingUp, setIsMovingUp] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -425,7 +427,6 @@ export default function ChatInput({
               placeholder="输入想要记录的内容"
               placeholderTextColor={Colors.light.icon}
               value={inputText}
-              onChangeText={onInputChange}
               onFocus={handleInputFocus}
               onBlur={() => {
                 // 延迟检查，确保键盘状态已更新
@@ -439,6 +440,19 @@ export default function ChatInput({
               maxLength={500}
               editable={!isGeneratingDiary}
               allowFontScaling={false}
+              blurOnSubmit={false}
+              onChangeText={(text) => {
+                // 检测回车键：如果新文本以换行结尾且不是 shift+enter
+                if (text.endsWith('\n') && inputText.length < text.length) {
+                  const trimmed = text.replace(/\n$/, '').trim();
+                  if (trimmed) {
+                    onInputChange(trimmed);
+                    setTimeout(() => handleSend(), 0);
+                    return;
+                  }
+                }
+                onInputChange(text);
+              }}
             />
             
           </View>
@@ -509,11 +523,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: scaleSize(12),
     paddingTop: scaleSize(12),
-    paddingBottom: scaleSize(2), // 与 tab bar 之间 2px 间距
-    // backgroundColor: Colors.light.background,
+    paddingBottom: scaleSize(2),
+    backgroundColor: Colors.light.background,
     gap: scaleSize(8),
     position: 'relative',
-    // 阴影样式：box-shadow: 0px 4px 12px -2px #00000005
     shadowColor: '#000000',
     shadowOffset: {
       width: 0,

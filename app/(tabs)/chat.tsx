@@ -116,6 +116,29 @@ export default function ChatScreen() {
     checkShouldShowCardRef.current = checkShouldShowCard;
   }, [initUserMemory, loadChatHistory, refreshChatHistory, loadPendingMessages, fetchOperationCards, checkShouldShowCard]);
 
+  // 加载缓存的输入模式
+  useEffect(() => {
+    AsyncStorage.getItem('@chat_input_mode').then((mode) => {
+      if (mode === 'voice') setIsVoiceMode(true);
+    }).catch(() => {});
+  }, []);
+
+  // 消息变化时滚动到底部（新消息、系统回复完成等场景）
+  const prevMessagesLenRef = useRef(0);
+  useEffect(() => {
+    if (messages.length > 0 && pendingScrollToOffsetRef.current === null) {
+      // 新增消息或最后一条消息内容变化时滚动
+      const lastMsg = messages[messages.length - 1];
+      const isNewMessage = messages.length > prevMessagesLenRef.current;
+      const isStreamingDone = lastMsg && !lastMsg.isStreaming && lastMsg.text;
+      
+      if (isNewMessage || isStreamingDone) {
+        setTimeout(() => scrollToBottom(), 150);
+      }
+    }
+    prevMessagesLenRef.current = messages.length;
+  }, [messages]);
+
   // 监听键盘显示/隐藏事件
   useEffect(() => {
     const keyboardWillShowListener = Keyboard.addListener(
@@ -228,7 +251,9 @@ export default function ChatScreen() {
 
   // 切换语音/文字输入
   const toggleInputMode = useCallback(() => {
-    setIsVoiceMode(!isVoiceMode);
+    const newMode = !isVoiceMode;
+    setIsVoiceMode(newMode);
+    AsyncStorage.setItem('@chat_input_mode', newMode ? 'voice' : 'text').catch(() => {});
     if (!isVoiceMode) {
       setInputText('');
     } else {
@@ -701,6 +726,7 @@ export default function ChatScreen() {
           onSend={handleSendMessage}
           onImagePicker={openImagePicker}
           onInputFocus={() => setShowCard(false)}
+          onSubmitEditing={handleSendMessage}
         />
       </KeyboardAvoidingView>
 
