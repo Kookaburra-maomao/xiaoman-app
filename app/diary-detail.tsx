@@ -1,25 +1,27 @@
 import DiaryActionButtons from '@/components/diary/DiaryActionButtons';
 import DiaryCardContent from '@/components/diary/DiaryCardContent';
 import DiaryImageCarousel from '@/components/diary/DiaryImageCarousel';
-// import LinedText from '@/components/diary/LinedText';
+import DiaryStylePicker from '@/components/diary/DiaryStylePicker';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
-import { deleteDiary, DiaryDetail, getDiaryDetail } from '@/services/chatService';
+import { deleteDiary, DiaryDetail, DiaryTemplate, generateBeautifiedDiary, getDiaryDetail, getDiaryTemplateLogs, getTodayBeautifyCount, recordTemplateUse, TemplateLogItem } from '@/services/chatService';
 import { scaleSize } from '@/utils/screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as MediaLibrary from 'expo-media-library';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import LottieView from 'lottie-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -78,6 +80,12 @@ export default function DiaryDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showStylePicker, setShowStylePicker] = useState(false);
+  const [isBeautifying, setIsBeautifying] = useState(false);
+  const [beautifyCount, setBeautifyCount] = useState(0);
+  const [templateLogs, setTemplateLogs] = useState<TemplateLogItem[]>([]);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [savingImage, setSavingImage] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   // 获取日记详情
@@ -105,6 +113,12 @@ export default function DiaryDetailScreen() {
 
   useEffect(() => {
     fetchDiaryDetail();
+    if (user?.id) {
+      getTodayBeautifyCount(user.id).then(setBeautifyCount).catch(() => {});
+      if (diaryId) {
+        getDiaryTemplateLogs(user.id, diaryId).then(setTemplateLogs).catch(() => {});
+      }
+    }
   }, [diaryId]);
 
   // 页面聚焦时刷新数据（从编辑页面返回时）
@@ -112,8 +126,12 @@ export default function DiaryDetailScreen() {
     useCallback(() => {
       if (diaryId) {
         fetchDiaryDetail();
+        if (user?.id) {
+          getDiaryTemplateLogs(user.id, diaryId).then(setTemplateLogs).catch(() => {});
+          getTodayBeautifyCount(user.id).then(setBeautifyCount).catch(() => {});
+        }
       }
-    }, [diaryId])
+    }, [diaryId, user?.id])
   );
 
   // 处理删除
@@ -144,6 +162,47 @@ export default function DiaryDetailScreen() {
       setDeleting(false);
       setShowDeleteModal(false);
       setShowDeleteMenu(false);
+    }
+  };
+
+  // 美化日记
+  const handleBeautify = async (template: DiaryTemplate) => {
+    if (!diary || !user?.id) return;
+
+    // 检查今日美化次数
+    if (beautifyCount >= 5) {
+      Alert.alert('提示', '每天只能生成5篇美化日记哦~');
+      return;
+    }
+
+    setShowStylePicker(false);
+    setIsBeautifying(true);
+
+    // 异步统计模版使用次数（不阻塞主流程）
+    recordTemplateUse(template.id);
+
+    try {
+      const pics = parseImages(diary.pic);
+      const date = new Date(diary.gmt_create);
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+      const html = await generateBeautifiedDiary({
+        template_id: template.id,
+        diary_content: diary.context,
+        pics,
+        city: diary.city || '',
+        date: dateStr,
+        weather: diary.weather || '',
+      });
+
+      // 跳转到 WebView 页面
+      await AsyncStorage.setItem('@beautify_html', html);
+      setBeautifyCount(prev => prev + 1);
+      router.push(`/diary-beautify?diaryId=${diary.id}&templateId=${template.id}&userId=${user.id}` as any);
+    } catch (e: any) {
+      Alert.alert('错误', e.message || '美化日记失败');
+    } finally {
+      setIsBeautifying(false);
     }
   };
 
@@ -230,13 +289,45 @@ export default function DiaryDetailScreen() {
           />
         </View>
 
-        {/* 操作按钮 - 分享跳转至分享页 */}
+        {/* 美化日记图片列表 */}
+        {templateLogs.length > 0 && (
+          <View style={styles.templateSection}>
+            <Image
+              source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-icon-beauty-title.png' }}
+              style={styles.templateTitle}
+              resizeMode="contain"
+            />
+            <View style={styles.templateGrid}>
+              {templateLogs.map((log) => {
+                const imgUri = log.diary_image?.startsWith('http') ? log.diary_image : `${apiUrl}${log.diary_image}`;
+                return (
+                  <TouchableOpacity key={log.id} style={styles.templateCard} onPress={() => setPreviewImageUrl(imgUri)} activeOpacity={0.8}>
+                    <Image source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-template-sticker.png' }} style={styles.stickerLeft} resizeMode="contain" />
+                    <Image source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-template-sticker.png' }} style={styles.stickerRight} resizeMode="contain" />
+                    <Image source={{ uri: imgUri }} style={styles.templateImage} resizeMode="cover" />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* 操作按钮 - 编辑 + 美化日记 */}
         <DiaryActionButtons
           onEdit={() => router.push(`/diary-edit?diaryId=${diary.id}` as any)}
-          onExport={() => router.push(`/diary-share?diaryId=${diary.id}` as any)}
-          exportLabel="分享"
+          onExport={() => setShowStylePicker(true)}
+          exportLabel="美化日记"
+          exportIcon="http://xiaomanriji.com/api/files/xiaoman-icon-beauty.png"
         />
       </ScrollView>
+
+      {/* 日记风格选择浮层 */}
+      <DiaryStylePicker
+        visible={showStylePicker}
+        onClose={() => setShowStylePicker(false)}
+        onSelect={handleBeautify}
+        todayCount={beautifyCount}
+      />
 
       {/* 删除确认弹窗 */}
       <Modal
@@ -274,6 +365,62 @@ export default function DiaryDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* 美化日记 loading 浮层 */}
+      {isBeautifying && (
+        <View style={styles.beautifyOverlay}>
+          <LottieView
+            source={require('@/assets/animations/beautify-loading.json')}
+            autoPlay
+            loop
+            style={styles.beautifyLottie}
+          />
+          <Text style={styles.beautifyLoadingText} allowFontScaling={false}>日记美化中，约30秒左右... 请不要退出app</Text>
+        </View>
+      )}
+
+      {/* 图片预览 Modal */}
+      {previewImageUrl && (
+        <Modal visible={true} transparent animationType="fade" onRequestClose={() => setPreviewImageUrl(null)}>
+          <View style={styles.imagePreviewOverlay}>
+            <TouchableOpacity style={styles.imagePreviewClose} onPress={() => setPreviewImageUrl(null)}>
+              <Text style={styles.imagePreviewCloseText} allowFontScaling={false}>✕</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={1}
+              onLongPress={async () => {
+                try {
+                  setSavingImage(true);
+                  const { status } = await MediaLibrary.requestPermissionsAsync();
+                  if (status !== 'granted') {
+                    Alert.alert('提示', '需要相册权限才能保存图片');
+                    return;
+                  }
+                  // 下载图片到临时目录
+                  const { cacheDirectory, downloadAsync } = await import('expo-file-system/legacy');
+                  const fileUri = (cacheDirectory || '') + 'beautify_' + Date.now() + '.png';
+                  const download = await downloadAsync(previewImageUrl, fileUri);
+                  await MediaLibrary.createAssetAsync(download.uri);
+                  Alert.alert('成功', '图片已保存到相册');
+                } catch (e: any) {
+                  Alert.alert('错误', e.message || '保存失败');
+                } finally {
+                  setSavingImage(false);
+                }
+              }}
+              style={styles.imagePreviewContent}
+            >
+              <Image source={{ uri: previewImageUrl }} style={styles.imagePreviewImage} resizeMode="contain" />
+              {savingImage && (
+                <View style={styles.imagePreviewSaving}>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                </View>
+              )}
+            </TouchableOpacity>
+            <Text style={styles.imagePreviewHint} allowFontScaling={false}>长按图片保存到相册</Text>
+          </View>
+        </Modal>
+      )}
 
     </SafeAreaView>
   );
@@ -474,6 +621,116 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  beautifyOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(241,241,241,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  beautifyLottie: {
+    width: scaleSize(96),
+    height: scaleSize(99),
+  },
+  beautifyLoadingText: {
+    marginTop: scaleSize(32),
+    fontSize: scaleSize(14),
+    color: '#666666',
+  },
+  templateSection: {
+    paddingHorizontal: scaleSize(26),
+    marginTop: scaleSize(20),
+    marginBottom: scaleSize(10),
+  },
+  templateTitle: {
+    width: scaleSize(96),
+    height: scaleSize(20),
+    alignSelf: 'center',
+  },
+  templateGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: scaleSize(30),
+  },
+  templateCard: {
+    width: scaleSize(140),
+    height: scaleSize(236),
+    marginBottom: scaleSize(16),
+    position: 'relative',
+  },
+  templateImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: scaleSize(4),
+  },
+  stickerLeft: {
+    position: 'absolute',
+    top: scaleSize(-8),
+    left: scaleSize(12),
+    width: scaleSize(12),
+    height: scaleSize(16),
+    zIndex: 1,
+  },
+  stickerRight: {
+    position: 'absolute',
+    top: scaleSize(-8),
+    right: scaleSize(12),
+    width: scaleSize(12),
+    height: scaleSize(16),
+    zIndex: 1,
+  },
+  imagePreviewOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePreviewClose: {
+    position: 'absolute',
+    top: scaleSize(60),
+    right: scaleSize(20),
+    width: scaleSize(36),
+    height: scaleSize(36),
+    borderRadius: scaleSize(18),
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  imagePreviewCloseText: {
+    fontSize: scaleSize(18),
+    color: '#FFFFFF',
+  },
+  imagePreviewContent: {
+    width: '90%',
+    height: '75%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePreviewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imagePreviewSaving: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePreviewHint: {
+    marginTop: scaleSize(20),
+    fontSize: scaleSize(13),
+    color: 'rgba(255,255,255,0.6)',
   },
 });
 

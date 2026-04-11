@@ -8,6 +8,48 @@ import { fetchActivePlans } from './planService';
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 
+// 日记模板
+export interface DiaryTemplate {
+  id: string;
+  name: string;
+  preview_image: string;
+  prompt: string;
+}
+
+export const getDiaryTemplates = async (): Promise<DiaryTemplate[]> => {
+  const response = await fetch(`${apiUrl}/api/diary-templates`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) throw new Error('获取日记模板失败');
+  const result = await response.json();
+  if (result.code === 200 && Array.isArray(result.data)) return result.data;
+  throw new Error(result.message || '获取日记模板失败');
+};
+
+// 美化日记
+export const generateBeautifiedDiary = async (params: {
+  template_id: string;
+  diary_content: string;
+  pics: string[];
+  city: string;
+  date: string;
+  weather: string;
+}): Promise<string> => {
+  const response = await fetch(`${apiUrl}/api/diary-templates/diary-model-generator`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.message || '美化日记失败');
+  }
+  const result = await response.json();
+  if (result.code === 200 && result.data?.html) return result.data.html;
+  throw new Error(result.message || '美化日记失败');
+};
+
 // 用户记忆接口返回的数据结构
 export interface UserMemory {
   id: string;
@@ -38,6 +80,7 @@ export interface DiaryDetail {
   status?: string; // 日记状态：normal-正常, deleted-已删除
   city?: string; // 城市
   weather?: string; // 天气
+  template_images?: string; // 模版美化图片 JSON 数组字符串
 }
 
 // 日记统计信息接口返回的数据结构
@@ -493,7 +536,8 @@ export const updateDiary = async (
   pic?: string,
   weather?: string,
   city?: string,
-  gmt_create?: string
+  gmt_create?: string,
+  template_images?: string
 ): Promise<DiaryDetail> => {
   const body: any = {
     id,
@@ -504,6 +548,7 @@ export const updateDiary = async (
   if (weather !== undefined) body.weather = weather;
   if (city !== undefined) body.city = city;
   if (gmt_create !== undefined) body.gmt_create = gmt_create;
+  if (template_images !== undefined) body.template_images = template_images;
 
   const response = await fetch(`${apiUrl}/api/diaries`, {
     method: 'POST',
@@ -525,6 +570,103 @@ export const updateDiary = async (
   } else {
     throw new Error(result.message || '更新日记失败');
   }
+};
+
+// 更新日记模版图片
+export const updateDiaryTemplateImages = async (
+  diaryId: string,
+  templateImages: string[]
+): Promise<void> => {
+  const url = `${apiUrl}/api/diaries/${diaryId}/template-images`;
+  const body = { template_images: templateImages };
+  console.log('[updateDiaryTemplateImages] 请求:', { url, body: JSON.stringify(body) });
+  
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  
+  console.log('[updateDiaryTemplateImages] 状态码:', response.status);
+  
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '');
+    console.error('[updateDiaryTemplateImages] 错误响应:', errText);
+    throw new Error(`更新日记模版图片失败 (${response.status}): ${errText}`);
+  }
+  const result = await response.json();
+  console.log('[updateDiaryTemplateImages] 返回:', JSON.stringify(result));
+  if (result.code !== 200) {
+    throw new Error(result.message || '更新日记模版图片失败');
+  }
+};
+
+// 增加日记模版使用次数
+export const recordTemplateUse = async (templateId: string): Promise<void> => {
+  try {
+    await fetch(`${apiUrl}/api/diary-templates/${templateId}/use`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch {
+    // 静默处理，不影响主流程
+  }
+};
+
+// 创建日记模版使用记录
+export const createTemplateLog = async (params: {
+  user_id: string;
+  diary_id: string;
+  template_id: string;
+  diary_image: string;
+}): Promise<void> => {
+  const response = await fetch(`${apiUrl}/api/diary-templates-logs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (!response.ok) {
+    const err = await response.text().catch(() => '');
+    console.error('[createTemplateLog] 失败:', err);
+  }
+};
+
+// 查询日记的美化图片列表
+export interface TemplateLogItem {
+  id: string;
+  diary_image: string;
+  template_id: string;
+  gmt_create: string;
+}
+
+export const getDiaryTemplateLogs = async (userId: string, diaryId: string): Promise<TemplateLogItem[]> => {
+  try {
+    const response = await fetch(`${apiUrl}/api/diary-templates-logs/by-diary?user_id=${userId}&diary_id=${diaryId}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) return [];
+    const result = await response.json();
+    if (result.code === 200 && Array.isArray(result.data)) return result.data;
+    return [];
+  } catch {
+    return [];
+  }
+};
+
+// 查询今日美化日记次数
+export const getTodayBeautifyCount = async (userId: string): Promise<number> => {
+  const response = await fetch(`${apiUrl}/api/diary-templates-logs/today-count?user_id=${userId}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) return 0;
+  const result = await response.json();
+  const data = result.data;
+  // data 可能是 { user_id, count } 对象或直接是数字
+  if (typeof data === 'number') return data;
+  if (data && typeof data.count === 'number') return data.count;
+  return 0;
 };
 
 // 保存对话记录

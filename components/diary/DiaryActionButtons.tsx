@@ -8,12 +8,12 @@ import { logByPosition } from '@/services/logService';
 import { scaleSize } from '@/utils/screen';
 import React from 'react';
 import {
-  ActivityIndicator,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 export interface DiaryActionButtonsProps {
@@ -22,7 +22,8 @@ export interface DiaryActionButtonsProps {
   editDisabled?: boolean;
   exportDisabled?: boolean;
   exportLoading?: boolean;
-  exportLabel?: '分享';
+  exportLabel?: string;
+  exportIcon?: string; // 自定义右侧按钮 icon
   userId?: string; // 用户ID，用于打点
 }
 
@@ -33,6 +34,7 @@ export default function DiaryActionButtons({
   exportDisabled = false,
   exportLoading = false,
   exportLabel = '分享',
+  exportIcon,
   userId,
 }: DiaryActionButtonsProps) {
   // 包装编辑函数，添加打点
@@ -77,7 +79,7 @@ export default function DiaryActionButtons({
         ) : (
           <>
             <Image
-              source={{ uri: EXPORT_ICON_URL }}
+              source={{ uri: exportIcon || EXPORT_ICON_URL }}
               style={styles.actionIcon}
               resizeMode="contain"
             />
