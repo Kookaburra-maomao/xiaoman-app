@@ -646,6 +646,24 @@ export default function SettingsScreen() {
           <TouchableOpacity 
             style={styles.settingItem} 
             activeOpacity={0.7}
+            onPress={() => router.push('/ai-profile' as any)}
+          >
+            <View style={styles.settingItemLeft}>
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-icon-beauty-dark.png' }}
+                style={styles.settingIcon}
+                resizeMode="contain"
+              />
+              <Text style={styles.settingItemText}>小满性格设置</Text>
+            </View>
+            <View style={styles.settingItemRight}>
+              <Ionicons name="chevron-forward" size={18} color={Colors.light.icon} />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.settingItem} 
+            activeOpacity={0.7}
             onPress={() => {
               log('SETTING_RECENT_DELETE');
               router.push('/diary-recycle-bin');
@@ -767,7 +785,7 @@ export default function SettingsScreen() {
           >
             <View style={styles.settingItemLeft}>
               <Image
-                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-edit.png' }}
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-delete.png' }}
                 style={styles.settingIcon}
                 resizeMode="contain"
               />

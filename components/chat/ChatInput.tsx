@@ -4,12 +4,12 @@
 
 import { Colors } from '@/constants/theme';
 import {
-    KEYBOARD_ICON_URL,
-    LOTTIE_RADIO_URL,
-    PIC_ICON_URL,
-    RADIO_DOT_IMAGE_URL,
-    RADIO_ICON_URL,
-    SEND_MSG_ICON_URL,
+  KEYBOARD_ICON_URL,
+  LOTTIE_RADIO_URL,
+  PIC_ICON_URL,
+  RADIO_DOT_IMAGE_URL,
+  RADIO_ICON_URL,
+  SEND_MSG_ICON_URL,
 } from '@/constants/urls';
 import { logByPosition } from '@/services/logService';
 import { scaleSize } from '@/utils/screen';
@@ -146,14 +146,14 @@ export default function ChatInput({
     };
   }, []);
 
-  // 判断是否显示扩展样式（键盘显示且是文字输入态）
-  const showExpandedStyle = !isVoiceMode && isKeyboardVisible && isInputFocused;
+  // 判断是否显示扩展样式（文字输入态且输入框获得焦点）
+  const showExpandedStyle = !isVoiceMode && isInputFocused;
   
   // 判断是否显示发送按钮
-  // 1. 键盘显示时，始终显示发送按钮（在输入框内）
-  // 2. 键盘收起时，如果有文字内容，显示发送按钮；否则隐藏
+  // 1. 输入框聚焦时，始终显示发送按钮
+  // 2. 输入框未聚焦时，如果有文字内容，显示发送按钮
   const hasText = inputText.trim().length > 0;
-  const showSendButton = showExpandedStyle || (!isKeyboardVisible && !isInputFocused && hasText);
+  const showSendButton = showExpandedStyle || hasText;
 
   // 手势处理（用于检测上滑取消）- 在按钮和透明蒙层上工作
   // 使用 useMemo 确保 PanResponder 能够访问最新的状态
@@ -429,12 +429,7 @@ export default function ChatInput({
               value={inputText}
               onFocus={handleInputFocus}
               onBlur={() => {
-                // 延迟检查，确保键盘状态已更新
-                setTimeout(() => {
-                  if (!isKeyboardVisible) {
-                    setIsInputFocused(false);
-                  }
-                }, 100);
+                setIsInputFocused(false);
               }}
               multiline
               maxLength={500}

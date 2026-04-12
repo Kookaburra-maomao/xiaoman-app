@@ -377,7 +377,7 @@ export default function DiaryDetailScreen() {
             loop
             style={styles.beautifyLottie}
           />
-          <Text style={styles.beautifyLoadingText} allowFontScaling={false}>日记美化中，约30秒左右... 请不要退出app</Text>
+          <Text style={styles.beautifyLoadingText} allowFontScaling={false}>魔法加载中，预计等候30秒... 请不要离开app</Text>
         </View>
       )}
 

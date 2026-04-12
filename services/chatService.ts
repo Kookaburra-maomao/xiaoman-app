@@ -655,6 +655,38 @@ export const getDiaryTemplateLogs = async (userId: string, diaryId: string): Pro
   }
 };
 
+// 更新用户 AI 风格设置
+export const updateAiProfile = async (params: {
+  userId: string;
+  chat_profile?: string;
+  diary_profile?: string;
+}): Promise<void> => {
+  const response = await fetch(`${apiUrl}/api/users/ai-profile`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.message || '更新风格设置失败');
+  }
+};
+
+// 获取用户 AI 风格设置
+export const getAiProfile = async (userId: string): Promise<{ chat_profile?: string; diary_profile?: string }> => {
+  try {
+    const response = await fetch(`${apiUrl}/api/users/ai-profile?userId=${userId}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) return {};
+    const result = await response.json();
+    return result.data || {};
+  } catch {
+    return {};
+  }
+};
+
 // 查询今日美化日记次数
 export const getTodayBeautifyCount = async (userId: string): Promise<number> => {
   const response = await fetch(`${apiUrl}/api/diary-templates-logs/today-count?user_id=${userId}`, {

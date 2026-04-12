@@ -5,14 +5,18 @@
 import DiaryActionButtons from '@/components/diary/DiaryActionButtons';
 import DiaryCardContent from '@/components/diary/DiaryCardContent';
 import DiaryImageCarousel from '@/components/diary/DiaryImageCarousel';
+import DiaryStylePicker from '@/components/diary/DiaryStylePicker';
 import { Colors } from '@/constants/theme';
 import { RETURN_ICON_URL } from '@/constants/urls';
 import { useAuth } from '@/hooks/useAuth';
 import { useLog } from '@/hooks/useLog';
+import { DiaryTemplate, generateBeautifiedDiary, getDiaryDetail, getTodayBeautifyCount, recordTemplateUse } from '@/services/chatService';
 import { getLocationAndWeather } from '@/services/locationService';
 import { defaultMarkdownStyles } from '@/utils/markdownStyles';
 import { scaleSize } from '@/utils/screen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import LottieView from 'lottie-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import ViewShot from 'react-native-view-shot';
@@ -74,14 +78,22 @@ export default function DiaryGenerateModal({
   const [weather, setWeather] = useState<string>('');
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  
+  const [showStylePicker, setShowStylePicker] = useState(false);
+  const [isBeautifying, setIsBeautifying] = useState(false);
+  const [beautifyCount, setBeautifyCount] = useState(0);
+
+  // 判断是否为 VIP 用户
+  const isVip = (user?.is_vip ?? '').toString() === '1' && user?.vip_expire_time && new Date(user.vip_expire_time).getTime() > Date.now();
   // 判断流式展示是否完成（需要等待打字机效果完成）
   const isStreamingComplete = !isGenerating && typewriterComplete && displayedContent === content && content.length > 0;
 
-  // 页面曝光打点
+  // 页面曝光打点 + 查询美化次数
   useEffect(() => {
     if (visible) {
       log('DIARY_PREVIEW_EXPO');
+      if (user?.id) {
+        getTodayBeautifyCount(user.id).then(setBeautifyCount).catch(() => {});
+      }
     }
   }, [visible]);
 
@@ -187,14 +199,55 @@ export default function DiaryGenerateModal({
     router.push(`/diary-edit?diaryId=${diaryId}` as any);
   };
 
-  // 处理导出/分享 - 跳转到分享页面
+  // 处理导出/分享 - 改为美化日记
   const handleExport = () => {
     if (!diaryId) {
-      Alert.alert('提示', '日记尚未保存，无法分享');
+      Alert.alert('提示', '日记尚未保存，无法美化');
       return;
     }
-    onClose();
-    router.push(`/diary-share?diaryId=${diaryId}` as any);
+    setShowStylePicker(true);
+  };
+
+  // 美化日记
+  const handleBeautify = async (template: DiaryTemplate) => {
+    if (!diaryId) return;
+    setShowStylePicker(false);
+
+    // VIP 检查
+    if (!isVip && beautifyCount >= 5) {
+      Alert.alert('提示', '每天只能生成5篇美化日记哦~');
+      return;
+    }
+
+    setIsBeautifying(true);
+    recordTemplateUse(template.id);
+
+    try {
+      const diaryDetail = await getDiaryDetail(diaryId);
+      const pics = diaryDetail?.pic ? (() => {
+        try { const p = JSON.parse(diaryDetail.pic!); return Array.isArray(p) ? p : []; } catch { return []; }
+      })() : [];
+      const date = new Date(gmt_create || Date.now());
+      const dateStr2 = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+      const html = await generateBeautifiedDiary({
+        template_id: template.id,
+        diary_content: content,
+        pics,
+        city: city || '',
+        date: dateStr2,
+        weather: weather || '',
+      });
+
+      await AsyncStorage.setItem('@beautify_html', html);
+      setBeautifyCount(prev => prev + 1);
+      onClose();
+      router.push(`/diary-beautify?diaryId=${diaryId}&templateId=${template.id}&userId=${user?.id}` as any);
+    } catch (e: any) {
+      Alert.alert('错误', e.message || '美化日记失败');
+    } finally {
+      setIsBeautifying(false);
+    }
   };
 
   if (!visible) return null;
@@ -307,9 +360,32 @@ export default function DiaryGenerateModal({
                 onExport={handleExport}
                 editDisabled={isGenerating || !diaryId}
                 exportDisabled={isGenerating}
-                exportLabel="分享"
+                exportLabel="美化日记"
+                exportIcon="http://xiaomanriji.com/api/files/xiaoman-icon-beauty.png"
                 userId={user?.id}
               />
+            </View>
+          )}
+
+          {/* 日记风格选择浮层 */}
+          <DiaryStylePicker
+            visible={showStylePicker}
+            onClose={() => setShowStylePicker(false)}
+            onSelect={handleBeautify}
+            todayCount={beautifyCount}
+            isVip={!!isVip}
+          />
+
+          {/* 美化日记 loading 浮层 */}
+          {isBeautifying && (
+            <View style={styles.beautifyOverlay}>
+              <LottieView
+                source={require('@/assets/animations/beautify-loading.json')}
+                autoPlay
+                loop
+                style={styles.beautifyLottie}
+              />
+              <Text style={styles.beautifyLoadingText} allowFontScaling={false}>魔法加载中，预计等候30秒... 请不要离开app</Text>
             </View>
           )}
 
@@ -457,6 +533,26 @@ const styles = StyleSheet.create({
     fontSize: scaleSize(14),
     color: Colors.light.icon,
     fontFamily: 'PingFang SC',
+  },
+  beautifyOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(241,241,241,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  beautifyLottie: {
+    width: scaleSize(96),
+    height: scaleSize(99),
+  },
+  beautifyLoadingText: {
+    marginTop: scaleSize(32),
+    fontSize: scaleSize(14),
+    color: '#666666',
   },
 });
 
