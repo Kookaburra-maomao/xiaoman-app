@@ -18,9 +18,10 @@ interface DiaryStylePickerProps {
   onClose: () => void;
   onSelect: (template: DiaryTemplate) => void;
   todayCount?: number;
+  isVip?: boolean;
 }
 
-export default function DiaryStylePicker({ visible, onClose, onSelect, todayCount = 0 }: DiaryStylePickerProps) {
+export default function DiaryStylePicker({ visible, onClose, onSelect, todayCount = 0, isVip = false }: DiaryStylePickerProps) {
   const [templates, setTemplates] = useState<DiaryTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -80,7 +81,9 @@ export default function DiaryStylePicker({ visible, onClose, onSelect, todayCoun
       <View style={styles.container}>
         <View style={styles.titleRow}>
           <Text style={styles.title} allowFontScaling={false}>选择日记风格</Text>
-          <Text style={styles.countText} allowFontScaling={false}>今日已生成 {todayCount}/5</Text>
+          <Text style={styles.countText} allowFontScaling={false}>
+            {isVip ? `今日已生成 ${todayCount}篇，VIP无限制` : `今日已生成 ${todayCount}/5`}
+          </Text>
         </View>
         {loading ? (
           <View style={styles.loadingContainer}>

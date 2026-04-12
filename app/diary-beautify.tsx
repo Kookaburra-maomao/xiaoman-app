@@ -105,6 +105,7 @@ export default function DiaryBeautifyScreen() {
           diary_id: diaryId,
           template_id: templateId,
           diary_image: imageUrl,
+          diary_html: html || '',
         });
       }
       console.log('[Beautify] 模版记录创建完成');

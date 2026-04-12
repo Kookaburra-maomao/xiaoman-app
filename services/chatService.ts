@@ -619,6 +619,7 @@ export const createTemplateLog = async (params: {
   diary_id: string;
   template_id: string;
   diary_image: string;
+  diary_html?: string;
 }): Promise<void> => {
   const response = await fetch(`${apiUrl}/api/diary-templates-logs`, {
     method: 'POST',

@@ -88,6 +88,8 @@ export default function DiaryDetailScreen() {
   const [savingImage, setSavingImage] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // 判断是否为 VIP 用户
+  const isVip = (user?.is_vip || '').toString() === '1' && user?.vip_expire_time && new Date(user.vip_expire_time).getTime() > Date.now();
   // 获取日记详情
   const fetchDiaryDetail = async () => {
     if (!diaryId) return;
@@ -168,9 +170,8 @@ export default function DiaryDetailScreen() {
   // 美化日记
   const handleBeautify = async (template: DiaryTemplate) => {
     if (!diary || !user?.id) return;
-
-    // 检查今日美化次数
-    if (beautifyCount >= 5) {
+    // 检查今日美化次数（VIP 用户无限制）
+    if (!isVip && beautifyCount >= 5) {
       Alert.alert('提示', '每天只能生成5篇美化日记哦~');
       return;
     }
@@ -327,6 +328,7 @@ export default function DiaryDetailScreen() {
         onClose={() => setShowStylePicker(false)}
         onSelect={handleBeautify}
         todayCount={beautifyCount}
+        isVip={!!isVip}
       />
 
       {/* 删除确认弹窗 */}
