@@ -5,13 +5,14 @@
 import Toast from '@/components/common/Toast';
 import { useAuth } from '@/hooks/useAuth';
 import { getAiProfile, updateAiProfile } from '@/services/chatService';
+import { saveJwtUser } from '@/utils/jwtAuth';
 import { scaleSize } from '@/utils/screen';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator, Image, ScrollView, StyleSheet,
-    Text, TouchableOpacity, View
+  ActivityIndicator, Image, ScrollView, StyleSheet,
+  Text, TouchableOpacity, View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -29,7 +30,7 @@ const DIARY_OPTIONS = [
 ];
 
 export default function AiProfileScreen() {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const router = useRouter();
   const [chatProfile, setChatProfile] = useState('NORMAL');
   const [diaryProfile, setDiaryProfile] = useState('NORMAL');
@@ -40,6 +41,10 @@ export default function AiProfileScreen() {
 
   useEffect(() => {
     if (!user?.id) return;
+    // 优先从本地 user 对象读取（保存时已同步）
+    if (user.chat_profile) setChatProfile(user.chat_profile);
+    if (user.diary_profile) setDiaryProfile(user.diary_profile);
+    // 同时从接口获取最新值
     getAiProfile(user.id).then((data) => {
       if (data.chat_profile) setChatProfile(data.chat_profile);
       if (data.diary_profile) setDiaryProfile(data.diary_profile);
@@ -60,6 +65,14 @@ export default function AiProfileScreen() {
         userId: user.id,
         ...(type === 'chat' ? { chat_profile: key } : { diary_profile: key }),
       });
+      // 同步更新本地 user 对象并持久化
+      if (user) {
+        const updatedUser = { ...user };
+        if (type === 'chat') updatedUser.chat_profile = key;
+        else updatedUser.diary_profile = key;
+        setUser(updatedUser);
+        await saveJwtUser(updatedUser);
+      }
       setToastMessage('设置已保存');
       setToastVisible(true);
     } catch {

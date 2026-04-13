@@ -227,7 +227,8 @@ export const sendChatMessage = async (
   userId: string,
   assistantHistory?: AssistantHistoryItem[],
   location?: { latitude: number; longitude: number },
-  userMemory?: string
+  userMemory?: string,
+  aiProfile?: string
 ): Promise<string> => {
   console.log('[chatService] sendChatMessage 调用，userId:', userId);
   
@@ -248,6 +249,7 @@ export const sendChatMessage = async (
     userContent: [...finalHistory, { role: 'user', content: formattedContent }],
     userId,
   };
+  if (aiProfile) requestBody.ai_profile = aiProfile;
 
   console.log('[chatService] 请求体:', { 
     userId: requestBody.userId, 
@@ -352,24 +354,24 @@ export const generateDiary = async (
   userContent: string[],
   assistantHistory: AssistantHistoryItem[],
   userId: string,
-  onProgress?: (text: string) => void
+  onProgress?: (text: string) => void,
+  aiProfile?: string
 ): Promise<string> => {
+  const requestBody: any = {
+    userContent: userContent,
+    assistantHistory: assistantHistory,
+    userId: userId,
+  };
+  if (aiProfile) requestBody.ai_profile = aiProfile;
+
   const response = await fetch(`${apiUrl}/api/diary/save`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      userContent: userContent,
-      assistantHistory: assistantHistory,
-      userId: userId,
-    }),
+    body: JSON.stringify(requestBody),
   });
-  console.log("generateDiary:"+JSON.stringify({
-      userContent: userContent,
-      assistantHistory: assistantHistory,
-      userId: userId,
-  }));
+  console.log("generateDiary:", JSON.stringify(requestBody));
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
     throw new Error(errorData?.message || '生成日记失败');
@@ -1388,7 +1390,7 @@ export const extractUserMemory = async (
     });
 
     if (!response.ok) {
-      console.error('抽取用户记忆失败');
+      // 静默处理，对用户无感知
       return null;
     }
 

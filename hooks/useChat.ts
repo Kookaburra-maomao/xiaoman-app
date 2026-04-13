@@ -18,6 +18,8 @@ const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 
 export const useChat = (scrollViewRef?: RefObject<any>) => {
   const { user } = useAuth();
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
 
   // 格式化时间为 MM-DD HH:mm
   const formatTimeHHmm = (date: Date = new Date()): string => {
@@ -279,8 +281,10 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         user.id, 
         history,
         location || undefined,
-        userMemory // 传递用户记忆
+        userMemory,
+        userRef.current?.chat_profile || undefined
       );
+      console.log('[useChat] sendChatMessage ai_profile:', userRef.current?.chat_profile);
 
       // 清除超时定时器
       clearTimeout(timeoutId);
@@ -635,16 +639,10 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       // 转换记录为消息格式
       const newMessages = await processRecords(records);
 
-      // 构建 assistantHistory（只取最新一次 diary 之后的记录）
-      const now = new Date();
-      const today = new Date(now);
-      today.setHours(0, 0, 0, 0);
-      const todayStart = today.getTime();
-
+      // 构建 assistantHistory（取最后一次 diary 之后的所有记录，不限今天）
       let lastDiaryIndex = -1;
       for (let i = records.length - 1; i >= 0; i--) {
-        const recordTime = new Date(records[i].gmt_create).getTime();
-        if (recordTime >= todayStart && records[i].type === 'diary') {
+        if (records[i].type === 'diary') {
           lastDiaryIndex = i;
           break;
         }
@@ -653,10 +651,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       const historyItems: AssistantHistoryItem[] = [];
       for (let i = 0; i < records.length; i++) {
         const record = records[i];
-        const recordTime = new Date(record.gmt_create).getTime();
-        const isToday = recordTime >= todayStart;
-
-        if (isToday && i > lastDiaryIndex) {
+        if (i > lastDiaryIndex) {
           if (record.chat_from === 'user') {
             const content = record.type === 'image' ? '[图片]' : record.chat_context;
             historyItems.push({ role: 'user', content });
@@ -748,36 +743,36 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       const history = await getAssistantHistory();
       
       // 立即异步调用抽取记忆接口（不等待结果，不阻塞日记生成）
-      console.log('[生成日记] 立即启动异步抽取记忆');
-      const finalHistory = [...history];
-      if (userMemory && userMemory.length > 0) {
-        finalHistory.unshift({ role: 'assistant', content: userMemory });
-      }
+      // console.log('[生成日记] 立即启动异步抽取记忆');
+      // const finalHistory = [...history];
+      // if (userMemory && userMemory.length > 0) {
+      //   finalHistory.unshift({ role: 'assistant', content: userMemory });
+      // }
       
-      // 异步抽取记忆（完全不阻塞日记生成流程）
-      chatService.extractUserMemory(finalHistory, user.id).then((extractedMemory) => {
-        if (extractedMemory) {
-          console.log('[生成日记] 抽取记忆成功:', extractedMemory);
-          const memoryContent = JSON.stringify(extractedMemory);
+      // // 异步抽取记忆（完全不阻塞日记生成流程）
+      // chatService.extractUserMemory(finalHistory, user.id).then((extractedMemory) => {
+      //   if (extractedMemory) {
+      //     console.log('[生成日记] 抽取记忆成功:', extractedMemory);
+      //     const memoryContent = JSON.stringify(extractedMemory);
           
-          // 更新用户记忆到数据库
-          chatService.updateUserMemory(user.id, memoryContent).then((success) => {
-            if (success) {
-              console.log('[生成日记] 更新用户记忆成功');
-              // 同时更新本地的 userMemory 状态
-              setUserMemory(memoryContent);
-            } else {
-              console.error('[生成日记] 更新用户记忆失败');
-            }
-          }).catch((error) => {
-            console.error('[生成日记] 更新用户记忆异常:', error);
-          });
-        } else {
-          console.log('[生成日记] 抽取记忆失败或无新记忆');
-        }
-      }).catch((error) => {
-        console.error('[生成日记] 抽取记忆异常:', error);
-      });
+      //     // 更新用户记忆到数据库
+      //     chatService.updateUserMemory(user.id, memoryContent).then((success) => {
+      //       if (success) {
+      //         console.log('[生成日记] 更新用户记忆成功');
+      //         // 同时更新本地的 userMemory 状态
+      //         setUserMemory(memoryContent);
+      //       } else {
+      //         console.error('[生成日记] 更新用户记忆失败');
+      //       }
+      //     }).catch((error) => {
+      //       console.error('[生成日记] 更新用户记忆异常:', error);
+      //     });
+      //   } else {
+      //     console.log('[生成日记] 抽取记忆失败或无新记忆');
+      //   }
+      // }).catch((error) => {
+      //   console.error('[生成日记] 抽取记忆异常:', error);
+      // });
 
       // 收集用户消息内容（从 assistantHistory 中提取 role === 'user' 的消息）
       const userContent: string[] = assistantHistory
@@ -812,13 +807,14 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       // 调用生成日记接口（流式）
       const fullContent = await chatService.generateDiary(
         userContent,
-        history, // 直接使用当前 history
+        history,
         user.id,
         (text: string) => {
-          // 流式更新内容
           setDiaryContent(text);
-        }
+        },
+        userRef.current?.diary_profile || undefined
       );
+      console.log('[useChat] generateDiary ai_profile:', userRef.current?.diary_profile);
 
       // 打点：日记生成完成
       logByPosition('DIARY_GENERATE_COMPLETE', user.id);

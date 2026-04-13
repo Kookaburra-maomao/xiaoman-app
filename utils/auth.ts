@@ -17,6 +17,8 @@ export interface User {
   vip_expire_time?: string;
   /** 是否开启日记加密：'1' 开启，'0' 关闭 */
   diary_secret?: string;
+  chat_profile?: string;
+  diary_profile?: string;
 }
 
 export interface LoginResponse {

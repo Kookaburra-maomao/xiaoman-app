@@ -17,6 +17,8 @@ export interface JwtUser {
   is_vip?: string;
   vip_expire_time?: string;
   diary_secret?: string;
+  chat_profile?: string;
+  diary_profile?: string;
 }
 
 export interface JwtLoginResponse {
