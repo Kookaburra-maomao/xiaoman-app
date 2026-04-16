@@ -1,3 +1,4 @@
+import DiaryEncryptionModal from "@/components/diary/DiaryEncryptionModal";
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useLog } from '@/hooks/useLog';
@@ -18,6 +19,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  Switch,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View
@@ -35,6 +37,8 @@ export default function SettingsScreen() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [diaryEncryptionEnabled, setDiaryEncryptionEnabled] = useState(false);
   const [updatingDiarySecret, setUpdatingDiarySecret] = useState(false);
+  const [showEncryptionModal, setShowEncryptionModal] = useState(false);
+  const [encryptionMode, setEncryptionMode] = useState<'set' | 'verify'>('set');
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<'system' | 'dark' | 'light'>('system');
   const [showAboutModal, setShowAboutModal] = useState(false); // 关于小满弹窗
@@ -576,24 +580,31 @@ export default function SettingsScreen() {
 
         {/* 设置选项组1 */}
         <View style={styles.settingsGroup}>
-          {/* <View style={styles.settingItem}>
+          <View style={styles.settingItem}>
             <View style={styles.settingItemLeft}>
-              <Ionicons name="lock-closed-outline" size={20} color={Colors.light.text} />
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-security.png' }}
+                style={styles.settingIcon}
+                resizeMode="contain"
+              />
               <Text style={styles.settingItemText}>日记加密</Text>
             </View>
             <View style={styles.settingItemRight}>
               {updatingDiarySecret ? (
-                <ActivityIndicator size="small" color={Colors.light.tint} />
+                <ActivityIndicator size="small" color="#222" />
               ) : (
                 <Switch
                   value={diaryEncryptionEnabled}
-                  onValueChange={onDiaryEncryptionChange}
-                  trackColor={{ false: '#E5E5E5', true: Colors.light.tint }}
+                  onValueChange={(value) => {
+                    setEncryptionMode(value ? 'set' : 'verify');
+                    setShowEncryptionModal(true);
+                  }}
+                  trackColor={{ false: '#E5E5E5', true: '#222222' }}
                   thumbColor="#FFFFFF"
                 />
               )}
             </View>
-          </View> */}
+          </View>
 
           {/* <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
             <View style={styles.settingItemLeft}>
@@ -895,6 +906,20 @@ export default function SettingsScreen() {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+
+      {/* 日记加密弹窗 */}
+      <DiaryEncryptionModal
+        visible={showEncryptionModal}
+        mode={encryptionMode}
+        userId={user?.id || ''}
+        phone={user?.phone}
+        onClose={() => setShowEncryptionModal(false)}
+        onSuccess={() => {
+          setShowEncryptionModal(false);
+          setDiaryEncryptionEnabled(encryptionMode === 'set');
+          refreshAuth();
+        }}
+      />
     </SafeAreaView>
   );
 }

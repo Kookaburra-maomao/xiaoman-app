@@ -11,6 +11,8 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
+        "CFBundleDevelopmentRegion": "zh_CN",
+        "CFBundleLocalizations": ["zh_CN", "zh"],
         "NSFaceIDUsageDescription": "用于验证身份以查看加密日记",
         "NSLocationWhenInUseUsageDescription": "需要获取您的位置信息以记录日记的城市和天气",
         "ITSAppUsesNonExemptEncryption": false

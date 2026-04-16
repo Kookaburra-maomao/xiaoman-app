@@ -124,7 +124,13 @@ export default function DiaryBeautifyScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar hidden />
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => {
+          if (diaryId) {
+            router.replace({ pathname: '/diary-detail', params: { diaryId } } as any);
+          } else {
+            router.back();
+          }
+        }} style={styles.backButton}>
           <Image source={{ uri: RETURN_ICON }} style={styles.backIcon} resizeMode="contain" />
         </TouchableOpacity>
         <Text style={styles.headerTitle} allowFontScaling={false}>美化日记</Text>

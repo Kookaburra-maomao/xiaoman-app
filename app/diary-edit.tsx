@@ -9,7 +9,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, Dimensions,
   Image, KeyboardAvoidingView, Modal,
@@ -23,7 +23,7 @@ const RETURN_ICON = 'http://xiaomanriji.com/api/files/xiaoman-top-return.png';
 const UPLOAD_ICON = 'http://xiaomanriji.com/api/files/xiaoman-image-upload-icon.png';
 const DELETE_ICON = 'http://xiaomanriji.com/api/files/xiaoman-image-delete.png';
 const TOP_ICON = 'http://xiaomanriji.com/api/files/xiaoman-image-top.png';
-const BACK_ICON = 'http://xiaomanriji.com/api/files/xiaoman-calander-prev.png';
+const BACK_ICON = 'http://xiaomanriji.com/api/files/xiaoman-top-return-dark.png';
 
 const parseImages = (pic?: string | null): string[] => {
   if (!pic || pic.trim() === '') return [];
@@ -77,6 +77,7 @@ export default function DiaryEditScreen() {
   const [uploading, setUploading] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (isCreateMode || !diaryId) return;
@@ -100,7 +101,7 @@ export default function DiaryEditScreen() {
   }, [diaryId]);
 
   const handlePickImage = async () => {
-    if (images.length >= 3) { Alert.alert('提示', '最多支持3张图片'); return; }
+    if (images.length >= 9) { Alert.alert('提示', '最多支持9张图片'); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
@@ -211,7 +212,7 @@ export default function DiaryEditScreen() {
           <View style={styles.backButton} />
         </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {/* 图片编辑区 */}
           <View style={styles.imageRow}>
             {images.map((uri, index) => (
@@ -219,7 +220,7 @@ export default function DiaryEditScreen() {
                 <Image source={{ uri: resolveUri(uri) }} style={styles.imageThumb} resizeMode="cover" />
               </TouchableOpacity>
             ))}
-            {images.length < 3 && (
+            {images.length < 9 && (
               <TouchableOpacity style={styles.uploadBox} onPress={handlePickImage} activeOpacity={0.7} disabled={uploading}>
                 {uploading ? (
                   <ActivityIndicator size="small" color="#999" />
@@ -269,6 +270,11 @@ export default function DiaryEditScreen() {
             textAlignVertical="top"
             allowFontScaling={false}
             maxLength={2000}
+            onFocus={() => {
+              setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({ animated: true });
+              }, 300);
+            }}
           />
         </ScrollView>
 
@@ -391,7 +397,7 @@ const styles = StyleSheet.create({
     width: scaleSize(40), height: scaleSize(40), borderRadius: scaleSize(20),
     backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center',
   },
-  previewBackIcon: { width: scaleSize(24), height: scaleSize(24), tintColor: '#FFFFFF' },
+  previewBackIcon: { width: scaleSize(40), height: scaleSize(40) },
   previewScrollView: { flex: 1 },
   previewScrollContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   previewActions: {

@@ -312,15 +312,17 @@ export default function DiaryDetailScreen() {
             </View>
           </View>
         )}
+      </ScrollView>
 
-        {/* 操作按钮 - 编辑 + 美化日记 */}
+      {/* 操作按钮 - 固定在底部 */}
+      <View style={styles.fixedBottomButtons}>
         <DiaryActionButtons
           onEdit={() => router.push(`/diary-edit?diaryId=${diary.id}` as any)}
           onExport={() => setShowStylePicker(true)}
           exportLabel="美化日记"
           exportIcon="http://xiaomanriji.com/api/files/xiaoman-icon-beauty.png"
         />
-      </ScrollView>
+      </View>
 
       {/* 日记风格选择浮层 */}
       <DiaryStylePicker
@@ -510,6 +512,11 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  fixedBottomButtons: {
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+    backgroundColor: Colors.light.background,
   },
   contentView: {
     backgroundColor: Colors.light.background,

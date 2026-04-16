@@ -5,10 +5,11 @@ import { useLog } from '@/hooks/useLog';
 import { useOperationCard } from '@/hooks/useOperationCard';
 import { DiaryCountItem, getDiaryCount } from '@/services/chatService';
 import { scaleSize } from '@/utils/screen';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
@@ -29,24 +30,6 @@ function parseImageUrl(imageUrl?: string | null): { hasImage: boolean; firstImag
   }
 }
 
-// TODO: 日记加密 - 暂时注释掉生物识别相关常量
-// const BIOMETRIC_PROMPT_MESSAGE =
-//   Platform.OS === 'ios' ? '使用面容 ID 验证身份' : '使用指纹或面部识别验证身份';
-// const FALLBACK_LABEL = '使用密码';
-
-// 调试：安全级别与认证类型文案（便于 console 排查面容 ID 为何不出现）
-// const securityLevelLabel: Record<number, string> = {
-//   [SecurityLevel.NONE]: 'NONE(未设置任何认证)',
-//   [SecurityLevel.SECRET]: 'SECRET(仅设备密码/PIN)',
-//   [SecurityLevel.BIOMETRIC_WEAK]: 'BIOMETRIC_WEAK(弱生物识别)',
-//   [SecurityLevel.BIOMETRIC_STRONG]: 'BIOMETRIC_STRONG(面容/指纹)',
-// };
-// const authTypeLabel: Record<number, string> = {
-//   [AuthenticationType.FINGERPRINT]: 'FINGERPRINT',
-//   [AuthenticationType.FACIAL_RECOGNITION]: 'FACIAL_RECOGNITION',
-//   [AuthenticationType.IRIS]: 'IRIS',
-// };
-
 export default function RecordScreen() {
   const { user, refreshAuth } = useAuth();
   const router = useRouter();
@@ -55,11 +38,15 @@ export default function RecordScreen() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [diaryCounts, setDiaryCounts] = useState<DiaryCountItem[]>([]);
   const [loading, setLoading] = useState(false);
-  // TODO: 日记加密 - 暂时注释掉日记加密相关功能
-  // const [isUnlocked, setIsUnlocked] = useState(true);
-  // const [authError, setAuthError] = useState<string | null>(null);
-  // 是否开启日记加密（以用户信息 diary_secret 为准）
-  // const diaryEncryptionEnabled = false && user?.diary_secret === 'true';
+
+  // 日记加密相关状态
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [password, setPassword] = useState('');
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyError, setVerifyError] = useState('');
+  const passwordInputRef = useRef<TextInput>(null);
+  // 是否开启日记加密
+  const diaryEncryptionEnabled = user?.diary_secret === 'true';
   
   // 我的记录统计数据
   const [todayRecords, setTodayRecords] = useState(0); // 今天对话轮数
@@ -172,138 +159,58 @@ export default function RecordScreen() {
     }
   }, [user?.id]);
 
-  // TODO: 日记加密 - 暂时注释掉生物识别验证函数
-  // 执行验证：优先面容/指纹，可回退到设备密码；若未设置任何认证则不做校验
-  // const runBiometricAuth = useCallback(async (): Promise<boolean> => {
-  //   try {
-  //     const enrolledLevel = await LocalAuthentication.getEnrolledLevelAsync();
-  //     const hasHardware = await LocalAuthentication.hasHardwareAsync();
-  //     const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-  //     const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+  // 验证日记密码
+  const handleVerifyPassword = useCallback(async () => {
+    if (password.length !== 4) {
+      setVerifyError('请输入4位密码');
+      return;
+    }
+    try {
+      setVerifyLoading(true);
+      setVerifyError('');
+      const res = await fetch(`${apiUrl}/api/users/verify-diary-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user?.id, diary_password: password }),
+      });
+      const result = await res.json();
+      if (result.code === 200 && result.data?.verified) {
+        setIsUnlocked(true);
+        setPassword('');
+        setVerifyError('');
+        // 解锁后加载数据
+        fetchDiaryCounts();
+        fetchOperationCards();
+        fetchMyRecordStats();
+      } else {
+        setVerifyError('密码错误，请重试');
+        setPassword('');
+      }
+    } catch {
+      setVerifyError('验证失败，请重试');
+    } finally {
+      setVerifyLoading(false);
+    }
+  }, [password, user?.id, fetchDiaryCounts, fetchOperationCards, fetchMyRecordStats]);
 
-  //     console.log('[record 解锁] getEnrolledLevelAsync:', enrolledLevel, securityLevelLabel[enrolledLevel] ?? `未知(${enrolledLevel})`);
-  //     console.log('[record 解锁] hasHardwareAsync:', hasHardware, '| isEnrolledAsync(生物识别已录入):', isEnrolled);
-  //     console.log('[record 解锁] supportedAuthenticationTypesAsync:', supportedTypes, supportedTypes.map((t: number) => authTypeLabel[t] ?? t));
-
-  //     if (enrolledLevel === SecurityLevel.NONE) {
-  //       console.log('[record 解锁] 未设置任何认证，跳过校验');
-  //       setAuthError(null);
-  //       setIsUnlocked(true);
-  //       return true;
-  //     }
-  //     if (!hasHardware) {
-  //       console.log('[record 解锁] 设备无生物识别硬件，跳过校验');
-  //       setAuthError(null);
-  //       setIsUnlocked(true);
-  //       return true;
-  //     }
-  //     if (!isEnrolled) {
-  //       console.log('[record 解锁] 未录入面容/指纹，系统会走设备密码；若仍只出现密码，多为 enrolledLevel=SECRET(仅密码)');
-  //     }
-
-  //     // 先仅用生物识别（面容/指纹），避免 iOS 使用 deviceOwnerAuthentication 时直接弹出密码
-  //     if (isEnrolled && hasHardware) {
-  //       console.log('[record 解锁] 先调用 authenticateAsync(仅生物识别)，强制弹出面容 ID...');
-  //       const biometricOnly = await LocalAuthentication.authenticateAsync({
-  //         promptMessage: BIOMETRIC_PROMPT_MESSAGE,
-  //         cancelLabel: '取消',
-  //         disableDeviceFallback: true,
-  //         fallbackLabel: FALLBACK_LABEL,
-  //       });
-  //       if (biometricOnly.success) {
-  //         console.log('[record 解锁] 面容/指纹验证成功');
-  //         setAuthError(null);
-  //         setIsUnlocked(true);
-  //         return true;
-  //       }
-  //       const err = (biometricOnly as { success: false; error?: string })?.error;
-  //       console.log('[record 解锁] 仅生物识别未通过:', err, '→ 若为 user_cancel 则不再弹窗，否则继续弹设备密码');
-  //       if (err === 'user_cancel') {
-  //         setAuthError('验证未通过或已取消');
-  //         return false;
-  //       }
-  //       // user_fallback / lockout / missing_usage_description / not_available 等均继续弹「允许设备密码」一次
-  //     }
-
-  //     // 允许设备密码：用户点「使用密码」、生物识别锁定、或仅生物识别不可用时，弹出带密码的验证
-  //     console.log('[record 解锁] 调用 authenticateAsync(允许设备密码)...');
-  //     const result = await LocalAuthentication.authenticateAsync({
-  //       promptMessage: BIOMETRIC_PROMPT_MESSAGE,
-  //       cancelLabel: '取消',
-  //       disableDeviceFallback: false,
-  //       fallbackLabel: FALLBACK_LABEL,
-  //     });
-
-  //     if (result.success) {
-  //       console.log('[record 解锁] authenticateAsync 成功');
-  //       setAuthError(null);
-  //       setIsUnlocked(true);
-  //       return true;
-  //     }
-  //     const err = (result as { success: false; error?: string })?.error;
-  //     console.log('[record 解锁] authenticateAsync 未通过:', err, result);
-  //     setAuthError('验证未通过或已取消');
-  //     return false;
-  //   } catch (e) {
-  //     console.log('[record 解锁] authenticateAsync 异常:', e);
-  //     setAuthError('验证出错，请重试');
-  //     return false;
-  //   }
-  // }, []);
-
-  // TODO: 日记加密 - 暂时注释掉进入页面时的加密检查
-  // 进入页面时：先拉取最新用户信息，若开启日记加密则先面容校验，通过后再拉数据
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     let cancelled = false;
-  //     (async () => {
-  //       await refreshAuth();
-  //       if (cancelled) return;
-  //       // 依赖当前 user（refreshAuth 会 setUser，下一帧或同次渲染后 user 会更新）
-  //       // 这里通过 setTimeout 或在下一次 effect 中读取，更稳妥的方式是依赖 user 的 useFocusEffect
-  //       // 改为在 useFocusEffect 里先 refreshAuth，然后用一个 state 存「本次是否需加密」
-  //     })();
-  //     return () => {
-  //       cancelled = true;
-  //     };
-  //   }, [refreshAuth])
-  // );
-
-  // TODO: 日记加密 - 暂时注释掉根据用户 diary_secret 的验证逻辑
-  // 根据用户 diary_secret 与解锁状态：加密开启时需先验证
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     if (!user) return;
-      
-  //     console.log('[record] useFocusEffect 触发，user.diary_secret:', user.diary_secret);
-      
-  //     const enabled = user.diary_secret === 'true';
-  //     if (!enabled) {
-  //       setIsUnlocked(true);
-  //       setAuthError(null);
-  //       fetchDiaryCounts();
-  //       fetchOperationCards(); // 加载运营卡片
-  //       fetchMyRecordStats(); // 加载我的记录统计数据
-  //       return;
-  //     }
-  //     // 加密开启时，设置为未解锁状态，但不自动弹出验证弹窗
-  //     setIsUnlocked(false);
-  //     setAuthError(null);
-  //     // 即使加密开启，也加载运营卡片（解锁后才显示）
-  //     fetchOperationCards();
-  //     // 移除自动调用 runBiometricAuth()，等待用户点击"验证"按钮
-  //   }, [user?.diary_secret, user?.id, fetchDiaryCounts, fetchOperationCards, fetchMyRecordStats])
-  // );
-
-  // 进入页面时加载数据（不检查加密）
+  // 进入页面时：检查加密状态并加载数据
   useFocusEffect(
     useCallback(() => {
       if (!user) return;
-      
-      fetchDiaryCounts();
-      fetchOperationCards();
-      fetchMyRecordStats();
-    }, [user?.id, fetchDiaryCounts, fetchOperationCards, fetchMyRecordStats])
+
+      if (user.diary_secret === 'true') {
+        // 加密开启时，重置为未解锁状态
+        setIsUnlocked(false);
+        setPassword('');
+        setVerifyError('');
+      } else {
+        // 未开启加密，直接加载数据
+        setIsUnlocked(true);
+        fetchDiaryCounts();
+        fetchOperationCards();
+        fetchMyRecordStats();
+      }
+    }, [user?.id, user?.diary_secret, fetchDiaryCounts, fetchOperationCards, fetchMyRecordStats])
   );
 
   // 月份切换时获取数据
@@ -417,33 +324,44 @@ export default function RecordScreen() {
     } as any);
   }, [router]);
 
-  // TODO: 日记加密 - 暂时注释掉锁屏界面
-  // 日记加密开启且未通过面容校验时显示锁屏
-  // if (diaryEncryptionEnabled && !isUnlocked) {
-  //   return (
-  //     <SafeAreaView style={styles.container} edges={['top']}>
-  //       <StatusBar hidden />
-  //       <View style={styles.lockScreen}>
-  //         <Ionicons name="lock-closed" size={64} color={Colors.light.icon} />
-  //         <Text style={styles.lockTitle}>日记已加密</Text>
-  //         <Text style={styles.lockHint}>请使用面容 ID 或设备密码验证身份</Text>
-  //         {authError ? <Text style={styles.lockError}>{authError}</Text> : null}
-  //         <TouchableOpacity
-  //           style={styles.lockButton}
-  //           onPress={async () => {
-  //             const success = await runBiometricAuth();
-  //             if (success) {
-  //               fetchDiaryCounts();
-  //             }
-  //           }}
-  //           activeOpacity={0.7}
-  //         >
-  //           <Text style={styles.lockButtonText}>验证</Text>
-  //         </TouchableOpacity>
-  //       </View>
-  //     </SafeAreaView>
-  //   );
-  // }
+  // 日记加密开启且未通过密码验证时显示锁屏
+  if (diaryEncryptionEnabled && !isUnlocked) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <StatusBar hidden />
+        <View style={styles.lockScreen}>
+          <Ionicons name="lock-closed" size={scaleSize(64)} color={Colors.light.icon} />
+          <Text style={styles.lockTitle} allowFontScaling={false}>日记已加密</Text>
+          <Text style={styles.lockHint} allowFontScaling={false}>请输入4位数字密码查看历史日记</Text>
+          <TextInput
+            ref={passwordInputRef}
+            style={styles.lockInput}
+            value={password}
+            onChangeText={(text: string) => { setPassword(text); setVerifyError(''); }}
+            placeholder="输入密码"
+            keyboardType="number-pad"
+            maxLength={4}
+            secureTextEntry
+            allowFontScaling={false}
+            autoFocus
+          />
+          {verifyError ? <Text style={styles.lockError} allowFontScaling={false}>{verifyError}</Text> : null}
+          <TouchableOpacity
+            style={[styles.lockButton, verifyLoading && { opacity: 0.6 }]}
+            onPress={handleVerifyPassword}
+            disabled={verifyLoading}
+            activeOpacity={0.7}
+          >
+            {verifyLoading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.lockButtonText} allowFontScaling={false}>验证</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['top'] : []}>
@@ -755,6 +673,20 @@ const styles = StyleSheet.create({
     color: Colors.light.icon,
     marginBottom: scaleSize(16),
   },
+  lockInput: {
+    width: scaleSize(200),
+    height: scaleSize(48),
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: scaleSize(10),
+    paddingHorizontal: scaleSize(16),
+    fontSize: scaleSize(16),
+    color: '#222',
+    marginBottom: scaleSize(12),
+    textAlign: 'center',
+    letterSpacing: scaleSize(8),
+    backgroundColor: '#FFFFFF',
+  },
   lockError: {
     fontSize: scaleSize(14),
     color: '#E74C3C',
@@ -764,7 +696,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: scaleSize(32),
     paddingVertical: scaleSize(12),
     borderRadius: scaleSize(8),
-    backgroundColor: Colors.light.tint,
+    backgroundColor: '#222',
+    marginTop: scaleSize(12),
   },
   lockButtonText: {
     fontSize: scaleSize(16),

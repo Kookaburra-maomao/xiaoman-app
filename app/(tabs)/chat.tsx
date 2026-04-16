@@ -73,6 +73,7 @@ export default function ChatScreen() {
     diaryImageList,
     userMemory,
     assistantHistory,
+    setAssistantHistory,
     isLoadingMore,
     hasMoreHistory,
     setShowDiaryModal,
@@ -123,17 +124,17 @@ export default function ChatScreen() {
     }).catch(() => {});
   }, []);
 
-  // 消息变化时滚动到底部（新消息、系统回复完成等场景）
+  // 消息变化时滚动到底部（新消息、流式传输中、系统回复完成等场景）
   const prevMessagesLenRef = useRef(0);
   useEffect(() => {
     if (messages.length > 0 && pendingScrollToOffsetRef.current === null) {
-      // 新增消息或最后一条消息内容变化时滚动
       const lastMsg = messages[messages.length - 1];
       const isNewMessage = messages.length > prevMessagesLenRef.current;
+      const isStreaming = lastMsg && lastMsg.isStreaming;
       const isStreamingDone = lastMsg && !lastMsg.isStreaming && lastMsg.text;
       
-      if (isNewMessage || isStreamingDone) {
-        setTimeout(() => scrollToBottom(), 150);
+      if (isNewMessage || isStreaming || isStreamingDone) {
+        setTimeout(() => scrollToBottom(), 100);
       }
     }
     prevMessagesLenRef.current = messages.length;
@@ -268,32 +269,38 @@ export default function ChatScreen() {
   const handleStopRecording = useCallback(async () => {
     const uri = await stopRecording();
     if (uri) {
+      // 显示 loading 气泡
+      const loadingMsgId = `voice_loading_${Date.now()}`;
+      setMessages((prev: any[]) => [
+        ...prev,
+        { id: loadingMsgId, type: 'user', text: '•••', isVoiceLoading: true },
+      ]);
+      scrollToBottom();
+
       try {
         const recognizedText = await uploadAndRecognize(uri, user?.id);
-        // 将识别结果自动发送
+
+        // 移除 loading 气泡
+        setMessages((prev: any[]) => prev.filter((m: any) => m.id !== loadingMsgId));
+
         if (recognizedText?.trim()) {
           const trimmedText = recognizedText.trim();
-          // 保存对话记录：用户上传录音
           if (user?.id) {
-            chatService.saveChatRecord(user.id, 'text', 'user', trimmedText).catch(() => {
-              // 静默处理错误
-            });
+            chatService.saveChatRecord(user.id, 'text', 'user', trimmedText).catch(() => {});
           }
           setShowCard(false);
           await sendMessage(trimmedText, scrollToBottom);
         } else {
-          // 识别结果为空（可能是静音音频），显示提示
           Alert.alert('提示', '未识别到语音内容，请重新录制');
         }
       } catch (error: any) {
+        // 移除 loading 气泡
+        setMessages((prev: any[]) => prev.filter((m: any) => m.id !== loadingMsgId));
         console.error('上传或识别失败:', error);
-        Alert.alert(
-          '录音完成',
-          `上传或识别失败: ${error.message || '请稍后重试'}`
-        );
+        Alert.alert('录音完成', `上传或识别失败: ${error.message || '请稍后重试'}`);
       }
     }
-  }, [stopRecording, uploadAndRecognize, sendMessage, scrollToBottom, user?.id]);
+  }, [stopRecording, uploadAndRecognize, sendMessage, scrollToBottom, user?.id, setMessages]);
 
   // 处理语音按钮点击（保留用于兼容）
   const handleVoiceButtonPress = useCallback(() => {
@@ -478,8 +485,7 @@ export default function ChatScreen() {
       return sum + content.length;
     }, 0);
 
-    // 少于 20 个汉字（一个汉字两个字符，所以是 40 字符）
-    if (totalUserChars < 20) {
+    if (totalUserChars < 10) {
       setToastMessage('多聊几句再生成日记吧~');
       setToastVisible(true);
       return;
@@ -498,6 +504,34 @@ export default function ChatScreen() {
       setShowPlanModal(true);
     }
   }, []);
+
+  // 处理删除消息
+  const handleDeleteMessage = useCallback(async (message: any) => {
+    console.log('[handleDeleteMessage] 删除消息:', message.id, message.text?.substring(0, 20));
+    if (!message.id || !user?.id) return;
+    try {
+      // 1. 从页面删除
+      setMessages((prev: any[]) => prev.filter((m: any) => m.id !== message.id));
+      // 2. 从 assistantHistory 删除对应内容
+      const content = message.type === 'user' ? message.text : message.text;
+      if (content) {
+        setAssistantHistory((prev: any[]) => {
+          const role = message.type === 'user' ? 'user' : 'assistant';
+          const idx = prev.findIndex((h: any) => h.role === role && h.content === content);
+          if (idx >= 0) {
+            const newHistory = [...prev];
+            newHistory.splice(idx, 1);
+            return newHistory;
+          }
+          return prev;
+        });
+      }
+      // 3. 调用接口删除
+      await chatService.deleteChatRecord(message.id, user.id);
+    } catch (e: any) {
+      console.error('删除消息失败:', e);
+    }
+  }, [user?.id, setMessages, setAssistantHistory]);
 
   // 处理计划创建成功（用于刷新计划tab的数据）
   const handlePlanCreated = useCallback(() => {
@@ -702,6 +736,7 @@ export default function ChatScreen() {
             isGeneratingDiary={isGeneratingDiary}
             onGenerateDiary={handleGenerateDiary}
             onAddToPlan={handleAddToPlan}
+            onDeleteMessage={handleDeleteMessage}
             userId={user?.id}
           />
         </ScrollView>

@@ -15,8 +15,13 @@ module.exports = ({ config }) => {
     ios: {
       supportsTablet: true,
       infoPlist: {
+        CFBundleDevelopmentRegion: "zh_CN",
+        CFBundleLocalizations: ["zh_CN", "zh"],
         NSFaceIDUsageDescription: "用于验证身份以查看加密日记",
         NSLocationWhenInUseUsageDescription: "需要获取您的位置信息以记录日记的城市和天气",
+        NSPhotoLibraryUsageDescription: "需要访问您的相册以选择图片",
+        NSCameraUsageDescription: "需要使用相机拍照",
+        NSMicrophoneUsageDescription: "需要使用麦克风进行语音录入",
         ITSAppUsesNonExemptEncryption: false,
         NSAppTransportSecurity: {
           NSAllowsArbitraryLoads: true,

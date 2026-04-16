@@ -5,7 +5,9 @@
 import { RIGHT_ICON_URL } from '@/constants/urls';
 import { Message } from '@/types/chat';
 import { scaleSize } from '@/utils/screen';
+import { useRef, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MessageActionMenu from './MessageActionMenu';
 import MessageItem from './MessageItem';
 import PlanList from './PlanList';
 
@@ -14,11 +16,14 @@ interface MessageListProps {
   isGeneratingDiary: boolean;
   onGenerateDiary: () => void;
   onAddToPlan: (message: Message) => void;
-  userId?: string; // 用户ID，用于打点
+  onDeleteMessage?: (message: Message) => void;
+  userId?: string;
 }
 
-export default function MessageList({ messages, isGeneratingDiary, onGenerateDiary, onAddToPlan, userId }: MessageListProps) {
-  // 处理生成日记按钮点击
+export default function MessageList({ messages, isGeneratingDiary, onGenerateDiary, onAddToPlan, onDeleteMessage, userId }: MessageListProps) {
+  const [actionMessage, setActionMessage] = useState<Message | null>(null);
+  const pendingDeleteRef = useRef<Message | null>(null);
+
   const handleGenerateDiary = () => {
     onGenerateDiary();
   };
@@ -69,7 +74,15 @@ export default function MessageList({ messages, isGeneratingDiary, onGenerateDia
         
         return (
           <View key={message.id}>
-            <MessageItem message={message} userId={userId} />
+            <MessageItem
+              message={message}
+              userId={userId}
+              onLongPress={() => {
+                const isCopyable = !message.recordType || message.recordType === 'chat' || message.recordType === 'text';
+                if (isCopyable && message.text) setActionMessage(message);
+              }}
+              onDismissCopy={() => setActionMessage(null)}
+            />
             {/* 显示计划列表 */}
             {shouldShowPlanList && (
               <PlanList message={message} onAddToPlan={() => onAddToPlan(message)} userId={userId} />
@@ -105,6 +118,24 @@ export default function MessageList({ messages, isGeneratingDiary, onGenerateDia
           </View>
         );
       })}
+
+      {/* 消息操作菜单 */}
+      <MessageActionMenu
+        visible={!!actionMessage}
+        messageText={actionMessage?.text || ''}
+        onClose={() => {
+          pendingDeleteRef.current = actionMessage;
+          setActionMessage(null);
+        }}
+        onDelete={() => {
+          const msg = pendingDeleteRef.current;
+          if (msg && onDeleteMessage) {
+            onDeleteMessage(msg);
+          }
+          pendingDeleteRef.current = null;
+          setActionMessage(null);
+        }}
+      />
     </View>
   );
 }

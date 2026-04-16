@@ -11,13 +11,16 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MarkdownText from '../common/MarkdownText';
 import DiaryCard from './DiaryCard';
 import ImagePreviewModal from './ImagePreviewModal';
+import LoadingDots from './LoadingDots';
 
 interface MessageItemProps {
   message: Message;
-  userId?: string; // 用户ID，用于打点
+  userId?: string;
+  onLongPress?: () => void;
+  onDismissCopy?: () => void;
 }
 
-export default function MessageItem({ message, userId }: MessageItemProps) {
+export default function MessageItem({ message, userId, onLongPress, onDismissCopy }: MessageItemProps) {
   const [previewVisible, setPreviewVisible] = useState(false);
   // 判断消息类型
   const isDiary = message.recordType === 'diary' && message.diaryData;
@@ -44,6 +47,10 @@ export default function MessageItem({ message, userId }: MessageItemProps) {
   
   // 渲染内容
   const renderContent = () => {
+    if (message.isVoiceLoading) {
+      return <LoadingDots />;
+    }
+
     if (isDiaryCard && message.diaryData) {
       return (
         <DiaryCard 
@@ -95,7 +102,7 @@ export default function MessageItem({ message, userId }: MessageItemProps) {
               styles.messageTextUser,
               message.isError && styles.messageTextError,
             ]}
-            selectable={true}
+
           >
             {message.text || ''}
           </Text>
@@ -104,17 +111,29 @@ export default function MessageItem({ message, userId }: MessageItemProps) {
     );
   };
   
+  const isActionable = !isDiaryCard && !!message.text && !message.imageUrl;
+
   return (
     <View style={containerStyle}>
-      {/* 用户消息显示时间戳 */}
       {isUserMessage && message.timestamp && (
         <Text style={styles.messageTimestamp} allowFontScaling={false}>
           {message.timestamp}
         </Text>
       )}
-      <View style={bubbleStyle}>
-        {renderContent()}
-      </View>
+      {isActionable ? (
+        <TouchableOpacity
+          style={bubbleStyle}
+          onLongPress={onLongPress}
+          delayLongPress={400}
+          activeOpacity={0.8}
+        >
+          {renderContent()}
+        </TouchableOpacity>
+      ) : (
+        <View style={bubbleStyle}>
+          {renderContent()}
+        </View>
+      )}
     </View>
   );
 }
@@ -209,4 +228,3 @@ const styles = StyleSheet.create({
     color: '#FF4444',
   },
 });
-

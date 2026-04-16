@@ -736,6 +736,18 @@ export const saveChatRecord = async (
   }
 };
 
+// 删除对话记录
+export const deleteChatRecord = async (recordId: string, userId: string): Promise<void> => {
+  const response = await fetch(`${apiUrl}/api/chat/records/${recordId}?user_id=${userId}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => null);
+    throw new Error(err?.message || '删除对话记录失败');
+  }
+};
+
 // 获取对话记录
 export const getChatRecords = async (
   userId: string,
