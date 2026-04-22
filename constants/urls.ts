@@ -35,6 +35,7 @@ export const PIN_NORMAL_IMAGE_URL = `${API_BASE_URL}/api/files/Pin-normal.png`;
 export const OPTION_ICON_URL = `${API_BASE_URL}/api/files/icon-option.png`;
 export const ICON_OPTION_DARK_URL = `${API_BASE_URL}/api/files/icon-option-dark.png`;
 export const MISSION_COMPLETED_ICON_URL = `${API_BASE_URL}/api/files/MissionConpleted.png`;
+export const PLAN_EDIT_IMAGE_URL = `${API_BASE_URL}/api/files/xiaoman-icon-plan-edit.png`;
 export const ICON_REPEAT_URL = `${API_BASE_URL}/api/files/icon-repeat.png`;
 export const ICON_CALC_URL = `${API_BASE_URL}/api/files/icon-calc.png`;
 export const ICON_OK_URL = `${API_BASE_URL}/api/files/icon-ok.png`;

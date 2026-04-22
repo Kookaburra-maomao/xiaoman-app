@@ -10,12 +10,15 @@ import {
   ICON_RETURN_URL,
   ICON_WARNING_URL,
   MISSION_COMPLETED_ICON_URL,
-  OPTION_ICON_URL
+  OPTION_ICON_URL,
+  PLAN_EDIT_IMAGE_URL
 } from '@/constants/urls';
+import * as imageService from '@/services/imageService';
 import { getPlanKeepTimesList } from '@/utils/plan-utils';
 import { del, get, put } from '@/utils/request';
 import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -72,6 +75,7 @@ export default function PlanDetailScreen() {
   const [saving, setSaving] = useState(false);
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   
   // 判断是否可以编辑（已完成计划不可编辑）
   const canEdit = plan?.state !== 'finish' && initialPlanState !== 'finish';
@@ -248,6 +252,66 @@ export default function PlanDetailScreen() {
     }
   };
 
+  // 编辑计划图片
+  const handleEditPlanImage = () => {
+    Alert.alert('选择图片', '请选择图片来源', [
+      {
+        text: '拍照',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('提示', '需要摄像头权限'); return; }
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            quality: 1,
+          });
+          if (!result.canceled && result.assets[0]) {
+            await uploadAndUpdatePlanImage(result.assets[0].uri);
+          }
+        },
+      },
+      {
+        text: '从相册选择',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('提示', '需要相册权限'); return; }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            quality: 1,
+          });
+          if (!result.canceled && result.assets[0]) {
+            await uploadAndUpdatePlanImage(result.assets[0].uri);
+          }
+        },
+      },
+      { text: '取消', style: 'cancel' },
+    ]);
+  };
+
+  // 上传图片并更新计划
+  const uploadAndUpdatePlanImage = async (imageUri: string) => {
+    if (!plan) return;
+    try {
+      setIsUploadingImage(true);
+      const uploadResult = await imageService.uploadImage(imageUri);
+      const result = await put(`/api/plans/${plan.id}`, {
+        image: uploadResult.url,
+        image_preview: uploadResult.url,
+      });
+      if (result.code === 200) {
+        await fetchPlanDetail();
+      } else {
+        throw new Error(result.message || '更新失败');
+      }
+    } catch (error: any) {
+      console.error('更新计划图片失败:', error);
+      Alert.alert('错误', error.message || '更新图片失败，请重试');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   // 获取计划图片URL（必须在早期返回之前调用，遵守 Hooks 规则）
   const planImageUrl = useMemo(() => {
     if (!plan) return '';
@@ -405,6 +469,20 @@ export default function PlanDetailScreen() {
             style={styles.planImage}
             resizeMode="cover"
           />
+
+          {/* 编辑图片按钮 */}
+          <TouchableOpacity
+            style={styles.editImageButton}
+            onPress={handleEditPlanImage}
+            activeOpacity={0.7}
+            disabled={isUploadingImage}
+          >
+            <Image
+              source={{ uri: PLAN_EDIT_IMAGE_URL }}
+              style={styles.editImageIcon}
+              resizeMode="contain"
+            /> 
+          </TouchableOpacity>
           
           {/* 渐变遮罩 */}
           <LinearGradient
@@ -640,6 +718,22 @@ const styles = StyleSheet.create({
   planImage: {
     width: '100%',
     height: '100%',
+  },
+  editImageButton: {
+    position: 'absolute',
+    top: scaleSize(10),
+    right: scaleSize(10),
+    width: scaleSize(36),
+    height: scaleSize(32),
+    borderRadius: scaleSize(16),
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  editImageIcon: {
+    width: scaleSize(36),
+    height: scaleSize(36),
+    zIndex: 11,
   },
   completedIcon: {
     position: 'absolute',

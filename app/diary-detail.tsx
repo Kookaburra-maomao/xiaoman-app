@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  ImageBackground,
   Modal,
   ScrollView,
   StyleSheet,
@@ -373,13 +374,20 @@ export default function DiaryDetailScreen() {
       {/* 美化日记 loading 浮层 */}
       {isBeautifying && (
         <View style={styles.beautifyOverlay}>
-          <LottieView
-            source={require('@/assets/animations/beautify-loading.json')}
-            autoPlay
-            loop
-            style={styles.beautifyLottie}
-          />
-          <Text style={styles.beautifyLoadingText} allowFontScaling={false}>魔法加载中，预计等候30秒... 请不要离开app</Text>
+          <ImageBackground
+            source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-diary-beauty-bg.png' }}
+            style={styles.beautifyCard}
+            imageStyle={styles.beautifyCardBg}
+            resizeMode="cover"
+          >
+            <LottieView
+              source={require('@/assets/animations/beautify-loading.json')}
+              autoPlay
+              loop
+              style={styles.beautifyLottie}
+            />
+            <Text style={styles.beautifyLoadingText} allowFontScaling={false}>魔法加载中，预计等候30秒... 请不要离开app</Text>
+          </ImageBackground>
         </View>
       )}
 
@@ -637,10 +645,20 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(241,241,241,0.9)',
+    backgroundColor: 'rgba(241,241,241,1)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 9999,
+  },
+  beautifyCard: {
+    width: scaleSize(375),
+    height: scaleSize(350),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  beautifyCardBg: {
+    width: scaleSize(375),
+    height: scaleSize(350),
   },
   beautifyLottie: {
     width: scaleSize(96),

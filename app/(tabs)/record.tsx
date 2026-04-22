@@ -6,6 +6,7 @@ import { useOperationCard } from '@/hooks/useOperationCard';
 import { DiaryCountItem, getDiaryCount } from '@/services/chatService';
 import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -13,6 +14,8 @@ import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, S
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
+const DIARY_UNLOCK_KEY = '@xiaoman_diary_unlock_ts';
+const DIARY_UNLOCK_DURATION = 60 * 60 * 1000; // 1小时
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 
 // image_url 为 JSON 字符串数组，如 '["/api/files/xxx.png", ...]'
@@ -178,6 +181,8 @@ export default function RecordScreen() {
         setIsUnlocked(true);
         setPassword('');
         setVerifyError('');
+        // 记录解锁时间戳，1小时内免验证
+        await AsyncStorage.setItem(DIARY_UNLOCK_KEY, String(Date.now()));
         // 解锁后加载数据
         fetchDiaryCounts();
         fetchOperationCards();
@@ -199,10 +204,24 @@ export default function RecordScreen() {
       if (!user) return;
 
       if (user.diary_secret === 'true') {
-        // 加密开启时，重置为未解锁状态
-        setIsUnlocked(false);
-        setPassword('');
-        setVerifyError('');
+        // 检查是否在1小时免验证期内
+        (async () => {
+          try {
+            const ts = await AsyncStorage.getItem(DIARY_UNLOCK_KEY);
+            if (ts && Date.now() - Number(ts) < DIARY_UNLOCK_DURATION) {
+              // 免验证期内，直接解锁
+              setIsUnlocked(true);
+              fetchDiaryCounts();
+              fetchOperationCards();
+              fetchMyRecordStats();
+              return;
+            }
+          } catch {}
+          // 需要验证
+          setIsUnlocked(false);
+          setPassword('');
+          setVerifyError('');
+        })();
       } else {
         // 未开启加密，直接加载数据
         setIsUnlocked(true);

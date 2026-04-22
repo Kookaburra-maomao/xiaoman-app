@@ -27,7 +27,7 @@ export default function DiaryBeautifyScreen() {
     diaryId: string; templateId: string; userId: string;
   }>();
   const [html, setHtml] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(true);
   const [saved, setSaved] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [webViewHeight, setWebViewHeight] = useState(0);
@@ -133,11 +133,10 @@ export default function DiaryBeautifyScreen() {
         }} style={styles.backButton}>
           <Image source={{ uri: RETURN_ICON }} style={styles.backIcon} resizeMode="contain" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} allowFontScaling={false}>美化日记</Text>
-        <View style={styles.headerRight}>
-          {saved && <Text style={styles.savedText} allowFontScaling={false}>已保存</Text>}
-          {isSaving && <Text style={styles.savingText} allowFontScaling={false}>保存中...</Text>}
-        </View>
+        <Text style={styles.headerTitle} allowFontScaling={false}>
+          {isSaving ? '保存中...' : saved ? '已保存' : '美化日记'}
+        </Text>
+        <View style={styles.headerRight} />
       </View>
       {html ? (
         <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false}>

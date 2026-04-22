@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import LottieView from 'lottie-react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, ImageBackground, Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import ViewShot from 'react-native-view-shot';
 import MarkdownText from '../common/MarkdownText';
 import Toast from '../common/Toast';
@@ -267,7 +267,7 @@ export default function DiaryGenerateModal({
       return (
         <View style={styles.generatingContainer}>
           <ActivityIndicator size="small" color={Colors.light.tint} style={{ marginRight: scaleSize(8) }} />
-          <Text style={styles.generatingText} allowFontScaling={false}>正在生成中...</Text>
+          <Text style={styles.generatingText} allowFontScaling={false}>日记书写中，请勿退出app...</Text>
         </View>
       );
     }
@@ -379,6 +379,12 @@ export default function DiaryGenerateModal({
           {/* 美化日记 loading 浮层 */}
           {isBeautifying && (
             <View style={styles.beautifyOverlay}>
+              <ImageBackground
+                          source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-diary-beauty-bg.png' }}
+                          style={styles.beautifyCard}
+                          imageStyle={styles.beautifyCardBg}
+                          resizeMode="cover"
+                        >
               <LottieView
                 source={require('@/assets/animations/beautify-loading.json')}
                 autoPlay
@@ -386,6 +392,7 @@ export default function DiaryGenerateModal({
                 style={styles.beautifyLottie}
               />
               <Text style={styles.beautifyLoadingText} allowFontScaling={false}>魔法加载中，预计等候30秒... 请不要离开app</Text>
+              </ImageBackground>
             </View>
           )}
 
@@ -540,10 +547,20 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(241,241,241,0.9)',
+    backgroundColor: 'rgba(241,241,241,1)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 9999,
+  },
+    beautifyCard: {
+    width: scaleSize(375),
+    height: scaleSize(350),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  beautifyCardBg: {
+    width: scaleSize(375),
+    height: scaleSize(350),
   },
   beautifyLottie: {
     width: scaleSize(96),
