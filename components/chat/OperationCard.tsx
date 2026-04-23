@@ -10,13 +10,12 @@ import { useCallback, useRef } from 'react';
 import { Dimensions, FlatList, Image, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = scaleSize(335); // 卡片宽度固定为 335px
-const CARD_HEIGHT = scaleSize(240); // 卡片高度固定为 240px
-const CARD_SPACING = scaleSize(10); // 卡片间距
-const PEEK_AMOUNT = scaleSize(10); // 露出下一个/上一个卡片的宽度
-const SNAP_INTERVAL = CARD_WIDTH + CARD_SPACING; // 分页间隔 = 卡片宽度 + 卡片间距
-// 计算左右内边距：(屏幕宽度 - 卡片宽度 - 一侧露出的宽度) / 2
-const SIDE_PADDING = (scaleSize(375) - CARD_WIDTH - (PEEK_AMOUNT * 2)) / 2;
+const CARD_WIDTH = scaleSize(335);
+const CARD_HEIGHT = scaleSize(240);
+const CARD_SPACING = scaleSize(10);
+const PEEK_AMOUNT = scaleSize(10);
+const SNAP_INTERVAL = CARD_WIDTH + CARD_SPACING;
+const SIDE_PADDING = (SCREEN_WIDTH - CARD_WIDTH - (PEEK_AMOUNT * 2)) / 2;
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 
 interface OperationCardProps {

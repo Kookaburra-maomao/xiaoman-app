@@ -578,11 +578,9 @@ const styles = StyleSheet.create({
   weekdaysRow: {
     flexDirection: 'row',
     marginBottom: scaleSize(8),
-    justifyContent: 'center',
   },
   weekdayCell: {
-    width: scaleSize(44),
-    marginHorizontal: scaleSize(2),
+    width: `${100 / 7}%` as any,
     marginTop: scaleSize(8),
     alignItems: 'center',
   },
@@ -595,11 +593,9 @@ const styles = StyleSheet.create({
   daysGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
   },
   dayCell: {
-    width: scaleSize(44),
-    marginHorizontal: scaleSize(2),
+    width: `${100 / 7}%` as any,
     height: scaleSize(46),
     alignItems: 'center',
     justifyContent: 'center',

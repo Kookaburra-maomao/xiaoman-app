@@ -13,6 +13,7 @@ module.exports = ({ config }) => {
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     ios: {
+      buildNumber: "48",
       supportsTablet: true,
       infoPlist: {
         CFBundleDevelopmentRegion: "zh_CN",

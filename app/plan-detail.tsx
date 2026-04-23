@@ -16,7 +16,7 @@ import {
 import * as imageService from '@/services/imageService';
 import { getPlanKeepTimesList } from '@/utils/plan-utils';
 import { del, get, put } from '@/utils/request';
-import { scaleSize } from '@/utils/screen';
+import { getContentMaxWidth, scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -40,7 +40,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_ASPECT_RATIO = 295 / 360;
-const IMAGE_WIDTH = SCREEN_WIDTH - 80; // 左右各16px边距
+const IMAGE_WIDTH = Math.min(SCREEN_WIDTH, getContentMaxWidth()) - 80;
 const IMAGE_HEIGHT = IMAGE_WIDTH / IMAGE_ASPECT_RATIO;
 
 interface PlanRecord {
