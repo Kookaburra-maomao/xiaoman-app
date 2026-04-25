@@ -134,7 +134,7 @@ export default function DiaryBeautifyScreen() {
           <Image source={{ uri: RETURN_ICON }} style={styles.backIcon} resizeMode="contain" />
         </TouchableOpacity>
         <Text style={styles.headerTitle} allowFontScaling={false}>
-          {isSaving ? '保存中...' : saved ? '已保存' : '美化日记'}
+          {isSaving ? '日记美化中...' : saved ? '美化完成' : '美化日记'}
         </Text>
         <View style={styles.headerRight} />
       </View>

@@ -20,9 +20,10 @@ module.exports = ({ config }) => {
         CFBundleLocalizations: ["zh_CN", "zh"],
         NSFaceIDUsageDescription: "用于验证身份以查看加密日记",
         NSLocationWhenInUseUsageDescription: "需要获取您的位置信息以记录日记的城市和天气",
-        NSPhotoLibraryUsageDescription: "需要访问您的相册以选择图片",
-        NSCameraUsageDescription: "需要使用相机拍照",
-        NSMicrophoneUsageDescription: "需要使用麦克风进行语音录入",
+        NSPhotoLibraryUsageDescription: "小满日记需要访问您的相册，以便您在写日记时插入照片记录生活",
+        NSPhotoLibraryAddUsageDescription: "小满日记需要保存图片到您的相册，例如保存日记中的图片",
+        NSCameraUsageDescription: "小满日记需要使用相机，以便您拍照后插入到日记中记录生活",
+        NSMicrophoneUsageDescription: "小满日记需要使用麦克风，以便您通过语音输入的方式快速记录日记内容",
         ITSAppUsesNonExemptEncryption: false,
         NSAppTransportSecurity: {
           NSAllowsArbitraryLoads: true,
@@ -59,7 +60,10 @@ module.exports = ({ config }) => {
     plugins: [
       "expo-router",
       "expo-secure-store",
-      "expo-audio",
+      ["expo-audio", {
+        enableBackgroundPlayback: false,
+        enableBackgroundRecording: false,
+      }],
       [
         "expo-local-authentication",
         {
