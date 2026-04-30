@@ -40,7 +40,6 @@
     "expo-image": "~55.0.6",
     "expo-image-manipulator": "~55.0.11",
     "expo-image-picker": "~55.0.14",
-    "expo-in-app-purchases": "^14.5.0",
     "expo-linear-gradient": "~55.0.9",
     "expo-linking": "~55.0.9",
     "expo-local-authentication": "~55.0.9",
