@@ -5,16 +5,30 @@ import { useLog } from '@/hooks/useLog';
 import { getDeletedDiaries } from '@/services/chatService';
 import * as imageService from '@/services/imageService';
 import { scaleSize } from '@/utils/screen';
+import {
+  VIP_BANNER_URL,
+  VIP_CARD_URL,
+  VIP_HEADER_BG_URL,
+  VIP_NEW_FLAG_URL,
+  VIP_NO_URL,
+  VIP_NORMAL_URL,
+  VIP_RIGHT_ICON_URL,
+  VIP_SELECTED_URL,
+  VIP_TAG_URL,
+  VIP_TEXT_GRADIENT_URL,
+} from '@/constants/urls';
 import { Ionicons } from '@expo/vector-icons';
-import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
+  ImageBackground,
   Linking,
   Modal,
   ScrollView,
