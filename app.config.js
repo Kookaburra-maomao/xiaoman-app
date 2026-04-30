@@ -69,7 +69,8 @@ module.exports = ({ config }) => {
         {
           faceIDPermission: "允许使用面容 ID 验证日记身份"
         }
-      ]
+      ],
+      "expo-build-properties"
     ],
     experiments: {
       typedRoutes: true,

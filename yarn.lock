@@ -3873,6 +3873,15 @@ expo-audio@~55.0.9:
   resolved "https://registry.npmmirror.com/expo-audio/-/expo-audio-55.0.13.tgz#b8799325b5acd4873a3040c3d3bd4884c2971fe2"
   integrity sha512-rY9C81mSE6HHCPtyeCv53nRrBL1Su7JpQVuvbMFOA7AOY7xppg3Gq1SFybiDIiNQunDfcUUc2b8eDO8vkO0Iag==
 
+expo-build-properties@~55.0.13:
+  version "55.0.13"
+  resolved "https://registry.npmmirror.com/expo-build-properties/-/expo-build-properties-55.0.13.tgz#e44247a14424fa7a1597f29f99cd84a69c25385b"
+  integrity sha512-UYZhUKyh7YQhbJdkBvo68WUQ7fOtZeSV7F8kfYkjEiN/ADRHG0WfEIiddvGfi9cH/5iwpptv/+Lu5cx6uvfegA==
+  dependencies:
+    "@expo/schema-utils" "^55.0.3"
+    resolve-from "^5.0.0"
+    semver "^7.6.0"
+
 expo-clipboard@~55.0.13:
   version "55.0.13"
   resolved "https://registry.npmmirror.com/expo-clipboard/-/expo-clipboard-55.0.13.tgz#29e9920bf3b22fe80378f438aa9929e7cbcd289c"
