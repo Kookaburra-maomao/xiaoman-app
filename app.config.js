@@ -58,7 +58,7 @@ module.exports = ({ config }) => {
       favicon: "./assets/images/favicon.png"
     },
     plugins: [
-      "./plugins/withIAPFix",
+      "./plugins/withNativeIAP",
       "expo-router",
       "expo-secure-store",
       ["expo-audio", {
