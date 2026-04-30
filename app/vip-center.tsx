@@ -74,12 +74,12 @@ export default function VipCenterScreen() {
     if (!plan) return null;
     // 如果苹果有返回价格信息，用苹果的
     if (products.length > 0) {
-      const appleProduct = products.find((p) => p.productId === plan.productId);
+      const appleProduct = products.find((p) => p.id === plan.productId);
       if (appleProduct) {
         return {
           ...plan,
-          price: parseFloat(appleProduct.price),
-          localizedPrice: appleProduct.localizedPrice,
+          price: appleProduct.price ?? plan.price,
+          localizedPrice: appleProduct.displayPrice,
         };
       }
     }
@@ -217,7 +217,7 @@ export default function VipCenterScreen() {
           ) : (
             <View style={styles.plansContainer}>
               {APPLE_VIP_PLANS.map((plan) => {
-                const appleProduct = products.find((p) => p.productId === plan.productId);
+                const appleProduct = products.find((p) => p.id === plan.productId);
                 return (
                   <TouchableOpacity
                     key={plan.id}
@@ -246,7 +246,7 @@ export default function VipCenterScreen() {
                       <View style={styles.priceContainer}>
                         <Text style={styles.priceUnit}>￥</Text>
                         <Text style={styles.priceValue}>
-                          {appleProduct ? parseFloat(appleProduct.price) : plan.price}
+                          {appleProduct ? (appleProduct.price ?? plan.price) : plan.price}
                         </Text>
                       </View>
                       <Text style={styles.originalPrice}>￥{plan.originalPrice}元</Text>

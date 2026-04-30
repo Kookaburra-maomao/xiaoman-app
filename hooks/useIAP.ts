@@ -1,30 +1,31 @@
-/**
- * IAP 内购 Hook
- * 使用原生 StoreKit 模块
- */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Platform } from 'react-native';
 import {
-  getProducts,
-  purchase as nativePurchase,
-  restorePurchases as nativeRestore,
-  getReceipt,
+  initConnection,
+  endConnection,
+  fetchProducts,
+  requestPurchase,
   finishTransaction,
-  addPurchaseUpdateListener,
-  PRODUCT_IDS,
-} from '@/services/nativeIAP';
-import { verifyPurchase } from '@/services/iapService';
+  getAvailablePurchases,
+  purchaseUpdatedListener,
+  purchaseErrorListener,
+  getTransactionJwsIOS,
+  getReceiptDataIOS,
+  type Purchase,
+  type ProductSubscription,
+} from 'expo-iap';
+import { verifyPurchase, restorePurchase, PRODUCT_IDS } from '@/services/iapService';
 import { useAuth } from '@/hooks/useAuth';
 
 export function useIAP() {
   const { user, refreshAuth } = useAuth();
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<ProductSubscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isInitialized = useRef(false);
+  const purchaseResolveRef = useRef<((purchase: Purchase) => void) | null>(null);
 
-  // 初始化 IAP
   useEffect(() => {
     if (isInitialized.current || Platform.OS !== 'ios') {
       setIsLoading(false);
@@ -34,8 +35,11 @@ export function useIAP() {
     const setup = async () => {
       try {
         setIsLoading(true);
-        const items = await getProducts();
-        setProducts(items);
+        await initConnection();
+
+        const skus = Object.values(PRODUCT_IDS);
+        const items = await fetchProducts({ skus, type: 'subs' });
+        setProducts((items ?? []) as ProductSubscription[]);
         isInitialized.current = true;
       } catch (e: any) {
         console.error('IAP 初始化失败:', e);
@@ -47,18 +51,26 @@ export function useIAP() {
 
     setup();
 
-    // 监听购买更新
-    const subscription = addPurchaseUpdateListener((event) => {
-      console.log('IAP 事件:', event);
+    const purchaseSub = purchaseUpdatedListener(async (purchase: Purchase) => {
+      if (purchaseResolveRef.current) {
+        purchaseResolveRef.current(purchase);
+        purchaseResolveRef.current = null;
+      }
+    });
+
+    const errorSub = purchaseErrorListener((err) => {
+      console.error('IAP 购买错误:', err);
+      purchaseResolveRef.current = null;
     });
 
     return () => {
-      subscription?.remove();
+      purchaseSub?.remove();
+      errorSub?.remove();
+      endConnection();
       isInitialized.current = false;
     };
   }, []);
 
-  // 处理购买
   const handlePurchase = useCallback(
     async (planId: string) => {
       if (!user?.id) {
@@ -76,26 +88,45 @@ export function useIAP() {
         setIsPurchasing(true);
         setError(null);
 
-        // 发起购买
-        const result = await nativePurchase(sku);
+        await requestPurchase({
+          request: { apple: { sku } },
+          type: 'subs',
+        });
 
-        if (result.state === 'cancelled' || result.state === 'E_USER_CANCELLED') {
-          return;
+        // 获取 JWS token 用于服务端验证
+        let transactionJws = '';
+        try {
+          transactionJws = (await getTransactionJwsIOS(sku)) ?? '';
+        } catch {
+          // fallback: 无法获取 JWS
         }
 
-        // 获取收据
-        const receipt = await getReceipt();
-        if (!receipt) {
-          throw new Error('未获取到收据');
+        let receiptData: string | undefined;
+        if (!transactionJws) {
+          try {
+            receiptData = (await getReceiptDataIOS()) ?? undefined;
+          } catch {
+            // ignore
+          }
         }
 
-        // 调服务端验证
-        const verifyResult = await verifyPurchase(user.id, receipt);
+        if (!transactionJws && !receiptData) {
+          throw new Error('未获取到交易凭证');
+        }
+
+        const verifyResult = await verifyPurchase(
+          user.id,
+          transactionJws,
+          receiptData,
+        );
 
         if (verifyResult.code === 200) {
-          // 结束交易
-          if (result.transactionIdentifier) {
-            finishTransaction(result.transactionIdentifier);
+          const purchases = await getAvailablePurchases();
+          const matched = (purchases ?? []).find(
+            (p: Purchase) => p.productId === sku,
+          );
+          if (matched) {
+            await finishTransaction({ purchase: matched });
           }
           await refreshAuth();
           Alert.alert('成功', '会员开通成功！');
@@ -105,22 +136,20 @@ export function useIAP() {
       } catch (e: any) {
         console.error('购买失败:', e);
         setError(e.message);
-        // 原生模块未加载时给更友好的提示
-        if (e.message?.includes('模块未加载')) {
-          Alert.alert('暂不可用', '当前版本暂不支持购买，请升级至最新版本');
-        } else if (e.message?.includes('仅支持 iOS')) {
-          Alert.alert('提示', '会员功能仅支持 iOS 设备');
-        } else {
-          Alert.alert('购买失败', e.message || '请稍后重试');
+        if (
+          e.code === 'E_USER_CANCELLED' ||
+          e.message?.includes('cancel')
+        ) {
+          return;
         }
+        Alert.alert('购买失败', e.message || '请稍后重试');
       } finally {
         setIsPurchasing(false);
       }
     },
-    [user?.id, refreshAuth]
+    [user?.id, refreshAuth],
   );
 
-  // 恢复购买
   const handleRestore = useCallback(async () => {
     if (!user?.id) {
       Alert.alert('提示', '请先登录');
@@ -129,21 +158,50 @@ export function useIAP() {
 
     try {
       setIsPurchasing(true);
-      Alert.alert('恢复购买', '正在恢复您的购买记录...');
 
-      const receipt = await nativeRestore();
-      
-      if (receipt) {
-        const result = await verifyPurchase(user.id, receipt);
-        if (result.code === 200) {
-          await refreshAuth();
-          Alert.alert('成功', '恢复完成');
-          return;
+      const purchases = await getAvailablePurchases({
+        onlyIncludeActiveItemsIOS: true,
+      });
+
+      if (!purchases || purchases.length === 0) {
+        Alert.alert('提示', '未找到可恢复的订阅');
+        return;
+      }
+
+      const latest = purchases[0];
+      let transactionJws = '';
+      try {
+        transactionJws = (await getTransactionJwsIOS(latest.productId)) ?? '';
+      } catch {
+        // ignore
+      }
+
+      let receiptData: string | undefined;
+      if (!transactionJws) {
+        try {
+          receiptData = (await getReceiptDataIOS()) ?? undefined;
+        } catch {
+          // ignore
         }
       }
 
-      await refreshAuth();
-      Alert.alert('提示', '未找到可恢复的订阅');
+      if (!transactionJws && !receiptData) {
+        Alert.alert('恢复失败', '无法获取交易凭证');
+        return;
+      }
+
+      const result = await restorePurchase(
+        user.id,
+        transactionJws,
+        receiptData,
+      );
+
+      if (result.code === 200) {
+        await refreshAuth();
+        Alert.alert('成功', '恢复完成');
+      } else {
+        Alert.alert('提示', '未找到可恢复的订阅');
+      }
     } catch (e: any) {
       console.error('恢复购买失败:', e);
       Alert.alert('恢复失败', e.message || '请稍后重试');

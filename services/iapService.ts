@@ -1,10 +1,5 @@
-/**
- * IAP 内购服务
- * 使用 react-native-iap
- */
 import { post } from '@/utils/request';
 
-// 苹果商品 ID
 export const PRODUCT_IDS = {
   monthly: 'com.xiaomanriji.vip.monthly',
   quarterly: 'com.xiaomanriji.vip.quarterly',
@@ -31,16 +26,18 @@ export const APPLE_VIP_PLANS = [
   },
 ];
 
-/**
- * 验证收据并激活会员
- */
-export async function verifyPurchase(userId: string, receiptData: string) {
-  return post('/api/iap/verify', { userId, receiptData });
+export async function verifyPurchase(
+  userId: string,
+  transactionJws: string,
+  receiptData?: string,
+) {
+  return post('/api/iap/verify', { userId, transactionJws, receiptData });
 }
 
-/**
- * 恢复购买
- */
-export async function restorePurchase(userId: string, receiptData: string) {
-  return post('/api/iap/restore', { userId, receiptData });
+export async function restorePurchase(
+  userId: string,
+  transactionJws: string,
+  receiptData?: string,
+) {
+  return post('/api/iap/restore', { userId, transactionJws, receiptData });
 }

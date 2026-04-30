@@ -6,6 +6,7 @@ module.exports = ({ config }) => {
   const baseConfig = {
     name: "小满日记",
     slug: "xiaoman-app",
+    owner: "renwenjiaohui",
     version: "1.0.1",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
@@ -35,7 +36,7 @@ module.exports = ({ config }) => {
           }
         }
       },
-      bundleIdentifier: "com.anonymous.xiaomanapp"
+      bundleIdentifier: "com.anonymous.xiaomanapp",
     },
     android: {
       adaptiveIcon: {
@@ -58,7 +59,7 @@ module.exports = ({ config }) => {
       favicon: "./assets/images/favicon.png"
     },
     plugins: [
-      "./plugins/withNativeIAP",
+      "expo-iap",
       "expo-router",
       "expo-secure-store",
       ["expo-audio", {

@@ -3957,6 +3957,11 @@ expo-haptics@~55.0.9:
   resolved "https://registry.npmmirror.com/expo-haptics/-/expo-haptics-55.0.14.tgz#9532ba088ee7eae561ad0ef5552c78f33161998a"
   integrity sha512-KjDItBsA9mi1f5nRwf8g1wOdfEcLHwvEdt5Jl1sMCDETR/homcGOl+F3QIiPOl/PRlbGVieQsjTtF4DGtHOj6g==
 
+expo-iap@^4.2.3:
+  version "4.2.3"
+  resolved "https://registry.npmmirror.com/expo-iap/-/expo-iap-4.2.3.tgz#1b099902efd7c48018bba0e7d9c6b992809a342b"
+  integrity sha512-AbDZT1Jlyk9tLHokvpblWGj8L+klQUOjISfpU46Ggb6h6cr1KzLwLbRlTnGFdgBT9uWNXb1ua/SRwwuRN78O6A==
+
 expo-image-loader@~55.0.0:
   version "55.0.0"
   resolved "https://registry.npmmirror.com/expo-image-loader/-/expo-image-loader-55.0.0.tgz#56ae6631a0f43191432296a1f7f1e9737e653cfe"
