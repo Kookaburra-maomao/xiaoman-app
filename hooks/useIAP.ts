@@ -105,7 +105,14 @@ export function useIAP() {
       } catch (e: any) {
         console.error('购买失败:', e);
         setError(e.message);
-        Alert.alert('购买失败', e.message || '请稍后重试');
+        // 原生模块未加载时给更友好的提示
+        if (e.message?.includes('模块未加载')) {
+          Alert.alert('暂不可用', '当前版本暂不支持购买，请升级至最新版本');
+        } else if (e.message?.includes('仅支持 iOS')) {
+          Alert.alert('提示', '会员功能仅支持 iOS 设备');
+        } else {
+          Alert.alert('购买失败', e.message || '请稍后重试');
+        }
       } finally {
         setIsPurchasing(false);
       }

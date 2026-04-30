@@ -39,8 +39,11 @@ export const APPLE_VIP_PLANS = [
  * 获取商品列表
  */
 export async function getProducts() {
-  if (Platform.OS !== 'ios' || !IAPManager) {
+  if (Platform.OS !== 'ios') {
     throw new Error('IAP 仅支持 iOS');
+  }
+  if (!IAPManager) {
+    throw new Error('IAP 模块未加载');
   }
   return IAPManager.getProducts();
 }
