@@ -1,16 +1,10 @@
 /**
  * IAP 内购 Hook
- * 使用 react-native-iap
+ * 使用 react-native-iap v12
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Platform } from 'react-native';
-import RNIap, {
-  ProductPurchase,
-  PurchaseError,
-  SubscriptionPurchase,
-  productConnection,
-  purchaseErrorListener,
-} from 'react-native-iap';
+import RNIap from 'react-native-iap';
 import { verifyPurchase } from '@/services/iapService';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -23,6 +17,7 @@ export function useIAP() {
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isInitialized = useRef(false);
+  const purchaseUpdateSubscription = useRef<any>(null);
 
   // 初始化 IAP
   useEffect(() => {
@@ -38,7 +33,7 @@ export function useIAP() {
         // 初始化 IAP
         await RNIap.initConnection();
 
-        // 获取商品信息
+        // 获取订阅商品信息
         const items = await RNIap.getSubscriptions(PRODUCT_IDS);
         setProducts(items);
         isInitialized.current = true;
@@ -53,7 +48,10 @@ export function useIAP() {
     setup();
 
     return () => {
-      RNIap.endConnection().catch(() => {});
+      if (purchaseUpdateSubscription.current) {
+        purchaseUpdateSubscription.current.remove();
+      }
+      RNIap.endConnectionAndroid().catch(() => {});
       isInitialized.current = false;
     };
   }, []);
@@ -66,11 +64,11 @@ export function useIAP() {
         return;
       }
 
-      const productIds = {
+      const productIds: Record<string, string> = {
         monthly: 'com.xiaomanriji.vip.monthly',
         quarterly: 'com.xiaomanriji.vip.quarterly',
       };
-      const sku = productIds[planId as keyof typeof productIds];
+      const sku = productIds[planId];
       if (!sku) {
         Alert.alert('错误', '无效的套餐');
         return;
@@ -80,11 +78,8 @@ export function useIAP() {
         setIsPurchasing(true);
         setError(null);
 
-        // 发起购买
-        const purchase = await RNIap.requestSubscription({
-          sku,
-          andDangerouslyFinishTransactionAutomaticallyIOS: false,
-        });
+        // 发起订阅购买
+        const purchase = await RNIap.requestSubscription(sku);
 
         // 获取收据
         const receipt = purchase.transactionReceipt;
@@ -97,10 +92,7 @@ export function useIAP() {
 
         if (result.code === 200) {
           // 标记交易完成
-          await RNIap.finishTransaction({
-            purchase,
-            isConsumable: false,
-          });
+          await RNIap.finishTransaction(purchase, false);
           // 刷新用户信息
           await refreshAuth();
           Alert.alert('成功', '会员开通成功！');
@@ -111,7 +103,7 @@ export function useIAP() {
         console.error('购买失败:', e);
 
         // 用户取消购买不弹错误
-        if (e.code === 'E_USER_CANCELLED') {
+        if (e.code === 'E_USER_CANCELLED' || e.debugMessage?.includes('cancel')) {
           return;
         }
 
@@ -135,20 +127,16 @@ export function useIAP() {
       setIsPurchasing(true);
       Alert.alert('恢复购买', '正在恢复您的购买记录...');
 
-      // 获取所有购买记录
+      // 获取所有购买记录（v12 API）
       const purchases = await RNIap.getAvailablePurchases();
       const validPurchase = purchases.find(
-        (p: any) =>
-          PRODUCT_IDS.includes(p.productId) && p.transactionReceipt
+        (p: any) => PRODUCT_IDS.includes(p.productId) && p.transactionReceipt
       );
 
       if (validPurchase) {
         const result = await verifyPurchase(user.id, validPurchase.transactionReceipt);
         if (result.code === 200) {
-          await RNIap.finishTransaction({
-            purchase: validPurchase,
-            isConsumable: false,
-          });
+          await RNIap.finishTransaction(validPurchase, false);
           await refreshAuth();
           Alert.alert('成功', '恢复完成');
           return;
