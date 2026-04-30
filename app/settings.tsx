@@ -512,7 +512,7 @@ export default function SettingsScreen() {
               />
             </TouchableOpacity>
           </View>
-          {/* {(() => {
+          {(() => {
             // 检查是否是有效会员
             const isVipValid = () => {
               if (!user?.is_vip || user.is_vip === 'false') return false;
@@ -544,10 +544,10 @@ export default function SettingsScreen() {
                 </View>
               );
             }
-          })()} */}
+          })()}
         </View>
         {/* 会员推广横幅 */}
-        {/* <ImageBackground
+        <ImageBackground
           source={{ uri: VIP_CARD_URL }}
           style={styles.membershipBanner}
           resizeMode="cover"
@@ -602,7 +602,7 @@ export default function SettingsScreen() {
               </LinearGradient>
             </TouchableOpacity>
           </View>
-        </ImageBackground> */}
+        </ImageBackground>
 
         {/* 设置选项组1 */}
         <View style={styles.settingsGroup}>
