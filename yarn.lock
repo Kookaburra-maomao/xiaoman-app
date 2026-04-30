@@ -3873,15 +3873,6 @@ expo-audio@~55.0.9:
   resolved "https://registry.npmmirror.com/expo-audio/-/expo-audio-55.0.13.tgz#b8799325b5acd4873a3040c3d3bd4884c2971fe2"
   integrity sha512-rY9C81mSE6HHCPtyeCv53nRrBL1Su7JpQVuvbMFOA7AOY7xppg3Gq1SFybiDIiNQunDfcUUc2b8eDO8vkO0Iag==
 
-expo-build-properties@~55.0.13:
-  version "55.0.13"
-  resolved "https://registry.npmmirror.com/expo-build-properties/-/expo-build-properties-55.0.13.tgz#e44247a14424fa7a1597f29f99cd84a69c25385b"
-  integrity sha512-UYZhUKyh7YQhbJdkBvo68WUQ7fOtZeSV7F8kfYkjEiN/ADRHG0WfEIiddvGfi9cH/5iwpptv/+Lu5cx6uvfegA==
-  dependencies:
-    "@expo/schema-utils" "^55.0.3"
-    resolve-from "^5.0.0"
-    semver "^7.6.0"
-
 expo-clipboard@~55.0.13:
   version "55.0.13"
   resolved "https://registry.npmmirror.com/expo-clipboard/-/expo-clipboard-55.0.13.tgz#29e9920bf3b22fe80378f438aa9929e7cbcd289c"
@@ -3974,11 +3965,6 @@ expo-image@^55.0.8, expo-image@~55.0.6:
   integrity sha512-fNdvdYVcGn3g1x6o5AXHKzk4xX8U6rg2W9vFdE1pQO80kWCNReh003ypqSrGy4dD+zA8FtZjrNF3oMDGnPpIGQ==
   dependencies:
     sf-symbols-typescript "^2.2.0"
-
-expo-in-app-purchases@^14.5.0:
-  version "14.5.0"
-  resolved "https://registry.npmmirror.com/expo-in-app-purchases/-/expo-in-app-purchases-14.5.0.tgz#584f31e5a1340f3138d9cd273709de407f1f4943"
-  integrity sha512-rsVPH6fOoU+mzjn80IFLz5f4gxEHLxXv+Pl4Dwblc5IDYvKTaUvTljNuaVmWESZSjDOMBT1JUAYRAlMRfBWOcg==
 
 expo-json-utils@~55.0.2:
   version "55.0.2"
@@ -6457,6 +6443,11 @@ react-native-gesture-handler@~2.30.0:
     "@egjs/hammerjs" "^2.0.17"
     hoist-non-react-statics "^3.3.0"
     invariant "^2.2.4"
+
+react-native-iap@^15.2.0:
+  version "15.2.0"
+  resolved "https://registry.npmmirror.com/react-native-iap/-/react-native-iap-15.2.0.tgz#42ba1ae0604bf802b5e6b0d930003b4326f18e04"
+  integrity sha512-p3DM+Dg/lOucKNGUAW6Ssh1NPz4e7HsYYI7wblo4aIHxqjw0giPagypRcdEXXpI9b9sNf2quw1AbYVdQQogt2A==
 
 react-native-is-edge-to-edge@1.2.1:
   version "1.2.1"

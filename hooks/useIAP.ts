@@ -1,73 +1,62 @@
 /**
  * IAP 内购 Hook
- * 封装 expo-in-app-purchases 的完整购买流程
+ * 使用 react-native-iap
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Platform } from 'react-native';
-import {
-  connectAsync,
-  finishTransactionAsync,
-  getProductsAsync,
-  IAPItemDetails,
-  purchaseItemAsync,
-  IAPResponseCode,
-  disconnectAsync,
-} from 'expo-in-app-purchases';
-import { verifyPurchase, restorePurchase } from '@/services/iapService';
+import RNIap, {
+  ProductPurchase,
+  PurchaseError,
+  SubscriptionPurchase,
+  productConnection,
+  purchaseErrorListener,
+} from 'react-native-iap';
+import { verifyPurchase } from '@/services/iapService';
 import { useAuth } from '@/hooks/useAuth';
 
-// 商品 ID 常量
-const PRODUCT_IDS = {
-  monthly: 'com.xiaomanriji.vip.monthly',
-  quarterly: 'com.xiaomanriji.vip.quarterly',
-};
+const PRODUCT_IDS = ['com.xiaomanriji.vip.monthly', 'com.xiaomanriji.vip.quarterly'];
 
 export function useIAP() {
   const { user, refreshAuth } = useAuth();
-  const [products, setProducts] = useState<IAPItemDetails[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isInitialized = useRef(false);
 
-  // 初始化 IAP 连接
-  const initIAP = useCallback(async () => {
+  // 初始化 IAP
+  useEffect(() => {
     if (isInitialized.current || Platform.OS !== 'ios') {
       setIsLoading(false);
       return;
     }
 
-    try {
-      setIsLoading(true);
-      // expo-in-app-purchases 的 connectAsync 在 iOS 上返回 IAPQueryResponse
-      // 但类型定义可能不一致，用 any 处理
-      await (connectAsync as any)();
+    const setup = async () => {
+      try {
+        setIsLoading(true);
 
-      // 获取商品信息
-      const productIds = [PRODUCT_IDS.monthly, PRODUCT_IDS.quarterly];
-      const response = await (getProductsAsync as any)(productIds);
-      const { responseCode, results } = response || {};
+        // 初始化 IAP
+        await RNIap.initConnection();
 
-      if (responseCode === IAPResponseCode.OK && results) {
-        setProducts(results);
+        // 获取商品信息
+        const items = await RNIap.getSubscriptions(PRODUCT_IDS);
+        setProducts(items);
+        isInitialized.current = true;
+      } catch (e: any) {
+        console.error('IAP 初始化失败:', e);
+        setError(e.message);
+      } finally {
+        setIsLoading(false);
       }
-      isInitialized.current = true;
-    } catch (e: any) {
-      console.error('IAP 初始化失败:', e);
-      setError(e.message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    };
 
-  // 连接 IAP
-  useEffect(() => {
-    initIAP();
+    setup();
+
     return () => {
-      disconnectAsync().catch(() => {});
+      RNIap.endConnection().catch(() => {});
       isInitialized.current = false;
     };
-  }, [initIAP]);
+  }, []);
 
   // 处理购买
   const handlePurchase = useCallback(
@@ -77,8 +66,12 @@ export function useIAP() {
         return;
       }
 
-      const productId = PRODUCT_IDS[planId as keyof typeof PRODUCT_IDS];
-      if (!productId) {
+      const productIds = {
+        monthly: 'com.xiaomanriji.vip.monthly',
+        quarterly: 'com.xiaomanriji.vip.quarterly',
+      };
+      const sku = productIds[planId as keyof typeof productIds];
+      if (!sku) {
         Alert.alert('错误', '无效的套餐');
         return;
       }
@@ -88,20 +81,12 @@ export function useIAP() {
         setError(null);
 
         // 发起购买
-        const purchaseResponse = await (purchaseItemAsync as any)(productId);
-        const { responseCode, results } = purchaseResponse || {};
+        const purchase = await RNIap.requestSubscription({
+          sku,
+          andDangerouslyFinishTransactionAutomaticallyIOS: false,
+        });
 
-        if (responseCode !== IAPResponseCode.OK) {
-          throw new Error(`购买失败 (${responseCode})`);
-        }
-
-        // 处理购买结果
-        const purchase = results?.[0];
-        if (!purchase) {
-          throw new Error('未获取到购买信息');
-        }
-
-        // 获取收据数据
+        // 获取收据
         const receipt = purchase.transactionReceipt;
         if (!receipt) {
           throw new Error('未获取到收据');
@@ -112,7 +97,10 @@ export function useIAP() {
 
         if (result.code === 200) {
           // 标记交易完成
-          await finishTransactionAsync(purchase, true);
+          await RNIap.finishTransaction({
+            purchase,
+            isConsumable: false,
+          });
           // 刷新用户信息
           await refreshAuth();
           Alert.alert('成功', '会员开通成功！');
@@ -123,10 +111,7 @@ export function useIAP() {
         console.error('购买失败:', e);
 
         // 用户取消购买不弹错误
-        if (
-          e.message?.includes('User cancelled') ||
-          e.message?.includes('702')
-        ) {
+        if (e.code === 'E_USER_CANCELLED') {
           return;
         }
 
@@ -148,27 +133,30 @@ export function useIAP() {
 
     try {
       setIsPurchasing(true);
+      Alert.alert('恢复购买', '正在恢复您的购买记录...');
 
-      // 连接后再恢复
-      await connectAsync();
-      const { responseCode, results } = await getProductsAsync([
-        PRODUCT_IDS.monthly,
-        PRODUCT_IDS.quarterly,
-      ]);
+      // 获取所有购买记录
+      const purchases = await RNIap.getAvailablePurchases();
+      const validPurchase = purchases.find(
+        (p: any) =>
+          PRODUCT_IDS.includes(p.productId) && p.transactionReceipt
+      );
 
-      if (responseCode !== IAPResponseCode.OK) {
-        throw new Error('获取购买记录失败');
+      if (validPurchase) {
+        const result = await verifyPurchase(user.id, validPurchase.transactionReceipt);
+        if (result.code === 200) {
+          await RNIap.finishTransaction({
+            purchase: validPurchase,
+            isConsumable: false,
+          });
+          await refreshAuth();
+          Alert.alert('成功', '恢复完成');
+          return;
+        }
       }
 
-      // 从本地收据恢复（需要重新验证）
-      // expo-in-app-purchases 的 restore 通过 reconnect 自动恢复
-      // 这里重新连接会触发历史交易
-      Alert.alert('恢复购买', '正在恢复您的购买记录，请稍候...');
-
-      // 重新连接后会触发已完成的交易
-      // 实际恢复需要用户有本地收据，通过服务端验证
       await refreshAuth();
-      Alert.alert('提示', '恢复完成，请检查您的会员状态');
+      Alert.alert('提示', '未找到可恢复的订阅');
     } catch (e: any) {
       console.error('恢复购买失败:', e);
       Alert.alert('恢复失败', e.message || '请稍后重试');

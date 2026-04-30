@@ -1,5 +1,6 @@
 /**
- * 苹果 IAP 内购服务
+ * IAP 内购服务
+ * 使用 react-native-iap
  */
 import { post } from '@/utils/request';
 
@@ -33,13 +34,13 @@ export const APPLE_VIP_PLANS = [
 /**
  * 验证收据并激活会员
  */
-export async function verifyPurchase(userId, receiptData) {
+export async function verifyPurchase(userId: string, receiptData: string) {
   return post('/api/iap/verify', { userId, receiptData });
 }
 
 /**
  * 恢复购买
  */
-export async function restorePurchase(userId, receiptData) {
+export async function restorePurchase(userId: string, receiptData: string) {
   return post('/api/iap/restore', { userId, receiptData });
 }
