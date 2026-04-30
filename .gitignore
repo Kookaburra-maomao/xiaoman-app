@@ -40,5 +40,6 @@ app-example
 
 # generated native folders
 /android
+/ios
 /ios/Pods
 /tasks
