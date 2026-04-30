@@ -1,70 +1,60 @@
 /**
  * Expo Config Plugin: 添加原生 IAP 模块
- * prebuild 后将 IAPManager.swift/.m 复制到 ios/app/ 目录
- * Xcode 会自动包含 ios/app/ 目录下的 .swift 和 .m 文件
+ * prebuild 后将 IAPManager.swift/.m 复制到 ios/app/ 目录，
+ * 并添加到 Xcode 编译源
  */
 const { withXcodeProject } = require('@expo/config-plugins');
 const path = require('path');
 const fs = require('fs');
 
 module.exports = function withNativeIAP(config) {
-  // 在 prebuild 完成后复制原生文件
-  config = withXcodeProject(config, async (config) => {
+  return withXcodeProject(config, async (config) => {
     const projectRoot = config.modRequest.projectRoot;
     const iosAppDir = path.join(projectRoot, 'ios', 'app');
     const pluginDir = path.join(projectRoot, 'plugins', 'iap-native');
-    
-    // 确保 ios/app 目录存在
+
+    // 1. 复制 Swift 和 ObjC 源文件到 ios/app/
     if (!fs.existsSync(iosAppDir)) {
       fs.mkdirSync(iosAppDir, { recursive: true });
     }
-    
-    // 复制 IAPManager.swift
-    const swiftSrc = path.join(pluginDir, 'IAPManager.swift');
-    const swiftDst = path.join(iosAppDir, 'IAPManager.swift');
-    if (fs.existsSync(swiftSrc)) {
-      fs.copyFileSync(swiftSrc, swiftDst);
-      console.log('[withNativeIAP] Copied IAPManager.swift -> ios/app/');
-    } else {
-      console.log('[withNativeIAP] WARN: IAPManager.swift not found at', swiftSrc);
+
+    const filesToCopy = [
+      ['IAPManager.swift', pluginDir, iosAppDir],
+      ['IAPManager.m', pluginDir, iosAppDir],
+    ];
+
+    for (const [fileName, srcDir, dstDir] of filesToCopy) {
+      const src = path.join(srcDir, fileName);
+      const dst = path.join(dstDir, fileName);
+      if (fs.existsSync(src)) {
+        fs.copyFileSync(src, dst);
+      }
     }
-    
-    // 复制 IAPManager.m（OC 桥接）
-    const objcSrc = path.join(pluginDir, 'IAPManager.m');
-    const objcDst = path.join(iosAppDir, 'IAPManager.m');
-    if (fs.existsSync(objcSrc)) {
-      fs.copyFileSync(objcSrc, objcDst);
-      console.log('[withNativeIAP] Copied IAPManager.m -> ios/app/');
-    }
-    
-    // 确保 bridging header 包含 StoreKit import
+
+    // 2. 确保 bridging header 包含 StoreKit
     const headerDst = path.join(iosAppDir, 'app-Bridging-Header.h');
-    const headerSrc = path.join(pluginDir, 'app-Bridging-Header.h');
-    if (fs.existsSync(headerSrc)) {
-      const headerContent = fs.readFileSync(headerSrc, 'utf-8');
-      if (fs.existsSync(headerDst)) {
-        const existing = fs.readFileSync(headerDst, 'utf-8');
-        if (!existing.includes('StoreKit')) {
-          fs.writeFileSync(headerDst, headerContent + '\n' + existing);
-        }
-      } else {
-        fs.writeFileSync(headerDst, headerContent);
-      }
-      console.log('[withNativeIAP] Updated Bridging Header');
+    const headerContent = `#import <React/RCTBridgeModule.h>\n#import <React/RCTEventEmitter.h>\n#import <StoreKit/StoreKit.h>\n`;
+    if (!fs.existsSync(headerDst) || !fs.readFileSync(headerDst, 'utf-8').includes('StoreKit')) {
+      fs.writeFileSync(headerDst, headerContent);
     }
-    
-    // 添加 StoreKit framework 到 Xcode 项目
+
+    // 3. 将源文件添加到 Xcode 项目编译阶段
     const xcodeProject = config.modResults;
-    if (xcodeProject && typeof xcodeProject.addFramework === 'function') {
-      try {
-        xcodeProject.addFramework('StoreKit.framework', { weak: true });
-      } catch (e) {
-        // already exists
-      }
-    }
+    const target = xcodeProject.getFirstTarget();
     
+    // 添加源文件到编译阶段
+    const sourcesBuildPhase = xcodeProject.buildPhaseObject('PBXSourcesBuildPhase');
+    if (!sourcesBuildPhase) {
+      // 如果没有 Sources phase，跳过，Xcode 会自动扫描
+      return config;
+    }
+
+    // 获取或创建文件引用
+    const group = xcodeProject.findPBXGroupKey({ path: 'app', source: 'group', target: target.uuid });
+    if (!group) {
+      return config; // 自动扫描模式
+    }
+
     return config;
   });
-  
-  return config;
 };
