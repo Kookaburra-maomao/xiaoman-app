@@ -51,6 +51,10 @@ export default function MessageItem({ message, userId, onLongPress, onDismissCop
       return <LoadingDots />;
     }
 
+    if (message.isImageLoading) {
+      return <LoadingDots />;
+    }
+
     if (isDiaryCard && message.diaryData) {
       return (
         <DiaryCard 
@@ -60,29 +64,6 @@ export default function MessageItem({ message, userId, onLongPress, onDismissCop
           diaryId={message.diaryData.id}
           userId={userId}
         />
-      );
-    }
-    
-    if (message.imageUrl) {
-      return (
-        <>
-          <TouchableOpacity 
-            activeOpacity={0.8} 
-            onPress={() => setPreviewVisible(true)}
-          >
-            <Image
-              source={{ uri: message.imageUrl }}
-              style={styles.messageImage}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
-          
-          <ImagePreviewModal
-            visible={previewVisible}
-            imageUrl={message.imageUrl}
-            onClose={() => setPreviewVisible(false)}
-          />
-        </>
       );
     }
     
@@ -112,6 +93,7 @@ export default function MessageItem({ message, userId, onLongPress, onDismissCop
   };
   
   const isActionable = !isDiaryCard && !!message.text && !message.imageUrl;
+  const isImageMessage = !!message.imageUrl;
 
   return (
     <View style={containerStyle}>
@@ -120,7 +102,25 @@ export default function MessageItem({ message, userId, onLongPress, onDismissCop
           {message.timestamp}
         </Text>
       )}
-      {isActionable ? (
+      {isImageMessage ? (
+        <View style={styles.imageContainer}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setPreviewVisible(true)}
+          >
+            <Image
+              source={{ uri: message.imageUrl }}
+              style={styles.messageImage}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
+          <ImagePreviewModal
+            visible={previewVisible}
+            imageUrl={message.imageUrl}
+            onClose={() => setPreviewVisible(false)}
+          />
+        </View>
+      ) : isActionable ? (
         <TouchableOpacity
           style={bubbleStyle}
           onLongPress={onLongPress}
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     paddingRight: scaleSize(12),
     paddingBottom: scaleSize(8),
     paddingLeft: scaleSize(12),
-    backgroundColor: Colors.light.highlight,
+    backgroundColor: '#FFE8DA',
   },
   messageBubbleSystem: {
     backgroundColor: Colors.light.background,
@@ -209,10 +209,13 @@ const styles = StyleSheet.create({
     lineHeight: scaleSize(24),
     letterSpacing: 0,
     color: '#222222',
-    backgroundColor: Colors.light.highlight,
+    backgroundColor: '#FFE8DA',
   },
   messageTextSystem: {
     color: Colors.light.text,
+  },
+  imageContainer: {
+    alignItems: 'flex-end',
   },
   messageImage: {
     width: scaleSize(200),

@@ -16,9 +16,10 @@ interface ChatHeaderProps {
   onShowMenu: () => void;
   isStreaming?: boolean;
   hideCardButton?: boolean; // 是否隐藏运营卡片按钮
+  tagImageUrl?: string; // online tag图片URL
 }
 
-export default function ChatHeader({ title = '小满日记', showCard, onToggleCard, onShowMenu, isStreaming = false, hideCardButton = false }: ChatHeaderProps) {
+export default function ChatHeader({ title = '小满日记', showCard, onToggleCard, onShowMenu, isStreaming = false, hideCardButton = false, tagImageUrl }: ChatHeaderProps) {
   // 获取安全区域边距
   const insets = useSafeAreaInsets();
   
@@ -42,7 +43,16 @@ export default function ChatHeader({ title = '小满日记', showCard, onToggleC
     <View style={styles.header}>
       {/* 左边：标题和日期信息 */}
       <View style={styles.headerLeft}>
-        <Text style={styles.headerTitle} allowFontScaling={false}>{title}</Text>
+        <View style={styles.headerTitleRow}>
+          <Text style={styles.headerTitle} allowFontScaling={false}>{title}</Text>
+          {tagImageUrl ? (
+            <Image
+              source={{ uri: tagImageUrl.startsWith('http') ? tagImageUrl : `http://xiaomanriji.com${tagImageUrl}` }}
+              style={styles.headerTagImage}
+              resizeMode="contain"
+            />
+          ) : null}
+        </View>
         <Text style={styles.headerDate} allowFontScaling={false}>
           {month}月{date}日 · {weekday}
         </Text>
@@ -115,6 +125,15 @@ const styles = StyleSheet.create({
     lineHeight: scaleSize(24),
     letterSpacing: 0,
     color: Colors.light.text,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scaleSize(6),
+  },
+  headerTagImage: {
+    width: scaleSize(50),
+    height: scaleSize(18),
   },
   headerDate: {
     fontFamily: 'PingFang SC',

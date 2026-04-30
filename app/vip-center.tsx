@@ -1,5 +1,5 @@
 /**
- * 会员中心页面
+ * 会员中心页面（IAP 内购版）
  */
 
 import { Colors } from '@/constants/theme';
@@ -16,7 +16,8 @@ import {
   VIP_TEXT_GRADIENT_URL,
 } from '@/constants/urls';
 import { useAuth } from '@/hooks/useAuth';
-import { post } from '@/utils/request';
+import { useIAP } from '@/hooks/useIAP';
+import { APPLE_VIP_PLANS } from '@/services/iapService';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -27,11 +28,12 @@ import {
   Dimensions,
   Image,
   ImageBackground,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -39,59 +41,13 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
 
-interface VipPlan {
-  id: string;
-  name: string;
-  price: number;
-  originalPrice: number;
-  discount: string;
-  isNew?: boolean;
-}
-
-const vipPlans: VipPlan[] = [
-  {
-    id: 'monthly',
-    name: '连续包月',
-    price: 6,
-    originalPrice: 12,
-    discount: '立省50%',
-    isNew: true,
-  },
-  {
-    id: 'single',
-    name: '1个月',
-    price: 9.9,
-    originalPrice: 12,
-    discount: '立省30%',
-  },
-];
-
-interface VipBenefit {
-  category: string;
-  items: string[];
-}
-
-const vipBenefits: VipBenefit[] = [
-  {
-    category: '聊天和日记',
-    items: ['500 条对话/天', '50 张图片/天', '30 篇日记/天'],
-  },
-  {
-    category: '长期记忆',
-    items: ['知你冷暖,越来越懂你', '无限时间段', '无限对话、日记数量'],
-  },
-  {
-    category: '隐私与同步',
-    items: ['端到端加密,无忧记录生活', '基于XX 技术加密', '数据多端同步,用不丢失'],
-  },
-];
-
 export default function VipCenterScreen() {
   const router = useRouter();
-  const { user } = useAuth(); // updateVipExpireTime 暂时注释，会员功能已删除
+  const { user, refreshAuth } = useAuth();
+  const { products, isPurchasing, isLoading: iapLoading, purchase, restorePurchases } = useIAP();
   const [selectedPlan, setSelectedPlan] = useState<string>('monthly');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [paying, setPaying] = useState(false);
+  const [restoring, setRestoring] = useState(false);
 
   // 检查是否是有效会员
   const isVipValid = () => {
@@ -104,11 +60,30 @@ export default function VipCenterScreen() {
 
   // 格式化日期
   const formatDate = (dateString: string): string => {
+    if (!dateString) return '';
     const date = new Date(dateString);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}/${month}/${day}`;
+  };
+
+  // 从苹果商品列表中获取当前选择的商品
+  const getSelectedProduct = () => {
+    const plan = APPLE_VIP_PLANS.find((p) => p.id === selectedPlan);
+    if (!plan) return null;
+    // 如果苹果有返回价格信息，用苹果的
+    if (products.length > 0) {
+      const appleProduct = products.find((p) => p.productId === plan.productId);
+      if (appleProduct) {
+        return {
+          ...plan,
+          price: parseFloat(appleProduct.price),
+          localizedPrice: appleProduct.localizedPrice,
+        };
+      }
+    }
+    return plan;
   };
 
   // 处理支付
@@ -117,46 +92,39 @@ export default function VipCenterScreen() {
       Alert.alert('提示', '请先阅读并同意会员协议和续费协议');
       return;
     }
-
     if (!user?.id) {
       Alert.alert('错误', '用户信息不存在');
       return;
     }
-
-    try {
-      setPaying(true);
-      const result = await post(`/api/users/${user.id}/vip`, {
-        vipType: 'month',
-      });
-
-      if (result.code === 200) {
-        // 计算新的会员到期时间（当前时间 + 1个月）
-        const now = new Date();
-        const expireTime = new Date(now);
-        expireTime.setMonth(expireTime.getMonth() + 1);
-        const vipExpireTimeStr = expireTime.toISOString();
-
-        // 更新用户信息中的 vip_expire_time
-        // TODO: 会员功能已删除，暂时注释
-        // try {
-        //   await updateVipExpireTime(vipExpireTimeStr);
-        // } catch (error) {
-        //   console.error('更新会员信息失败:', error);
-        //   // 即使更新失败，支付已成功，继续导航
-        // }
-        
-        // 导航到设置页面
-        router.push('/settings');
-        Alert.alert('成功', '会员开通成功');
-      } else {
-        throw new Error(result.message || '支付失败');
-      }
-    } catch (error: any) {
-      console.error('支付失败:', error);
-      Alert.alert('错误', error.message || '支付失败，请重试');
-    } finally {
-      setPaying(false);
+    // iOS 以外的平台提示
+    if (Platform.OS !== 'ios') {
+      Alert.alert('提示', '会员功能仅支持 iOS 设备');
+      return;
     }
+    await purchase(selectedPlan);
+  };
+
+  // 恢复购买
+  const handleRestore = async () => {
+    if (!user?.id) {
+      Alert.alert('错误', '用户信息不存在');
+      return;
+    }
+    setRestoring(true);
+    try {
+      await restorePurchases();
+      await refreshAuth();
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  // 获取会员状态下标
+  const getVipStatusLabel = () => {
+    if (isVipValid()) {
+      return `有效期至 ${formatDate(user?.vip_expire_time || '')}`;
+    }
+    return '会员已过期';
   };
 
   const avatarUrl = user?.avatar
@@ -164,6 +132,8 @@ export default function VipCenterScreen() {
       ? user.avatar
       : `${apiUrl}${user.avatar}`
     : null;
+
+  const selectedProduct = getSelectedProduct();
 
   return (
     <View style={styles.container}>
@@ -216,9 +186,7 @@ export default function VipCenterScreen() {
                   )}
                 </View>
               </LinearGradient>
-              <View
-                style={styles.profileInfo}
-              >
+              <View style={styles.profileInfo}>
                 <Text style={styles.username}>{user?.nick || user?.username || '用户'}</Text>
                 {isVipValid() && user?.vip_expire_time && (
                   <View style={styles.vipInfo}>
@@ -227,56 +195,68 @@ export default function VipCenterScreen() {
                       style={styles.vipIcon}
                       resizeMode="contain"
                     />
-                    <Text style={styles.vipExpireText}>有效期至 {formatDate(user.vip_expire_time)}</Text>
+                    <Text style={styles.vipExpireText}>{getVipStatusLabel()}</Text>
                   </View>
                 )}
               </View>
             </View>
           </SafeAreaView>
         </ImageBackground>
+
         {/* 会员套餐选择模块 */}
         <ImageBackground
           source={{ uri: VIP_BANNER_URL }}
           style={styles.vipBanner}
           resizeMode="stretch"
-
         >
-          <View style={styles.plansContainer}>
-            {vipPlans.map((plan) => (
-              <TouchableOpacity
-                key={plan.id}
-                style={styles.planCard}
-                onPress={() => setSelectedPlan(plan.id)}
-                activeOpacity={0.8}
-              >
-                <Image
-                  source={{
-                    uri: selectedPlan === plan.id ? VIP_SELECTED_URL : VIP_NORMAL_URL,
-                  }}
-                  style={styles.planCardBackground}
-                  resizeMode="stretch"
-                />
-                {plan.isNew && (
-                    <ImageBackground
-                    source={{ uri: VIP_NEW_FLAG_URL }}
-                    style={styles.newFlag}
-                    resizeMode="contain"
-                    >
+          {iapLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <Text style={styles.loadingText}>加载商品中...</Text>
+            </View>
+          ) : (
+            <View style={styles.plansContainer}>
+              {APPLE_VIP_PLANS.map((plan) => {
+                const appleProduct = products.find((p) => p.productId === plan.productId);
+                return (
+                  <TouchableOpacity
+                    key={plan.id}
+                    style={styles.planCard}
+                    onPress={() => setSelectedPlan(plan.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Image
+                      source={{
+                        uri: selectedPlan === plan.id ? VIP_SELECTED_URL : VIP_NORMAL_URL,
+                      }}
+                      style={styles.planCardBackground}
+                      resizeMode="stretch"
+                    />
+                    {plan.isNew && (
+                      <ImageBackground
+                        source={{ uri: VIP_NEW_FLAG_URL }}
+                        style={styles.newFlag}
+                        resizeMode="contain"
+                      >
                         <Text style={styles.newFlagText}>新客专项</Text>
-                    </ImageBackground>
-                )}
-                <View style={styles.planCardContent}>
-                  <Text style={styles.planName}>{plan.name}</Text>
-                  <View style={styles.priceContainer}>
-                    <Text style={styles.priceUnit}>￥</Text>
-                    <Text style={styles.priceValue}>{plan.price}</Text>
-                  </View>
-                  <Text style={styles.originalPrice}>￥{plan.originalPrice}元</Text>
-                  <Text style={styles.discount}>{plan.discount}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+                      </ImageBackground>
+                    )}
+                    <View style={styles.planCardContent}>
+                      <Text style={styles.planName}>{plan.name}</Text>
+                      <View style={styles.priceContainer}>
+                        <Text style={styles.priceUnit}>￥</Text>
+                        <Text style={styles.priceValue}>
+                          {appleProduct ? parseFloat(appleProduct.price) : plan.price}
+                        </Text>
+                      </View>
+                      <Text style={styles.originalPrice}>￥{plan.originalPrice}元</Text>
+                      <Text style={styles.discount}>{plan.discount}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </ImageBackground>
 
         {/* 会员权益 */}
@@ -290,24 +270,25 @@ export default function VipCenterScreen() {
           </View>
 
           <View style={styles.benefitsCardContainer}>
-            {vipBenefits.map((benefit, index) => (
-              <View key={index}>
-                {index > 0 && <View style={styles.benefitDivider} />}
-                <View style={styles.benefitCard}>
-                  <Text style={styles.benefitCategory}>{benefit.category}</Text>
-                  {benefit.items.map((item, itemIndex) => (
-                    <View key={itemIndex} style={styles.benefitItem}>
-                      <Text style={styles.benefitText}>{item}</Text>
-                      <Image
-                        source={{ uri: VIP_RIGHT_ICON_URL }}
-                        style={styles.benefitIcon}
-                        resizeMode="contain"
-                      />
-                    </View>
-                  ))}
-                </View>
+            <View style={styles.benefitCard}>
+              <Text style={styles.benefitCategory}>聊天与日记</Text>
+              <View style={styles.benefitItem}>
+                <Text style={styles.benefitText}>无限对话与日记</Text>
+                <Image source={{ uri: VIP_RIGHT_ICON_URL }} style={styles.benefitIcon} resizeMode="contain" />
               </View>
-            ))}
+              <View style={styles.benefitDivider} />
+              <Text style={styles.benefitCategory}>AI 功能</Text>
+              <View style={styles.benefitItem}>
+                <Text style={styles.benefitText}>智能分析、情绪树洞、待办管理</Text>
+                <Image source={{ uri: VIP_RIGHT_ICON_URL }} style={styles.benefitIcon} resizeMode="contain" />
+              </View>
+              <View style={styles.benefitDivider} />
+              <Text style={styles.benefitCategory}>数据与隐私</Text>
+              <View style={styles.benefitItem}>
+                <Text style={styles.benefitText}>端到端加密、永久存储</Text>
+                <Image source={{ uri: VIP_RIGHT_ICON_URL }} style={styles.benefitIcon} resizeMode="contain" />
+              </View>
+            </View>
           </View>
         </View>
 
@@ -317,7 +298,7 @@ export default function VipCenterScreen() {
             style={styles.paymentButton}
             onPress={handlePayment}
             activeOpacity={0.8}
-            disabled={paying}
+            disabled={isPurchasing || iapLoading || !selectedProduct}
           >
             <LinearGradient
               colors={['#FF336C', '#FFC591']}
@@ -325,14 +306,30 @@ export default function VipCenterScreen() {
               end={{ x: 1, y: 0 }}
               style={styles.paymentButtonGradient}
             >
-              {paying ? (
+              {isPurchasing ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <Text style={styles.paymentButtonText}>
-                  立即支付 ￥{vipPlans.find(p => p.id === selectedPlan)?.price || '0'}
+                  {selectedProduct
+                    ? `立即支付 ￥${selectedProduct.price}`
+                    : '加载中...'}
                 </Text>
               )}
             </LinearGradient>
+          </TouchableOpacity>
+
+          {/* 恢复购买 */}
+          <TouchableOpacity
+            style={styles.restoreButton}
+            onPress={handleRestore}
+            disabled={restoring}
+            activeOpacity={0.7}
+          >
+            {restoring ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.restoreText}>恢复购买</Text>
+            )}
           </TouchableOpacity>
 
           {/* 协议同意 */}
@@ -350,6 +347,11 @@ export default function VipCenterScreen() {
               已阅读并同意 会员协议 和 续费协议
             </Text>
           </TouchableOpacity>
+
+          {/* 自动续费说明 */}
+          <Text style={styles.renewNotice}>
+            订阅会自动续费，可随时在 iPhone 设置中取消
+          </Text>
         </View>
       </ScrollView>
     </View>
@@ -375,6 +377,16 @@ const styles = StyleSheet.create({
   safeAreaTop: {
     paddingTop: 0,
   },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    marginTop: 8,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -387,12 +399,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    backdropFilter: 'blur(5px)',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 8,
     alignItems: 'center',
@@ -414,12 +422,8 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 20,
-    backdropFilter: 'blur(5px)',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 8,
     alignItems: 'center',
@@ -442,7 +446,6 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     padding: 1.8,
-    backgroundColor: 'linear-gradient(90deg, #FE4571 0%, #FEBA8F 100%)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 20,
@@ -496,19 +499,18 @@ const styles = StyleSheet.create({
   },
   vipBanner: {
     width: '100%',
-    // marginTop: 20,
   },
   plansContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingTop: 34,
-    paddingBottom: 24,
-    gap: 12,
+    justifyContent: 'center',
+    gap: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 24,
   },
   planCard: {
-    flex: 1,
+    width: (SCREEN_WIDTH - 64) / 2,
+    height: 180,
     position: 'relative',
-    minHeight: 200,
   },
   planCardBackground: {
     position: 'absolute',
@@ -521,112 +523,86 @@ const styles = StyleSheet.create({
   },
   newFlag: {
     position: 'absolute',
-    left: -1,
-    top: -10,
-    width: 60,
-    height: 20,
-    zIndex: 1,
+    top: 0,
+    right: 0,
+    width: 64,
+    height: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   newFlagText: {
-    fontFamily: 'PingFang SC',
-    fontWeight: '400',
-    fontSize: 12,
-    lineHeight: 18,
-    textAlign: 'center',
+    fontSize: 10,
     color: '#FFFFFF',
+    fontWeight: '600',
   },
   planCardContent: {
-    padding: 20,
-    paddingTop: 20,
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 10,
   },
   planName: {
-    marginTop: 20,
-    marginLeft: 0,
     fontFamily: 'PingFang SC',
     fontWeight: '600',
-    fontSize: 20,
-    lineHeight: 28,
+    fontSize: 14,
     color: '#FFFFFF',
+    marginBottom: 8,
   },
   priceContainer: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    marginTop: 12,
-    marginLeft: 0,
   },
   priceUnit: {
-    fontFamily: 'Plus Jakarta Sans',
+    fontFamily: 'PingFang SC',
     fontWeight: '400',
-    fontSize: 20,
-    lineHeight: 24,
+    fontSize: 12,
     color: '#FFFFFF',
   },
   priceValue: {
-    fontFamily: 'Plus Jakarta Sans',
+    fontFamily: 'PingFang SC',
     fontWeight: '700',
-    fontSize: 40,
-    lineHeight: 40,
+    fontSize: 28,
     color: '#FFFFFF',
   },
   originalPrice: {
-    marginTop: 4,
-    marginLeft: 0,
     fontFamily: 'PingFang SC',
     fontWeight: '400',
-    fontSize: 14,
-    lineHeight: 22,
-    textAlign: 'left',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.5)',
     textDecorationLine: 'line-through',
-    color: '#999999',
+    marginTop: 4,
   },
   discount: {
-    marginTop: 4,
-    marginLeft: 0,
     fontFamily: 'PingFang SC',
-    fontWeight: '400',
-    fontSize: 14,
-    lineHeight: 22,
-    color: '#FF326C',
+    fontWeight: '500',
+    fontSize: 10,
+    color: '#FEBA8F',
+    marginTop: 2,
   },
   benefitsSection: {
-    backgroundColor: '#000000',
-    paddingTop: 0,
+    paddingHorizontal: 20,
+    marginTop: 20,
   },
   benefitsTitle: {
-    flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 0,
     marginBottom: 16,
   },
-
   benefitsTitleGradientImage: {
-    width: 160,
-    height: 40,
-    marginLeft: 0,
+    width: 96,
+    height: 24,
   },
   benefitsCardContainer: {
-    padding: 16,
-    marginTop: 16,
-    marginHorizontal: 20,
+    backgroundColor: '#1A1A1A',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#232323',
     overflow: 'hidden',
   },
   benefitCard: {
-    
-  },
-  benefitDivider: {
-    height: 1,
-    marginTop: 16,
-    marginBottom: 16,
-    backgroundColor: '#232323',
+    padding: 20,
   },
   benefitCategory: {
     fontFamily: 'PingFang SC',
     fontWeight: '600',
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 14,
     color: '#FFFFFF',
     marginBottom: 12,
   },
@@ -634,31 +610,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 16,
   },
   benefitText: {
-    flex: 1,
     fontFamily: 'PingFang SC',
     fontWeight: '400',
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#FFFFFF',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   benefitIcon: {
-    width: 20,
-    height: 20,
-    marginLeft: 8,
+    width: 16,
+    height: 16,
+  },
+  benefitDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginVertical: 8,
   },
   paymentSection: {
-    marginTop: 30,
     paddingHorizontal: 20,
-    marginBottom: 20,
+    marginTop: 24,
+    alignItems: 'center',
   },
   paymentButton: {
     width: '100%',
     height: 50,
-    borderRadius: 12,
+    borderRadius: 25,
     overflow: 'hidden',
+    marginBottom: 12,
   },
   paymentButtonGradient: {
     width: '100%',
@@ -667,21 +646,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   paymentButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
     fontFamily: 'PingFang SC',
+    fontWeight: '600',
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  restoreButton: {
+    marginBottom: 16,
+  },
+  restoreText: {
+    fontFamily: 'PingFang SC',
+    fontWeight: '400',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.6)',
+    textDecorationLine: 'underline',
   },
   agreementContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
     gap: 6,
+    marginBottom: 12,
   },
   agreementText: {
-    fontSize: 10,
-    color: '#FFFFFF',
     fontFamily: 'PingFang SC',
+    fontWeight: '400',
+    fontSize: 12,
+    color: '#FFFFFF',
+    textDecorationLine: 'underline',
+  },
+  renewNotice: {
+    fontFamily: 'PingFang SC',
+    fontWeight: '400',
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.4)',
+    textAlign: 'center',
   },
 });

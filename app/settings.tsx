@@ -6,6 +6,7 @@ import { getDeletedDiaries } from '@/services/chatService';
 import * as imageService from '@/services/imageService';
 import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -14,12 +15,13 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   Modal,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
-  Switch,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View
@@ -45,6 +47,11 @@ export default function SettingsScreen() {
   const [showNickEditModal, setShowNickEditModal] = useState(false); // 编辑昵称弹窗
   const [editingNick, setEditingNick] = useState(''); // 编辑中的昵称
   const [savingNick, setSavingNick] = useState(false); // 保存昵称中
+  const [latestVersion, setLatestVersion] = useState(null); // 服务端最新版本
+  const [checkingVersion, setCheckingVersion] = useState(false); // 检查版本中
+
+  // 当前App版本
+  const currentVersion = Constants.expoConfig?.version || '1.0.0';
 
   // 主题选项配置
   const THEME_OPTIONS = [
@@ -70,6 +77,9 @@ export default function SettingsScreen() {
       if (user?.id) {
         loadDeletedDiariesCount();
       }
+
+      // 查询最新版本
+      checkLatestVersion();
     
     }, [user, loading, refreshAuth])
   );
@@ -83,6 +93,22 @@ export default function SettingsScreen() {
     } catch (error) {
       console.error('获取最近删除数量失败:', error);
       setRecentlyDeletedCount(0);
+    }
+  };
+
+  // 查询服务端最新版本
+  const checkLatestVersion = async () => {
+    try {
+      setCheckingVersion(true);
+      const response = await fetch(`${apiUrl}/api/app-versions/latest`);
+      const result = await response.json();
+      if (result.code === 200 && result.data) {
+        setLatestVersion(result.data.version);
+      }
+    } catch (error) {
+      console.error('检查更新失败:', error);
+    } finally {
+      setCheckingVersion(false);
     }
   };
 
@@ -702,7 +728,13 @@ export default function SettingsScreen() {
             activeOpacity={0.7}
             onPress={() => {
               log('SETTING_CHECK_UPDATE');
-              Alert.alert('提示', '当前已经是最新版');
+              const hasNew = latestVersion && latestVersion !== currentVersion;
+              if (hasNew) {
+                // 有新版本，跳转 App Store
+                Linking.openURL('https://apps.apple.com/cn/app/%E5%B0%8F%E6%BB%A1%E6%97%A5%E8%AE%B0-ai%E7%AC%94%E8%AE%B0%E5%A4%87%E5%BF%98-%E5%BE%85%E5%8A%9E%E6%97%A5%E7%A8%8B-%E6%83%85%E7%BB%AA%E6%A0%91%E6%B4%9E/id6759453270');
+              } else {
+                Alert.alert('提示', '当前已经是最新版本');
+              }
             }}
           >
             <View style={styles.settingItemLeft}>
@@ -714,7 +746,16 @@ export default function SettingsScreen() {
               <Text style={styles.settingItemText}>检查更新</Text>
             </View>
             <View style={styles.settingItemRight}>
-              <Text style={styles.settingItemValue}>V1.0.0</Text>
+              {checkingVersion ? (
+                <ActivityIndicator size="small" color={Colors.light.icon} />
+              ) : (
+                <Text style={[
+                  styles.settingItemValue,
+                  latestVersion && latestVersion !== currentVersion && { color: '#FF3B30' }
+                ]}>
+                  V{currentVersion}
+                </Text>
+              )}
               <Ionicons name="chevron-forward" size={18} color={Colors.light.icon} />
             </View>
           </TouchableOpacity>
@@ -792,6 +833,31 @@ export default function SettingsScreen() {
           <TouchableOpacity 
             style={styles.settingItem} 
             activeOpacity={0.7}
+            onPress={() => {
+              log('SETTING_CONTACT_US');
+              Alert.alert(
+                '联系我们',
+                '邮箱：birdy@xiaomanriji.com\n\n小红书：26857580837',
+                [{ text: '好的' }]
+              );
+            }}
+          >
+            <View style={styles.settingItemLeft}>
+              <Image
+                source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-setting-edit.png' }}
+                style={styles.settingIcon}
+                resizeMode="contain"
+              />
+              <Text style={styles.settingItemText}>联系我们</Text>
+            </View>
+            <View style={styles.settingItemRight}>
+              <Ionicons name="chevron-forward" size={18} color={Colors.light.icon} />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.settingItem} 
+            activeOpacity={0.7}
             onPress={handleCancelAccount}
           >
             <View style={styles.settingItemLeft}>
@@ -800,7 +866,7 @@ export default function SettingsScreen() {
                 style={styles.settingIcon}
                 resizeMode="contain"
               />
-              <Text style={[styles.settingItemText, { color: '#FF3B30' }]}>注销用户</Text>
+              <Text style={styles.settingItemText}>注销用户</Text>
             </View>
             <View style={styles.settingItemRight}>
               <Ionicons name="chevron-forward" size={18} color={Colors.light.icon} />

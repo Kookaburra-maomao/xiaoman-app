@@ -4,13 +4,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLog } from '@/hooks/useLog';
 import { useOperationCard } from '@/hooks/useOperationCard';
 import { DiaryCountItem, getDiaryCount } from '@/services/chatService';
+import { getOnlineLetters } from '@/services/letterService';
 import { scaleSize } from '@/utils/screen';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
@@ -55,6 +56,7 @@ export default function RecordScreen() {
   const [todayRecords, setTodayRecords] = useState(0); // 今天对话轮数
   const [weekDays, setWeekDays] = useState(0); // 本周累计记录天数
   const [weekDiaryCount, setWeekDiaryCount] = useState(0); // 本周生成日记篇数
+  const [hasNewLetter, setHasNewLetter] = useState(false);
   
   // 使用运营卡片 Hook（不自动检查，手动控制显示）
   const {
@@ -229,6 +231,14 @@ export default function RecordScreen() {
         fetchOperationCards();
         fetchMyRecordStats();
       }
+
+      // 检查是否有新来信
+      (async () => {
+        try {
+          const { maxLetterVersion } = await getOnlineLetters();
+          setHasNewLetter(maxLetterVersion > (user?.letter_version || 0));
+        } catch {}
+      })();
     }, [user?.id, user?.diary_secret, fetchDiaryCounts, fetchOperationCards, fetchMyRecordStats])
   );
 
@@ -464,17 +474,14 @@ export default function RecordScreen() {
                   style={[
                     styles.dayCell,
                     !isCurrentMonthDay && styles.dayCellOtherMonth,
-                    isTodayDate && styles.dayCellToday,
-                    hasRecord && styles.dayCellWithRecord,
-                    isFuture && styles.dayCellFuture, // 未来日期样式
+                    isFuture && styles.dayCellFuture,
                   ]}
                   activeOpacity={0.7}
                   onPress={() => handleDayPress(day)}
-                  disabled={!isCurrentMonthDay || isFuture} // 禁止点击未来日期
+                  disabled={!isCurrentMonthDay || isFuture}
                 >
                   {hasImage && firstImageUrl && !isFuture ? (
-                    // 情况1：有图片（取第一张展示）- 未来日期不显示图片
-                    <View style={styles.dayCellWithImage}>
+                    <View style={styles.dayCellInner}>
                       <Image
                         source={{ uri: firstImageUrl }}
                         style={styles.dayImage}
@@ -485,29 +492,28 @@ export default function RecordScreen() {
                       </View>
                     </View>
                   ) : hasEmoji && !isFuture ? (
-                    // 情况2：无图片有emoji - 未来日期不显示emoji
-                    <View style={styles.dayCellWithImage}>
+                    <View style={styles.dayCellInner}>
                       <Image source={{ uri: dayData.emoji }} style={styles.dayImage}
                         resizeMode="cover"/>
                       <View style={styles.dayImageOverlay} >
                         <Text style={styles.dayTextOnImage} allowFontScaling={false}>{isTodayDate ? '今' : day}</Text>
                       </View>
                     </View>
-                    
                   ) : (
-                    // 情况3和4：正常展示或特殊背景色
                     day !== null && (
-                      <Text
-                        allowFontScaling={false}
-                        style={[
-                          styles.dayText,
-                          !isCurrentMonthDay && styles.dayTextOtherMonth,
-                          isTodayDate && styles.dayTextToday,
-                          hasRecord && styles.dayTextWithRecord,
-                        ]}
-                      >
-                        {isTodayDate ? '今' : day}
-                      </Text>
+                      <View style={[styles.dayCellInner, hasRecord && styles.dayCellInnerRecord, isTodayDate && styles.dayCellInnerToday]}>
+                        <Text
+                          allowFontScaling={false}
+                          style={[
+                            styles.dayText,
+                            !isCurrentMonthDay && styles.dayTextOtherMonth,
+                            isTodayDate && styles.dayTextToday,
+                            hasRecord && styles.dayTextWithRecord,
+                          ]}
+                        >
+                          {isTodayDate ? '今' : day}
+                        </Text>
+                      </View>
                     )
                   )}
                 </TouchableOpacity>
@@ -524,6 +530,40 @@ export default function RecordScreen() {
           </Text>
         </View>
 
+        {/* 日记回顾 + 小满来信 */}
+        <View style={styles.entryRow}>
+          <TouchableOpacity
+            style={styles.entryCard}
+            onPress={() => router.push('/diary-review' as any)}
+            activeOpacity={0.7}
+          >
+            <Image source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-icon-summary.png' }} style={styles.entryIcon} />
+            <View style={styles.entryTextRow}>
+              <Text style={styles.entryCardTitle} allowFontScaling={false}>日记回顾</Text>
+              <View style={styles.entryTextRight}>
+                {(user?.is_week_new || user?.is_month_new || user?.is_year_new) ? (
+                  <View style={styles.entryRedDot} />
+                ) : null}
+                <Image source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-icon-right.png' }} style={styles.entryArrow} />
+              </View>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.entryCard}
+            onPress={() => router.push('/letter-list' as any)}
+            activeOpacity={0.7}
+          >
+            <Image source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-icon-letter.png' }} style={styles.entryIcon} />
+            <View style={styles.entryTextRow}>
+              <Text style={styles.entryCardTitle} allowFontScaling={false}>小满来信</Text>
+              <View style={styles.entryTextRight}>
+                {hasNewLetter ? <View style={styles.entryRedDot} /> : null}
+                <Image source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-icon-right.png' }} style={styles.entryArrow} />
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* 补写日记 */}
         {/* <TouchableOpacity
           style={styles.addDiaryButton}
@@ -538,6 +578,11 @@ export default function RecordScreen() {
     </SafeAreaView>
   );
 }
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CALENDAR_CONTAINER_MARGIN = scaleSize(16) * 2;
+const CALENDAR_WIDTH = SCREEN_WIDTH - CALENDAR_CONTAINER_MARGIN;
+const DAY_CELL_WIDTH = Math.floor(CALENDAR_WIDTH / 7);
 
 const styles = StyleSheet.create({
   container: {
@@ -580,7 +625,7 @@ const styles = StyleSheet.create({
     marginBottom: scaleSize(8),
   },
   weekdayCell: {
-    width: `${100 / 7}%` as any,
+    width: DAY_CELL_WIDTH,
     marginTop: scaleSize(8),
     alignItems: 'center',
   },
@@ -595,13 +640,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   dayCell: {
-    width: `${100 / 7}%` as any,
+    width: DAY_CELL_WIDTH,
     height: scaleSize(46),
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: scaleSize(8),
-    borderRadius: scaleSize(8),
-    overflow: 'hidden',
+    paddingHorizontal: scaleSize(2),
   },
   dayCellLastRow: {
     marginBottom: 0, // 移除最后一行的底部边距
@@ -612,15 +656,23 @@ const styles = StyleSheet.create({
   dayCellToday: {
   },
   dayCellWithRecord: {
-    backgroundColor: '#00000033', // 有记录的背景色（半透明黑色）
   },
   dayCellFuture: {
-    opacity: 0.7, // 未来日期置灰
+    opacity: 0.7,
   },
-  dayCellWithImage: {
+  dayCellInner: {
     width: '100%',
     height: '100%',
     position: 'relative',
+    borderRadius: scaleSize(8),
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayCellInnerRecord: {
+    backgroundColor: '#00000033',
+  },
+  dayCellInnerToday: {
   },
   dayImage: {
     width: '100%',
@@ -741,6 +793,80 @@ const styles = StyleSheet.create({
     fontSize: scaleSize(14),
     fontWeight: '600',
     // color: Colors.light.tint,
+  },
+  diaryReviewEntry: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: scaleSize(12),
+    marginHorizontal: scaleSize(16),
+    marginBottom: scaleSize(20),
+    padding: scaleSize(12),
+  },
+  diaryReviewTitle: {
+    fontSize: scaleSize(16),
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  diaryReviewRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  diaryReviewHint: {
+    fontSize: scaleSize(12),
+    color: Colors.light.icon,
+    marginRight: scaleSize(4),
+  },
+  entryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginHorizontal: scaleSize(16),
+    marginBottom: scaleSize(20),
+  },
+  entryCard: {
+    width: scaleSize(166),
+    backgroundColor: '#FFFFFF',
+    borderRadius: scaleSize(12),
+    padding: scaleSize(12),
+  },
+  entryIcon: {
+    width: scaleSize(40),
+    height: scaleSize(40),
+    marginBottom: scaleSize(6),
+  },
+  entryTextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  entryTextRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 'auto',
+    gap: scaleSize(4),
+  },
+  entryCardTitle: {
+    fontSize: scaleSize(14),
+    fontWeight: '600',
+    color: '#222',
+    lineHeight: scaleSize(22),
+  },
+  entryArrow: {
+    width: scaleSize(20),
+    height: scaleSize(20),
+  },
+  entryRedDot: {
+    width: scaleSize(14),
+    height: scaleSize(14),
+    borderRadius: scaleSize(7),
+    backgroundColor: '#FF326C',
+  },
+  redDot: {
+    width: scaleSize(8),
+    height: scaleSize(8),
+    borderRadius: scaleSize(4),
+    backgroundColor: '#FF3B30',
+    marginRight: scaleSize(4),
   },
   addDiaryButton: {
     flexDirection: 'row',

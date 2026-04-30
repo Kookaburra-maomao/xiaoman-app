@@ -3886,6 +3886,38 @@ expo-constants@~55.0.13, expo-constants@~55.0.9:
     "@expo/config" "~55.0.14"
     "@expo/env" "~2.1.1"
 
+expo-dev-client@~55.0.28:
+  version "55.0.28"
+  resolved "https://registry.npmmirror.com/expo-dev-client/-/expo-dev-client-55.0.28.tgz#0189f72ebb6540f668e62f65d8e4a49b596570e9"
+  integrity sha512-QZK6Ylx8Jg7lhOOHCxwC10g+i34ggMBAqV497JXFqla1tuuYiEw1poNJS5pD/60ZLe8kyy5PYPB4E9ezDHA9yQ==
+  dependencies:
+    expo-dev-launcher "55.0.29"
+    expo-dev-menu "55.0.24"
+    expo-dev-menu-interface "55.0.2"
+    expo-manifests "~55.0.16"
+    expo-updates-interface "~55.1.6"
+
+expo-dev-launcher@55.0.29:
+  version "55.0.29"
+  resolved "https://registry.npmmirror.com/expo-dev-launcher/-/expo-dev-launcher-55.0.29.tgz#3a791e5cf5e95209fd8665ee928d5c635abc3a80"
+  integrity sha512-Rusz6VfVUAXPArkQhnxC5yY70RCfGNZv+06qCGIkm2boQ3wOiSUwJic8oIt7kW6yD2rkpm24q/7F/6r5joPfng==
+  dependencies:
+    "@expo/schema-utils" "^55.0.3"
+    expo-dev-menu "55.0.24"
+    expo-manifests "~55.0.16"
+
+expo-dev-menu-interface@55.0.2:
+  version "55.0.2"
+  resolved "https://registry.npmmirror.com/expo-dev-menu-interface/-/expo-dev-menu-interface-55.0.2.tgz#aead1b9980c904d61c59e9182e13b2b37bcb2161"
+  integrity sha512-DomUNvGzY/xliwnMdbAYY780sCv19N7zIbifc0ClcoCzJZpNSCkvJ2qGIFRPyM/7DmqmlHGCKi8di7kYYLKNEg==
+
+expo-dev-menu@55.0.24:
+  version "55.0.24"
+  resolved "https://registry.npmmirror.com/expo-dev-menu/-/expo-dev-menu-55.0.24.tgz#6af52133cd9de105d28317eb47938ffedb041e3b"
+  integrity sha512-/J93rADODlKpmaN9uywTd/RMywPDeUo/bAnrZNxlHrFUuO1VCGqYLhacITg2zebU8hucaou8pa8zVsTQaUCv6w==
+  dependencies:
+    expo-dev-menu-interface "55.0.2"
+
 expo-file-system@~55.0.12, expo-file-system@~55.0.16:
   version "55.0.16"
   resolved "https://registry.npmmirror.com/expo-file-system/-/expo-file-system-55.0.16.tgz#a4e766ef9ac0d3c4e1bf24165eb78040dd3ac7f7"
@@ -3934,6 +3966,16 @@ expo-image@^55.0.8, expo-image@~55.0.6:
   dependencies:
     sf-symbols-typescript "^2.2.0"
 
+expo-in-app-purchases@^14.5.0:
+  version "14.5.0"
+  resolved "https://registry.npmmirror.com/expo-in-app-purchases/-/expo-in-app-purchases-14.5.0.tgz#584f31e5a1340f3138d9cd273709de407f1f4943"
+  integrity sha512-rsVPH6fOoU+mzjn80IFLz5f4gxEHLxXv+Pl4Dwblc5IDYvKTaUvTljNuaVmWESZSjDOMBT1JUAYRAlMRfBWOcg==
+
+expo-json-utils@~55.0.2:
+  version "55.0.2"
+  resolved "https://registry.npmmirror.com/expo-json-utils/-/expo-json-utils-55.0.2.tgz#ef79888b881ef5b92d27245d3a758bc5debcbccf"
+  integrity sha512-QJMOZOPOG7CTnKcrdVaiummn2va1MCO56z++eyWkDv3GBRODldM6MFMDf/jTREWthFc2Nxo6TuyWRrEV9S6n/Q==
+
 expo-keep-awake@~55.0.6:
   version "55.0.6"
   resolved "https://registry.npmmirror.com/expo-keep-awake/-/expo-keep-awake-55.0.6.tgz#b5bac9a811e0dfe77deefeaf57e9c73b5dbcc839"
@@ -3965,6 +4007,13 @@ expo-location@~55.1.4:
   integrity sha512-mEExFf84nmWLwi14GFfUsFLrCm10gbcqFn9EPXpuruQ28YMtJWgCD+jJtESYPQkYF44N21fVok3T28fLuCqydA==
   dependencies:
     "@expo/image-utils" "^0.8.13"
+
+expo-manifests@~55.0.16:
+  version "55.0.16"
+  resolved "https://registry.npmmirror.com/expo-manifests/-/expo-manifests-55.0.16.tgz#d10c4f259561d37bc2bd1ef3047d8ab8482c915b"
+  integrity sha512-BR9BPcNsSnCKlQ/d7ECywr+2T54+bTSr26HjRjSua949o4mO/iPIrLjK0lOAa1oIczju6a6oUFckZD2OljxP0g==
+  dependencies:
+    expo-json-utils "~55.0.2"
 
 expo-media-library@~55.0.10:
   version "55.0.14"
@@ -4059,6 +4108,11 @@ expo-system-ui@~55.0.11:
   dependencies:
     "@react-native/normalize-colors" "0.83.4"
     debug "^4.3.2"
+
+expo-updates-interface@~55.1.6:
+  version "55.1.6"
+  resolved "https://registry.npmmirror.com/expo-updates-interface/-/expo-updates-interface-55.1.6.tgz#18a806d65a28229ed4a7f920fceb9dda678c5c09"
+  integrity sha512-evxNpagCkjT3lE6bGV570TFzRtKuIuLY8I37RYHoriXCJ+ZKCN1hbmklK29uAixya+BxGpeTI2K4FqYeJLvfrw==
 
 expo-web-browser@~55.0.10:
   version "55.0.14"

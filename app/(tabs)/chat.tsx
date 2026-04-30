@@ -7,6 +7,7 @@ import PlanAddModal from '@/components/chat/PlanAddModal';
 import PermissionExplainModal from '@/components/common/PermissionExplainModal';
 import Toast from '@/components/common/Toast';
 import { Colors } from '@/constants/theme';
+import { API_BASE_URL } from '@/constants/urls';
 import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
 import { useLog } from '@/hooks/useLog';
@@ -37,7 +38,8 @@ export default function ChatScreen() {
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [selectedPlanMessage, setSelectedPlanMessage] = useState<{ id: string; plans: any } | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  
+  const [onlineTagUrl, setOnlineTagUrl] = useState<string | null>(null);
+
   // 获取安全区域边距，用于计算header高度
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + scaleSize(16) + scaleSize(24) + scaleSize(14) + scaleSize(20); // top inset + paddingTop + title height + date height + paddingBottom
@@ -225,10 +227,28 @@ export default function ChatScreen() {
       if (checkShouldShowCardRef.current) {
         checkShouldShowCardRef.current();
       }
+      // 拉取当前 online tag
+      fetchOnlineTag();
       
       console.log('=== [Chat] useFocusEffect 完成 ===');
     }, [user?.id]) // 只依赖 user?.id，不依赖函数
   );
+
+  // 拉取当前 online tag
+  const fetchOnlineTag = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/xiaoman-tags/online`);
+      const result = await response.json();
+      if (result.code === 200 && result.data) {
+        setOnlineTagUrl(result.data.tag_image);
+      } else {
+        setOnlineTagUrl(null);
+      }
+    } catch (error) {
+      console.error('获取online tag失败:', error);
+      setOnlineTagUrl(null);
+    }
+  }, []);
 
   // 处理从 record 页面跳转过来的运营卡片参数
   useEffect(() => {
@@ -396,10 +416,21 @@ export default function ChatScreen() {
 
               if (!result.canceled && result.assets[0]) {
                 setShowCard(false);
+                
+                // 显示图片 loading 气泡（模仿语音识别的三点动画）
+                const loadingMsgId = `image_loading_${Date.now()}`;
+                setMessages((prev: any[]) => [
+                  ...prev,
+                  { id: loadingMsgId, type: 'user', text: '', isImageLoading: true },
+                ]);
+                scrollToBottom();
+
                 setIsUploadingImage(true);
                 try {
-                  await uploadImageAndUnderstand(result.assets[0].uri, scrollToBottom);
+                  await uploadImageAndUnderstand(result.assets[0].uri, scrollToBottom, loadingMsgId);
                 } finally {
+                  // 确保 loading 气泡被移除（异常情况下兜底）
+                  setMessages((prev: any[]) => prev.filter((m: any) => m.id !== loadingMsgId));
                   setIsUploadingImage(false);
                 }
               }
@@ -436,12 +467,23 @@ export default function ChatScreen() {
 
             if (!result.canceled && result.assets[0]) {
               setShowCard(false);
+              
+              // 显示图片 loading 气泡（模仿语音识别的三点动画）
+              const loadingMsgId = `image_loading_${Date.now()}`;
+              setMessages((prev: any[]) => [
+                ...prev,
+                { id: loadingMsgId, type: 'user', text: '', isImageLoading: true },
+              ]);
+              scrollToBottom();
+
               setIsUploadingImage(true);
               try {
-                await uploadImageAndUnderstand(result.assets[0].uri, scrollToBottom);
+                await uploadImageAndUnderstand(result.assets[0].uri, scrollToBottom, loadingMsgId);
               } catch (error: any) {
                 console.error('[openImagePicker] 图片上传失败:', error.message);
               } finally {
+                // 确保 loading 气泡被移除（异常情况下兜底）
+                setMessages((prev: any[]) => prev.filter((m: any) => m.id !== loadingMsgId));
                 setIsUploadingImage(false);
               }
             }
@@ -450,7 +492,7 @@ export default function ChatScreen() {
       ],
       { cancelable: true }
     );
-  }, [isGeneratingDiary, isUploadingImage, uploadImageAndUnderstand, scrollToBottom]);
+  }, [isGeneratingDiary, isUploadingImage, uploadImageAndUnderstand, scrollToBottom, setMessages]);
 
   // 处理运营卡片选项选择
   const handleOperationItemSelect = useCallback((promptRule: string, text: string, emoji: string) => {
@@ -691,6 +733,7 @@ export default function ChatScreen() {
           onToggleCard={() => setShowCard(!showCard)}
           onShowMenu={() => router.push('/settings' as any)}
           isStreaming={isSending}
+          tagImageUrl={onlineTagUrl || undefined}
         />
 
         {/* 悬浮的运营卡片 */}
@@ -797,16 +840,6 @@ export default function ChatScreen() {
         />
       )}
 
-      {/* 图片上传 Loading */}
-      {isUploadingImage && (
-        <View style={styles.uploadingOverlay}>
-          <View style={styles.uploadingContainer}>
-            <ActivityIndicator size="large" color={Colors.light.tint} />
-            <Text style={styles.uploadingText}>正在上传图片...</Text>
-          </View>
-        </View>
-      )}
-
       {/* Toast 提示 */}
       <Toast
         message={toastMessage}
@@ -850,35 +883,5 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 998, // 低于header的zIndex（1000），确保不覆盖title区域
     overflow: 'hidden', // 裁剪超出部分，确保卡片收起时不会透出到title区域上方
-  },
-  uploadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 9999,
-  },
-  uploadingContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: scaleSize(12),
-    padding: scaleSize(24),
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: scaleSize(2),
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: scaleSize(4),
-    elevation: 5,
-  },
-  uploadingText: {
-    marginTop: scaleSize(12),
-    fontSize: scaleSize(16),
-    color: Colors.light.text,
   },
 });

@@ -348,7 +348,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
   }, [isSending, user?.id, userMemory, stopTypewriter, startTypewriter, updateTypewriterTarget, waitForTypewriter]);
 
   // 上传图片并调用图片理解
-  const uploadImageAndUnderstand = useCallback(async (imageUri: string, scrollToBottomFn?: () => void) => {
+  const uploadImageAndUnderstand = useCallback(async (imageUri: string, scrollToBottomFn?: () => void, loadingMsgId?: string) => {
     if (!user?.id) {
       Alert.alert('错误', '用户信息不存在');
       return;
@@ -371,6 +371,10 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       timeoutTriggered = true;
       setIsSending(false);
       stopTypewriter();
+      // 超时时也移除 loading 气泡
+      if (loadingMsgId) {
+        setMessages((prev: any[]) => prev.filter((m: any) => m.id !== loadingMsgId));
+      }
       Alert.alert('提示', '图片上传超时，请检查网络连接后重试');
     }, 90000); // 90秒超时
 
@@ -380,6 +384,11 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
       // 上传图片（使用转换后的 URI）
       const uploadResult = await imageService.uploadImage(convertedUri);
       const imageUrl = `${uploadResult.url}`;
+
+      // 图片上传成功，移除 loading 气泡（在插入图片消息之前），避免两个气泡重叠
+      if (loadingMsgId) {
+        setMessages((prev: any[]) => prev.filter((m: any) => m.id !== loadingMsgId));
+      }
 
       // 将图片添加到列表（最多3张，FIFO）
       setImageList((prev) => {
@@ -412,7 +421,17 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         // 静默处理错误
       });
 
-      // 调用图片理解接口
+      // 调用图片理解接口 — 先插入"正在输入..."气泡
+      const loadingReplyId = `vl_loading_${Date.now()}`;
+      const loadingReplyMessage: Message = {
+        id: loadingReplyId,
+        type: 'system',
+        text: '',
+        isStreaming: true,
+      };
+      setMessages((prev) => [...prev, loadingReplyMessage]);
+      if (scrollToBottomFn) scrollToBottomFn();
+
       const history = await getAssistantHistory();
       const content = await chatService.callVL(imageUrl, user.id, history);
 
@@ -424,8 +443,11 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         return;
       }
 
+      // 停止上一个打字机（如果有）
+      stopTypewriter();
+
       // 创建系统消息用于显示理解结果，标记为流式传输中
-      const systemMessageId = `vl_${Date.now()}`;
+      const systemMessageId = loadingReplyId;
       const systemMessage: Message = {
         id: systemMessageId,
         type: 'system',
@@ -433,7 +455,8 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
         isStreaming: true,
       };
 
-      setMessages((prev) => [...prev, systemMessage]);
+      // 用 map 替换已有消息（同 ID），避免重复
+      setMessages((prev) => prev.map((msg) => msg.id === systemMessageId ? systemMessage : msg));
       if (scrollToBottomFn) scrollToBottomFn();
 
       // 停止之前的打字机效果
@@ -502,7 +525,7 @@ export const useChat = (scrollViewRef?: RefObject<any>) => {
     } finally {
       setIsSending(false);
     }
-  }, [user?.id, stopTypewriter, startTypewriter, updateTypewriterTarget, waitForTypewriter]);
+  }, [user?.id, stopTypewriter, startTypewriter, updateTypewriterTarget, waitForTypewriter, setMessages, imageService]);
 
   // 初始化用户记忆
   const initUserMemory = useCallback(async () => {

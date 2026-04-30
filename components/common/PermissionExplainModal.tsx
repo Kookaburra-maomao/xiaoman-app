@@ -72,7 +72,7 @@ export default function PermissionExplainModal({
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onCancel}
+      onRequestClose={onConfirm}
     >
       <View style={styles.overlay}>
         <View style={styles.container}>
@@ -100,19 +100,11 @@ export default function PermissionExplainModal({
           {/* 按钮 */}
           <View style={styles.buttonContainer}>
             <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
-              onPress={onCancel}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.cancelButtonText}>暂不授权</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
               style={[styles.button, styles.confirmButton]}
               onPress={onConfirm}
               activeOpacity={0.7}
             >
-              <Text style={styles.confirmButtonText}>去授权</Text>
+              <Text style={styles.confirmButtonText}>继续</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -182,24 +174,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   buttonContainer: {
-    flexDirection: 'row',
     width: '100%',
-    gap: scaleSize(12),
   },
   button: {
-    flex: 1,
     height: scaleSize(44),
     borderRadius: scaleSize(22),
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#F5F5F5',
-  },
-  cancelButtonText: {
-    fontSize: scaleSize(16),
-    color: '#666666',
-    fontWeight: '500',
   },
   confirmButton: {
     backgroundColor: Colors.light.tint,

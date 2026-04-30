@@ -19,6 +19,10 @@ export interface JwtUser {
   diary_secret?: string;
   chat_profile?: string;
   diary_profile?: string;
+  is_week_new?: number;
+  is_month_new?: number;
+  is_year_new?: number;
+  letter_version?: number;
 }
 
 export interface JwtLoginResponse {
