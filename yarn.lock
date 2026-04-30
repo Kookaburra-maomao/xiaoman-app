@@ -3966,6 +3966,11 @@ expo-image@^55.0.8, expo-image@~55.0.6:
   dependencies:
     sf-symbols-typescript "^2.2.0"
 
+expo-in-app-purchases@^14.5.0:
+  version "14.5.0"
+  resolved "https://registry.npmmirror.com/expo-in-app-purchases/-/expo-in-app-purchases-14.5.0.tgz#584f31e5a1340f3138d9cd273709de407f1f4943"
+  integrity sha512-rsVPH6fOoU+mzjn80IFLz5f4gxEHLxXv+Pl4Dwblc5IDYvKTaUvTljNuaVmWESZSjDOMBT1JUAYRAlMRfBWOcg==
+
 expo-json-utils@~55.0.2:
   version "55.0.2"
   resolved "https://registry.npmmirror.com/expo-json-utils/-/expo-json-utils-55.0.2.tgz#ef79888b881ef5b92d27245d3a758bc5debcbccf"
@@ -6443,11 +6448,6 @@ react-native-gesture-handler@~2.30.0:
     "@egjs/hammerjs" "^2.0.17"
     hoist-non-react-statics "^3.3.0"
     invariant "^2.2.4"
-
-react-native-iap@12.14.1:
-  version "12.14.1"
-  resolved "https://registry.npmmirror.com/react-native-iap/-/react-native-iap-12.14.1.tgz#bdf85e47e09269032d5d16d594ac3f9504075d06"
-  integrity sha512-JVvevB77JGFEgaqANArvsaJxImvYWISUlsshE4fyX7vxRrZ90+OV3xeChQpwC232OJwTfz7pLiJDAmArFSto9A==
 
 react-native-is-edge-to-edge@1.2.1:
   version "1.2.1"
