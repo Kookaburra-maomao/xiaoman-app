@@ -7,7 +7,7 @@ module.exports = ({ config }) => {
     name: "小满日记",
     slug: "xiaoman-app",
     owner: "renwenjiaohui",
-    version: "1.0.1",
+    version: "1.0.2",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "xiaomanapp",
@@ -62,6 +62,7 @@ module.exports = ({ config }) => {
       "expo-iap",
       "expo-router",
       "expo-secure-store",
+      "expo-notifications",
       ["expo-audio", {
         enableBackgroundPlayback: false,
         enableBackgroundRecording: false,

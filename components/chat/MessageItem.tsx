@@ -42,7 +42,6 @@ export default function MessageItem({ message, userId, onLongPress, onDismissCop
     isUserMessage && styles.messageBubbleUser,
     isSystemMessage && styles.messageBubbleSystem,
     isDiaryCard && styles.messageBubbleDiary,
-    message.isError && styles.messageBubbleError,
   ];
   
   // 渲染内容
@@ -57,31 +56,43 @@ export default function MessageItem({ message, userId, onLongPress, onDismissCop
 
     if (isDiaryCard && message.diaryData) {
       return (
-        <DiaryCard 
-          context={message.diaryData.context} 
-          pic={message.diaryData.pic} 
+        <DiaryCard
+          context={message.diaryData.context}
+          pic={message.diaryData.pic}
           gmt_create={message.diaryData.gmt_create}
           diaryId={message.diaryData.id}
           userId={userId}
         />
       );
     }
-    
+
+    if (message.isError) {
+      return (
+        <View style={styles.errorRow}>
+          <Image
+            source={{ uri: 'http://xiaomanriji.com/api/files/xiaoman-chat-error.png' }}
+            style={styles.errorIcon}
+            resizeMode="contain"
+          />
+          <Text allowFontScaling={false} style={styles.errorText}>
+            生成已中断，请重新输入
+          </Text>
+        </View>
+      );
+    }
+
     return (
       <>
         {isSystemMessage ? (
-          // 系统消息使用 Markdown 渲染
           <MarkdownText style={defaultMarkdownStyles}>
             {message.text || '正在输入...'}
           </MarkdownText>
         ) : (
-          // 用户消息使用普通 Text
           <Text
             allowFontScaling={false}
             style={[
               styles.messageText,
               styles.messageTextUser,
-              message.isError && styles.messageTextError,
             ]}
 
           >
@@ -223,11 +234,25 @@ const styles = StyleSheet.create({
     borderRadius: scaleSize(12),
   },
   messageBubbleError: {
-    backgroundColor: '#FFE5E5',
-    borderWidth: scaleSize(1),
-    borderColor: '#FF4444',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
   },
   messageTextError: {
     color: '#FF4444',
+  },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scaleSize(6),
+  },
+  errorIcon: {
+    width: scaleSize(20),
+    height: scaleSize(20),
+  },
+  errorText: {
+    fontFamily: 'PingFang SC',
+    fontWeight: '400',
+    fontSize: scaleSize(14),
+    color: '#999999',
   },
 });

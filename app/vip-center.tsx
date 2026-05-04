@@ -20,6 +20,7 @@ import { useIAP } from '@/hooks/useIAP';
 import { APPLE_VIP_PLANS } from '@/services/iapService';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { openBrowserAsync } from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -40,6 +41,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const apiUrl = process.env.EXPO_PUBLIC_XIAOMAN_API_URL || '';
+
+const formatPrice = (price: number) => {
+  const s = price.toFixed(2);
+  return s.replace(/\.?0+$/, '');
+};
 
 export default function VipCenterScreen() {
   const router = useRouter();
@@ -243,12 +249,9 @@ export default function VipCenterScreen() {
                     )}
                     <View style={styles.planCardContent}>
                       <Text style={styles.planName}>{plan.name}</Text>
-                      <View style={styles.priceContainer}>
-                        <Text style={styles.priceUnit}>￥</Text>
-                        <Text style={styles.priceValue}>
-                          {appleProduct ? (appleProduct.price ?? plan.price) : plan.price}
-                        </Text>
-                      </View>
+                      <Text style={styles.priceValueFull}>
+                        {appleProduct?.displayPrice ?? `￥${formatPrice(plan.price)}`}
+                      </Text>
                       <Text style={styles.originalPrice}>￥{plan.originalPrice}元</Text>
                       <Text style={styles.discount}>{plan.discount}</Text>
                     </View>
@@ -311,7 +314,7 @@ export default function VipCenterScreen() {
               ) : (
                 <Text style={styles.paymentButtonText}>
                   {selectedProduct
-                    ? `立即支付 ￥${selectedProduct.price}`
+                    ? `立即支付 ${selectedProduct.localizedPrice ?? `￥${formatPrice(selectedProduct.price)}`}`
                     : '加载中...'}
                 </Text>
               )}
@@ -333,20 +336,26 @@ export default function VipCenterScreen() {
           </TouchableOpacity>
 
           {/* 协议同意 */}
-          <TouchableOpacity
-            style={styles.agreementContainer}
-            onPress={() => setAgreedToTerms(!agreedToTerms)}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={agreedToTerms ? 'checkbox' : 'square-outline'}
-              size={14}
-              color="#FFFFFF"
-            />
-            <Text style={styles.agreementText}>
-              已阅读并同意 会员协议 和 续费协议
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.agreementContainer}>
+            <TouchableOpacity
+              onPress={() => setAgreedToTerms(!agreedToTerms)}
+              activeOpacity={0.7}
+              style={styles.agreementCheckbox}
+            >
+              <Ionicons
+                name={agreedToTerms ? 'checkbox' : 'square-outline'}
+                size={14}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+            <Text style={styles.agreementText}>已阅读并同意</Text>
+            <TouchableOpacity onPress={() => openBrowserAsync('http://xiaomanriji.com/terms')}>
+              <Text style={styles.agreementLink}>《用户协议》</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => openBrowserAsync('http://xiaomanriji.com/privacy')}>
+              <Text style={styles.agreementLink}>《隐私政策》</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* 自动续费说明 */}
           <Text style={styles.renewNotice}>
@@ -564,6 +573,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: '#FFFFFF',
   },
+  priceValueFull: {
+    fontFamily: 'PingFang SC',
+    fontWeight: '700',
+    fontSize: 28,
+    color: '#FFFFFF',
+  },
   originalPrice: {
     fontFamily: 'PingFang SC',
     fontWeight: '400',
@@ -664,14 +679,25 @@ const styles = StyleSheet.create({
   agreementContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 2,
     marginBottom: 12,
+  },
+  agreementCheckbox: {
+    marginRight: 4,
   },
   agreementText: {
     fontFamily: 'PingFang SC',
     fontWeight: '400',
     fontSize: 12,
     color: '#FFFFFF',
+  },
+  agreementLink: {
+    fontFamily: 'PingFang SC',
+    fontWeight: '400',
+    fontSize: 12,
+    color: '#FEBA8F',
     textDecorationLine: 'underline',
   },
   renewNotice: {

@@ -31,11 +31,18 @@
   },
   "submit": {
     "production": {},
+    "production": {
+      "ios": {
+        "appleId": "404315848@qq.com",
+        "ascAppId": "6759453270",
+        "appleTeamId": "D4XZ5J25XG"
+      }
+    },
     "testflight": {
       "ios": {
-        "appleId": "your-apple-id@example.com",
-        "ascAppId": "your-app-store-connect-app-id",
-        "appleTeamId": "your-team-id"
+        "appleId": "404315848@qq.com",
+        "ascAppId": "6759453270",
+        "appleTeamId": "D4XZ5J25XG"
       }
     }
   }

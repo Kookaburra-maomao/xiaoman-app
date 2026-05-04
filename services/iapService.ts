@@ -1,8 +1,8 @@
 import { post } from '@/utils/request';
 
 export const PRODUCT_IDS = {
-  monthly: 'com.xiaomanriji.vip.monthly',
-  quarterly: 'com.xiaomanriji.vip.quarterly',
+  monthly: 'com.xiaomanriji.vip.sub.monthly',
+  quarterly: 'com.xiaomanriji.vip.sub.quarterly',
 };
 
 export const APPLE_VIP_PLANS = [

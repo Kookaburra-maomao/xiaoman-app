@@ -1,4 +1,5 @@
 import { JwtAuthProvider, useJwtAuth } from '@/contexts/JwtAuthContext';
+import { useNotificationToken } from '@/hooks/useNotificationToken';
 import { disableFontScaling } from '@/utils/disableFontScaling';
 import { scaleSize } from '@/utils/screen';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -9,10 +10,12 @@ import { StyleSheet, View } from 'react-native';
 disableFontScaling();
 
 function RootLayoutContent() {
-  const { isAuthenticated, loading } = useJwtAuth();
+  const { isAuthenticated, loading, user } = useJwtAuth();
   const segments = useSegments();
   const router = useRouter();
   const prevAuthenticatedRef = useRef<boolean | null>(null);
+
+  useNotificationToken(isAuthenticated ? user?.id : undefined);
 
   useEffect(() => {
     console.log('[Route Guard] Effect triggered', {

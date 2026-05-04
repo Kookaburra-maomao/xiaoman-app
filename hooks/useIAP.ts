@@ -42,7 +42,6 @@ export function useIAP() {
         setProducts((items ?? []) as ProductSubscription[]);
         isInitialized.current = true;
       } catch (e: any) {
-        console.error('IAP 初始化失败:', e);
         setError(e.message);
       } finally {
         setIsLoading(false);
